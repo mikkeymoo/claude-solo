@@ -1,3 +1,8 @@
+---
+name: mm:test
+description: "Write and run unit, integration, and E2E tests. Reports coverage, flags gaps, and validates cross-platform compatibility."
+---
+
 Read `.planning/PLAN.md` (test matrix section) and the current codebase.
 
 Write and run tests:

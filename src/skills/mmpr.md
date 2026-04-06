@@ -1,3 +1,8 @@
+---
+name: mm:pr
+description: "Create a well-structured pull request with description, test plan, breaking changes, and review checklist."
+---
+
 Create a well-structured pull request for the current branch.
 
 1. **Gather context**:

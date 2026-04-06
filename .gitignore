@@ -1,2 +1,7 @@
 .claude-solo-manifest.json
 *.log
+*.omx
+.omx/
+.claude/
+.planning/
+convert-skills.mjs

@@ -1,3 +1,8 @@
+---
+name: mm:ready
+description: "Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation."
+---
+
 Pre-build readiness gate. Verify everything needed to build is actually in place.
 
 Run before /mm:build to catch gaps before they cost time mid-implementation.

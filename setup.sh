@@ -89,6 +89,18 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Source path saved (.claude-solo-source)"
     fi
 
+    # MCP template (copy but don't overwrite)
+    if [ -f "$REPO_DIR/src/mcp.json" ] && [ ! -f "$TARGET/mcp.json" ]; then
+        cp "$REPO_DIR/src/mcp.json" "$TARGET/mcp.json"
+        echo "    ✓ MCP template (mcp.json) — enable servers you need"
+    fi
+
+    # Status line config (copy but don't overwrite)
+    if [ -f "$REPO_DIR/src/settings/statusline.json" ] && [ ! -f "$TARGET/statusline.json" ]; then
+        cp "$REPO_DIR/src/settings/statusline.json" "$TARGET/statusline.json"
+        echo "    ✓ Status line config (statusline.json)"
+    fi
+
     # settings.json (merge hooks only)
     local SETTINGS="$TARGET/settings.json"
     python3 - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
@@ -163,5 +175,7 @@ fi
 
 echo ""
 echo "Open Claude Code and use:"
-echo "  /brief  /plan  /build  /review  /test  /ship  /retro"
+echo "  /brief  /plan  /build  /review  /test  /verify  /ship  /retro"
+echo ""
+echo "Power skills: /handoff  /release  /incident  /docsync  /doctor  /verify"
 echo ""

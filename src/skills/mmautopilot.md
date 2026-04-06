@@ -1,3 +1,9 @@
+---
+name: mm:autopilot
+description: "Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions."
+argument-hint: "[brief description of what to build]"
+---
+
 Run the full sprint pipeline end-to-end with minimal interruptions.
 
 Usage: `/mm:autopilot [brief description of what to build]`

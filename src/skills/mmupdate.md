@@ -1,3 +1,8 @@
+---
+name: mm:update
+description: "Pull the latest version of claude-solo from GitHub and reinstall hooks, skills, agents, and settings."
+---
+
 Pull the latest version of claude-solo from GitHub and reinstall.
 
 1. **Find the repo** — check where claude-solo was cloned from:

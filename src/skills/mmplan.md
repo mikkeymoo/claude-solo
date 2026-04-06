@@ -1,3 +1,8 @@
+---
+name: mm:plan
+description: "Create implementation plan with atomic tasks, dependencies, test matrix, and architecture decisions. Writes .planning/PLAN.md."
+---
+
 Read `.planning/BRIEF.md` (or ask me to describe the feature if it doesn't exist).
 
 Create an implementation plan in `.planning/PLAN.md`:

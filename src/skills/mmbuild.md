@@ -1,3 +1,8 @@
+---
+name: mm:build
+description: "Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline."
+---
+
 Read `.planning/PLAN.md` and implement the tasks in dependency order.
 
 For each task:

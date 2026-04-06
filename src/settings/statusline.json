@@ -1,0 +1,42 @@
+{
+  "$schema": "https://code.claude.com/schemas/statusline.json",
+  "statusLine": {
+    "enabled": true,
+    "segments": [
+      {
+        "type": "command",
+        "command": "git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'no-git'",
+        "label": "branch",
+        "icon": "🌿",
+        "refresh": "on_tool_use"
+      },
+      {
+        "type": "command",
+        "command": "git status --porcelain 2>/dev/null | wc -l | tr -d ' '",
+        "label": "dirty",
+        "icon": "📝",
+        "refresh": "on_tool_use"
+      },
+      {
+        "type": "command",
+        "command": "if [ -f .planning/VERIFY.md ]; then grep -oP 'Status:\\s*\\K\\w+' .planning/VERIFY.md 2>/dev/null || echo 'N/A'; else echo '-'; fi",
+        "label": "verify",
+        "icon": "✓",
+        "refresh": "on_tool_use"
+      },
+      {
+        "type": "model",
+        "label": "model"
+      },
+      {
+        "type": "cost",
+        "label": "cost"
+      },
+      {
+        "type": "context",
+        "label": "ctx",
+        "format": "percent"
+      }
+    ]
+  }
+}

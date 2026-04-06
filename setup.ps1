@@ -73,6 +73,22 @@ function Install-To($TARGET) {
         Write-Host "    ✓ Source path saved (.claude-solo-source)" -ForegroundColor Green
     }
 
+    # MCP template (copy but don't overwrite)
+    $MCP_SRC = "$REPO_DIR\src\mcp.json"
+    $MCP_DST = "$TARGET\mcp.json"
+    if ((Test-Path $MCP_SRC) -and -not (Test-Path $MCP_DST)) {
+        Copy-Item $MCP_SRC $MCP_DST
+        Write-Host "    ✓ MCP template (mcp.json) — enable servers you need" -ForegroundColor Green
+    }
+
+    # Status line config (copy but don't overwrite)
+    $SL_SRC = "$REPO_DIR\src\settings\statusline.json"
+    $SL_DST = "$TARGET\statusline.json"
+    if ((Test-Path $SL_SRC) -and -not (Test-Path $SL_DST)) {
+        Copy-Item $SL_SRC $SL_DST
+        Write-Host "    ✓ Status line config (statusline.json)" -ForegroundColor Green
+    }
+
     # settings.json
     $SETTINGS_PATH = "$TARGET\settings.json"
     $OUR_SETTINGS  = Get-Content "$REPO_DIR\src\settings\settings.json" -Raw | ConvertFrom-Json
@@ -157,5 +173,7 @@ if ($uninstall) {
 
 Write-Host ""
 Write-Host "Open Claude Code and use:" -ForegroundColor Cyan
-Write-Host "  /brief  /plan  /build  /review  /test  /ship  /retro"
+Write-Host "  /brief  /plan  /build  /review  /test  /verify  /ship  /retro"
+Write-Host ""
+Write-Host "Power skills: /handoff  /release  /incident  /docsync  /doctor  /verify" -ForegroundColor Gray
 Write-Host ""

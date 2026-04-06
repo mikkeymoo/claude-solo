@@ -1,3 +1,8 @@
+---
+name: mm:adversarial
+description: "Adversarial security review — think like an attacker trying to break the system. Finds exploit vectors, logic abuse, privilege escalation, and insider threats."
+---
+
 Adversarial code review. Think like an attacker trying to break this system.
 
 This is not a standard review. You are looking for ways to make the system do things it was not designed to do.

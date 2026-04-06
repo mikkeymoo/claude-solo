@@ -1,3 +1,8 @@
+---
+name: mm:ship
+description: "Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist."
+---
+
 Prepare and ship the feature.
 
 1. **Final check** — run all tests one more time. If anything fails, stop and tell me.

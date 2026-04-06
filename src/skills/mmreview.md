@@ -1,3 +1,8 @@
+---
+name: mm:review
+description: "Staff-engineer code review: security, performance, cross-platform, edge cases, error handling, and code clarity. Auto-fixes critical issues."
+---
+
 Read all commits made during /build (since the last tag or the PLAN.md was created).
 
 Perform a staff-engineer code review. Check:

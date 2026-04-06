@@ -1,3 +1,8 @@
+---
+name: mm:retro
+description: "Sprint retrospective — what shipped, what worked, what to fix, and priorities for next sprint. Final pipeline stage."
+---
+
 Sprint retrospective. Be concise and honest.
 
 Write `.planning/RETRO-[date].md` with:
