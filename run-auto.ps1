@@ -55,7 +55,7 @@ while ($iter -lt $Max) {
         $prompt = $ContinuePrompt
     }
 
-    $output = claude --dangerouslySkipPermissions -p $prompt 2>&1
+    $output = claude --model claude-sonnet-4-6 --dangerouslySkipPermissions -p $prompt 2>&1
     Write-Host $output
 
     if ($output -match "TASK_COMPLETE") {

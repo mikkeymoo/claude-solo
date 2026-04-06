@@ -95,6 +95,9 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `python-data` | Pandas/Polars, data pipelines, ETL, memory-efficient data work |
 | `security-auditor` | Enterprise security expert — OWASP, auth design, attack surface, SOC2 |
 | `ci-engineer` | GitHub Actions specialist — workflow design, caching, deploy gating |
+| `performance-optimizer` | Bottleneck diagnosis — profiles before optimizing, measures before/after |
+| `database-architect` | Schema design, migrations, indexes, multi-tenant isolation (SQL Server primary) |
+| `api-designer` | REST API design — consistent shapes, correct status codes, versioning, auth |
 
 ### Hooks
 | Hook | What it does |
