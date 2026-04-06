@@ -132,4 +132,13 @@ Every feature, every fix — follow the pipeline in order:
 - No openclaw (ever)
 - No premium tier, no telemetry, no accounts
 
+---
+
+## Optional: MCP Servers
+
+claude-solo works without any MCPs. Context7 is already bundled with Claude Code.
+For Playwright (browser automation/E2E) and other optional integrations: → [docs/recommended-mcps.md](docs/recommended-mcps.md)
+
+---
+
 MIT licensed.
