@@ -76,6 +76,13 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:adversarial` | Attacker mindset review — exploit vectors, logic abuse, insider threat |
 | `/mm:compliance` | Enterprise checklist — audit logging, PII, multi-tenancy, SOC2 surface |
 
+**CI/CD:**
+| Command | What it does |
+|---------|-------------|
+| `/mm:ci` | Review or generate GitHub Actions workflow for the current project |
+| `/mm:pr` | Create structured PR with description, test plan, breaking changes |
+| `/mm:changelog` | Generate CHANGELOG from git history, tag release |
+
 ### Agents
 | Agent | Role |
 |-------|------|
@@ -87,6 +94,7 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `sql-specialist` | SQL Server / T-SQL queries, schema design, index tuning, migrations |
 | `python-data` | Pandas/Polars, data pipelines, ETL, memory-efficient data work |
 | `security-auditor` | Enterprise security expert — OWASP, auth design, attack surface, SOC2 |
+| `ci-engineer` | GitHub Actions specialist — workflow design, caching, deploy gating |
 
 ### Hooks
 | Hook | What it does |
@@ -119,6 +127,31 @@ Every feature, every fix — follow the pipeline in order:
 ```
 
 **Total: 4-6 hours for a well-scoped feature.**
+
+---
+
+## Auto-Mode (Ralph Pattern)
+
+Run Claude fully autonomously — no confirmation prompts, loops until done.
+
+```bash
+# Linux/WSL — runs from .planning/PLAN.md
+bash run-auto.sh
+
+# One-shot task
+bash run-auto.sh "implement the user auth endpoints from PLAN.md"
+
+# Windows
+.\run-auto.ps1
+.\run-auto.ps1 "fix the failing tests"
+
+# Limit iterations (default: 10)
+bash run-auto.sh --max 5
+```
+
+**Requires**: Claude Code CLI installed + authenticated. Uses `--dangerouslySkipPermissions`.
+**Stops when**: Claude outputs `TASK_COMPLETE` or max iterations reached.
+**Use for**: well-scoped tasks with a clear PLAN.md. Not for vague open-ended work.
 
 ---
 
