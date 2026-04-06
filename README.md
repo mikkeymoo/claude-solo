@@ -8,7 +8,7 @@ Combines the best patterns from gstack, GSD, and SuperClaude. No domain lock-in.
 
 **Windows (PowerShell):**
 ```powershell
-git clone https://github.com/yourusername/claude-solo.git
+git clone https://github.com/mikkeymoo/claude-solo.git
 cd claude-solo
 
 .\setup.ps1              # Install globally (all projects)
@@ -18,7 +18,7 @@ cd claude-solo
 
 **Linux / WSL / macOS:**
 ```bash
-git clone https://github.com/yourusername/claude-solo.git
+git clone https://github.com/mikkeymoo/claude-solo.git
 cd claude-solo
 
 bash setup.sh             # Install globally (all projects)
