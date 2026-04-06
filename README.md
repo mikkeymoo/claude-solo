@@ -69,6 +69,13 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:tokens` | Show estimated token usage breakdown for today's session |
 | `/mm:update` | Pull latest claude-solo from GitHub and reinstall |
 
+**Enterprise Review Suite:**
+| Command | What it does |
+|---------|-------------|
+| `/mm:security` | Full OWASP audit — injection, auth, secrets, API exposure, deps |
+| `/mm:adversarial` | Attacker mindset review — exploit vectors, logic abuse, insider threat |
+| `/mm:compliance` | Enterprise checklist — audit logging, PII, multi-tenancy, SOC2 surface |
+
 ### Agents
 | Agent | Role |
 |-------|------|
@@ -79,6 +86,7 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `git-workflow` | Branch strategy, atomic commits, conflict resolution, PR descriptions |
 | `sql-specialist` | SQL Server / T-SQL queries, schema design, index tuning, migrations |
 | `python-data` | Pandas/Polars, data pipelines, ETL, memory-efficient data work |
+| `security-auditor` | Enterprise security expert — OWASP, auth design, attack surface, SOC2 |
 
 ### Hooks
 | Hook | What it does |
