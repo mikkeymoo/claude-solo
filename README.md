@@ -48,6 +48,7 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:build` | Implement in waves, atomic commits | 60-120 min |
 | `/mm:review` | Staff-engineer review, auto-fixes | 30 min |
 | `/mm:test` | Unit + integration + cross-platform | 30-45 min |
+| `/mm:verify` | Hard pass/fail gate — lint, types, tests, secrets | 10 min |
 | `/mm:ship` | Merge, verify deploy, monitor | 15-30 min |
 | `/mm:retro` | What shipped, what to fix, next sprint | 15 min |
 
@@ -65,8 +66,12 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:distill` | Lossless compress large docs/plans to reduce context token cost |
 | `/mm:ready` | Pre-build readiness gate — verifies brief, plan, env, and clarity |
 | `/mm:aislopcleaner` | Regression-tests-first cleanup — dead code, duplication, needless abstraction, AI padding |
+| `/mm:handoff` | Save rich resume packet for next session (replaces pause) |
 | `/mm:pause` | Save session context to resume in a fresh window |
-| `/mm:resume` | Restore context from a paused session and continue |
+| `/mm:resume` | Restore context from handoff, pause, or checkpoint |
+| `/mm:release` | Version bump, changelog, release notes, rollout checklist |
+| `/mm:incident` | Production debug — repro, root cause, fix, retro |
+| `/mm:docsync` | Sync README, CLAUDE.md, API docs with current code |
 | `/mm:tokens` | Show estimated token usage breakdown for today's session |
 | `/mm:update` | Pull latest claude-solo from GitHub and reinstall |
 
@@ -99,13 +104,20 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `performance-optimizer` | Bottleneck diagnosis — profiles before optimizing, measures before/after |
 | `database-architect` | Schema design, migrations, indexes, multi-tenant isolation (SQL Server primary) |
 | `api-designer` | REST API design — consistent shapes, correct status codes, versioning, auth |
+| `release-manager` | Release engineering — version bumps, changelogs, rollout checklists, rollback |
+| `docs-librarian` | Documentation accuracy — drift detection, README updates, stale comment cleanup |
 
-### Hooks
+### Hooks (8 — all automatic)
 | Hook | What it does |
 |------|-------------|
+| `session-start` | Injects git branch, sprint state, pending verification on session start |
+| `permission-request` | Auto-approves operations (allow-all by default, configurable) |
 | `pre-tool-use` | Warns about dangerous commands via stderr (advisory only, never blocks) |
 | `post-tool-use` | Logs commands, nudges RTK usage for token savings |
 | `prompt-submit` | Auto-injects sprint context (BRIEF.md, PLAN.md) into every prompt |
+| `pre-compact` | Saves checkpoint to .planning/CHECKPOINT.md before context compression |
+| `subagent-stop` | Captures agent outputs as durable artifacts in .planning/agent-outputs/ |
+| `session-end` | Writes session summary to .planning/SESSION-END.md |
 
 ### CLAUDE.md (appended, never overwrites)
 - 7-stage sprint rules and order
@@ -126,6 +138,7 @@ Every feature, every fix — follow the pipeline in order:
 /mm:build    →  build it          (60-120 min)
 /mm:review   →  review it         (30 min)
 /mm:test     →  test it           (30-45 min)
+/mm:verify   →  gate it           (10 min)
 /mm:ship     →  ship it           (15-30 min)
 /mm:retro    →  learn from it     (15 min)
 ```
@@ -171,12 +184,70 @@ bash run-auto.sh --max 5
 
 ---
 
-## Safe to Install
+## Safe to Install (Brownfield-Friendly)
 
-- **CLAUDE.md**: appended inside markers, never overwrites your content
-- **settings.json**: hooks are merged, your existing settings preserved
-- **agents/skills**: only adds files, doesn't touch what you already have
-- **Uninstall**: removes only what it installed, leaves your config intact
+claude-solo is designed to install alongside your existing Claude Code config without breaking anything.
+
+### What happens on install
+
+| File | Behavior | Your data safe? |
+|------|----------|----------------|
+| **CLAUDE.md** | Appends inside `<!-- claude-solo:start/end -->` markers. Your content is untouched. Re-runs replace only the marked block. | ✅ Yes |
+| **settings.json** | Merges hooks only — adds hook events that don't exist yet. Your `model`, `maxTurns`, MCP configs, and custom hooks are preserved. | ✅ Yes |
+| **settings.local.json** | Not touched at all. | ✅ Yes |
+| **memory/** | Not touched at all. | ✅ Yes |
+| **mcp.json** | Copies template only if file doesn't exist. Won't overwrite. | ✅ Yes |
+| **statusline.json** | Copies only if file doesn't exist. Won't overwrite. | ✅ Yes |
+| **Agents** (`.md`) | Overwrites files with matching names. Your custom agents with different names are untouched. | ⚠️ Name collisions |
+| **Skills** (`.md`) | Same as agents — overwrites matching names only. | ⚠️ Name collisions |
+| **Hooks** (`.js`) | Overwrites files with matching names. | ⚠️ Name collisions |
+
+### Automatic backups
+
+Before overwriting anything, the installer **automatically backs up** all existing files that would be replaced. Backups go to:
+
+```
+~/.claude/.claude-solo-backup/20260406-143022/
+├── hooks/
+│   └── pre-tool-use.js      (your original)
+├── agents/
+│   └── debugger.md           (your original)
+├── skills/
+│   └── ...
+├── settings.json              (your original)
+└── CLAUDE.md                  (your original)
+```
+
+To restore: copy files from the backup directory back to `~/.claude/`.
+
+To skip backups: `bash setup.sh --no-backup` or `.\setup.ps1 -nobackup`
+
+### Preserving custom settings
+
+If you have custom hooks, agents, or skills you want to keep:
+
+1. **Before install**: your files are automatically backed up (see above)
+2. **After install**: copy back any files you want to keep from the backup directory
+3. **For hooks**: if you have a custom `pre-tool-use.js`, restore it from backup after install
+4. **For settings.json**: your existing hook events are never overwritten — only new ones are added
+5. **For CLAUDE.md**: your content outside the `<!-- claude-solo:start/end -->` markers is always preserved
+
+### Recommended install for existing projects
+
+```bash
+# Install globally first (this is where hooks live)
+bash setup.sh
+
+# Then optionally install project-specific overrides
+cd /path/to/your/project
+bash setup.sh --project
+```
+
+### Permission hook behavior
+
+The `PermissionRequest` hook defaults to **allow-all mode** — it approves everything except catastrophic commands (`rm -rf /`, fork bombs, etc.). This is designed for users who run with `--dangerouslySkipPermissions`.
+
+To switch to conservative mode (only auto-approves read-only operations), edit `~/.claude/hooks/permission-request.js` and change `ALLOW_ALL` to `false`.
 
 ---
 
@@ -190,8 +261,17 @@ bash run-auto.sh --max 5
 
 ## Optional: MCP Servers
 
-claude-solo works without any MCPs. Context7 is already bundled with Claude Code.
-For Playwright (browser automation/E2E) and other optional integrations: → [docs/recommended-mcps.md](docs/recommended-mcps.md)
+claude-solo works without any MCPs. A template (`mcp.json`) is installed with 7 pre-configured servers — all disabled by default. Enable what you need:
+
+- **GitHub** — PRs, issues, Actions, code search
+- **Playwright** — browser automation and E2E testing
+- **PostgreSQL** — read-only database access
+- **Sentry** — production error tracking
+- **Brave Search** — web search (free tier: 2000/month)
+- **Memory** — persistent knowledge graph
+- **Filesystem** — file access with configurable allowed directories
+
+Recommended: enable 2-3 max. Details: → [docs/recommended-mcps.md](docs/recommended-mcps.md)
 
 ---
 

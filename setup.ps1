@@ -6,11 +6,13 @@
 #   .\setup.ps1 --both       → installs globally AND into current project
 #   .\setup.ps1 --uninstall  → removes from global
 #   .\setup.ps1 --uninstall --project → removes from project
+#   .\setup.ps1 -nobackup            → skip automatic backup of existing files
 
 param(
     [switch]$project,
     [switch]$both,
-    [switch]$uninstall
+    [switch]$uninstall,
+    [switch]$nobackup
 )
 
 $REPO_DIR = $PSScriptRoot
@@ -20,10 +22,73 @@ $PROJECT_DIR = "$((Get-Location).Path)\.claude"
 $MARKER_START = "<!-- claude-solo:start -->"
 $MARKER_END   = "<!-- claude-solo:end -->"
 
+function Backup-Existing($TARGET) {
+    if ($nobackup) { return }
+
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backupDir = "$TARGET\.claude-solo-backup\$timestamp"
+    $backedUp = $false
+
+    # Backup hooks that would be overwritten
+    Get-ChildItem "$REPO_DIR\src\hooks\*.js" -ErrorAction SilentlyContinue | ForEach-Object {
+        $existing = "$TARGET\hooks\$($_.Name)"
+        if (Test-Path $existing) {
+            if (-not $backedUp) {
+                New-Item -ItemType Directory -Force -Path "$backupDir\hooks" | Out-Null
+                New-Item -ItemType Directory -Force -Path "$backupDir\agents" | Out-Null
+                New-Item -ItemType Directory -Force -Path "$backupDir\skills" | Out-Null
+                $backedUp = $true
+            }
+            Copy-Item $existing "$backupDir\hooks\$($_.Name)"
+        }
+    }
+
+    # Backup agents that would be overwritten
+    Get-ChildItem "$REPO_DIR\src\agents\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $existing = "$TARGET\agents\$($_.Name)"
+        if (Test-Path $existing) {
+            if (-not $backedUp) {
+                New-Item -ItemType Directory -Force -Path "$backupDir\agents" | Out-Null
+                $backedUp = $true
+            }
+            Copy-Item $existing "$backupDir\agents\$($_.Name)"
+        }
+    }
+
+    # Backup skills that would be overwritten
+    Get-ChildItem "$REPO_DIR\src\skills\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $existing = "$TARGET\skills\$($_.Name)"
+        if (Test-Path $existing) {
+            if (-not $backedUp) {
+                New-Item -ItemType Directory -Force -Path "$backupDir\skills" | Out-Null
+                $backedUp = $true
+            }
+            Copy-Item $existing "$backupDir\skills\$($_.Name)"
+        }
+    }
+
+    # Backup settings.json and CLAUDE.md
+    if (Test-Path "$TARGET\settings.json") {
+        if (-not $backedUp) { New-Item -ItemType Directory -Force -Path $backupDir | Out-Null; $backedUp = $true }
+        Copy-Item "$TARGET\settings.json" "$backupDir\settings.json"
+    }
+    if (Test-Path "$TARGET\CLAUDE.md") {
+        if (-not $backedUp) { New-Item -ItemType Directory -Force -Path $backupDir | Out-Null; $backedUp = $true }
+        Copy-Item "$TARGET\CLAUDE.md" "$backupDir\CLAUDE.md"
+    }
+
+    if ($backedUp) {
+        Write-Host "    📦 Backup saved to: $backupDir" -ForegroundColor Yellow
+    }
+}
+
 function Install-To($TARGET) {
     Write-Host ""
     Write-Host "  Installing to: $TARGET" -ForegroundColor Cyan
     Write-Host ""
+
+    # Backup existing files before overwriting
+    Backup-Existing $TARGET
 
     New-Item -ItemType Directory -Force -Path "$TARGET\agents" | Out-Null
     New-Item -ItemType Directory -Force -Path "$TARGET\skills" | Out-Null

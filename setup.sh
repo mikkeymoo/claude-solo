@@ -7,6 +7,7 @@
 #   bash setup.sh --both      → installs globally AND into current project
 #   bash setup.sh --uninstall → removes from global
 #   bash setup.sh --uninstall --project → removes from project
+#   bash setup.sh --no-backup → skip automatic backup of existing files
 
 set -e
 
@@ -19,14 +20,87 @@ MARKER_END="<!-- claude-solo:end -->"
 
 SCOPE="global"
 UNINSTALL=false
+NO_BACKUP=false
 
 for arg in "$@"; do
     case $arg in
-        --project)   SCOPE="project" ;;
-        --both)      SCOPE="both" ;;
-        --uninstall) UNINSTALL=true ;;
+        --project)    SCOPE="project" ;;
+        --both)       SCOPE="both" ;;
+        --uninstall)  UNINSTALL=true ;;
+        --no-backup)  NO_BACKUP=true ;;
     esac
 done
+
+# ── Backup function ──────────────────────────────────────────────────────
+backup_existing() {
+    local TARGET="$1"
+    if $NO_BACKUP; then return; fi
+
+    local BACKUP_DIR="$TARGET/.claude-solo-backup/$(date +%Y%m%d-%H%M%S)"
+    local BACKED_UP=false
+
+    # Backup hooks that would be overwritten
+    for f in "$REPO_DIR/src/hooks/"*.js; do
+        [ -f "$f" ] || continue
+        local basename="$(basename "$f")"
+        local existing="$TARGET/hooks/$basename"
+        if [ -f "$existing" ]; then
+            if ! $BACKED_UP; then
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                BACKED_UP=true
+            fi
+            cp "$existing" "$BACKUP_DIR/hooks/$basename"
+        fi
+    done
+
+    # Backup agents that would be overwritten
+    for f in "$REPO_DIR/src/agents/"*.md; do
+        [ -f "$f" ] || continue
+        local basename="$(basename "$f")"
+        local existing="$TARGET/agents/$basename"
+        if [ -f "$existing" ]; then
+            if ! $BACKED_UP; then
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                BACKED_UP=true
+            fi
+            cp "$existing" "$BACKUP_DIR/agents/$basename"
+        fi
+    done
+
+    # Backup skills that would be overwritten
+    for f in "$REPO_DIR/src/skills/"*.md; do
+        [ -f "$f" ] || continue
+        local basename="$(basename "$f")"
+        local existing="$TARGET/skills/$basename"
+        if [ -f "$existing" ]; then
+            if ! $BACKED_UP; then
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                BACKED_UP=true
+            fi
+            cp "$existing" "$BACKUP_DIR/skills/$basename"
+        fi
+    done
+
+    # Backup settings.json and CLAUDE.md
+    if [ -f "$TARGET/settings.json" ]; then
+        if ! $BACKED_UP; then
+            mkdir -p "$BACKUP_DIR"
+            BACKED_UP=true
+        fi
+        cp "$TARGET/settings.json" "$BACKUP_DIR/settings.json"
+    fi
+    if [ -f "$TARGET/CLAUDE.md" ]; then
+        if ! $BACKED_UP; then
+            mkdir -p "$BACKUP_DIR"
+            BACKED_UP=true
+        fi
+        cp "$TARGET/CLAUDE.md" "$BACKUP_DIR/CLAUDE.md"
+    fi
+
+    if $BACKED_UP; then
+        echo "    📦 Backup saved to: $BACKUP_DIR"
+    fi
+}
 
 # ── Core install function ─────────────────────────────────────────────────
 install_to() {
@@ -34,6 +108,9 @@ install_to() {
     echo ""
     echo "  Installing to: $TARGET"
     echo ""
+
+    # Backup existing files before overwriting
+    backup_existing "$TARGET"
 
     mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/hooks" "$TARGET/logs"
 
