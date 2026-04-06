@@ -59,6 +59,15 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:parallel` | Execute independent tasks simultaneously in waves |
 | `/mm:doctor` | Diagnose project + Claude Code health (git, deps, tests, secrets) |
 | `/mm:deepsearch` | Deep multi-source research with synthesis and citations |
+| `/mm:quick` | Rapid flow for small tasks: clarify → implement → review in one shot |
+| `/mm:explain` | Deep code explanation — traces data flow, answers why not just what |
+| `/mm:estimate` | Structured effort estimate with confidence intervals and risk flags |
+| `/mm:distill` | Lossless compress large docs/plans to reduce context token cost |
+| `/mm:ready` | Pre-build readiness gate — verifies brief, plan, env, and clarity |
+| `/mm:pause` | Save session context to resume in a fresh window |
+| `/mm:resume` | Restore context from a paused session and continue |
+| `/mm:tokens` | Show estimated token usage breakdown for today's session |
+| `/mm:update` | Pull latest claude-solo from GitHub and reinstall |
 
 ### Agents
 | Agent | Role |
