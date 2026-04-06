@@ -64,6 +64,7 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:estimate` | Structured effort estimate with confidence intervals and risk flags |
 | `/mm:distill` | Lossless compress large docs/plans to reduce context token cost |
 | `/mm:ready` | Pre-build readiness gate — verifies brief, plan, env, and clarity |
+| `/mm:aislopcleaner` | Regression-tests-first cleanup — dead code, duplication, needless abstraction, AI padding |
 | `/mm:pause` | Save session context to resume in a fresh window |
 | `/mm:resume` | Restore context from a paused session and continue |
 | `/mm:tokens` | Show estimated token usage breakdown for today's session |
