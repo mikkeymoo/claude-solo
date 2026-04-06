@@ -39,6 +39,8 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 ## What Gets Installed
 
 ### Skills (Slash Commands)
+
+**The Sprint Pipeline (run in order):**
 | Command | What it does | Time |
 |---------|-------------|------|
 | `/mm:brief` | Define scope + acceptance criteria | 15 min |
@@ -48,6 +50,15 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `/mm:test` | Unit + integration + cross-platform | 30-45 min |
 | `/mm:ship` | Merge, verify deploy, monitor | 15-30 min |
 | `/mm:retro` | What shipped, what to fix, next sprint | 15 min |
+
+**Power Skills:**
+| Command | What it does |
+|---------|-------------|
+| `/mm:autopilot` | Full hands-off pipeline: idea → spec → build → QA → validate |
+| `/mm:tdd` | Strict TDD mode: red → green → refactor, no code before failing test |
+| `/mm:parallel` | Execute independent tasks simultaneously in waves |
+| `/mm:doctor` | Diagnose project + Claude Code health (git, deps, tests, secrets) |
+| `/mm:deepsearch` | Deep multi-source research with synthesis and citations |
 
 ### Agents
 | Agent | Role |
