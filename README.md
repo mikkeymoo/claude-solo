@@ -67,11 +67,14 @@ Open Claude Code and you're done. Your commands are prefixed with `mm:` so they 
 | `planner` | Turns vague requirements into executable atomic tasks |
 | `debugger` | Systematic root-cause analysis, never guesses |
 | `test-writer` | Tests that catch real bugs, not coverage theater |
+| `git-workflow` | Branch strategy, atomic commits, conflict resolution, PR descriptions |
+| `sql-specialist` | SQL Server / T-SQL queries, schema design, index tuning, migrations |
+| `python-data` | Pandas/Polars, data pipelines, ETL, memory-efficient data work |
 
 ### Hooks
 | Hook | What it does |
 |------|-------------|
-| `pre-tool-use` | Blocks dangerous commands before they run |
+| `pre-tool-use` | Warns about dangerous commands via stderr (advisory only, never blocks) |
 | `post-tool-use` | Logs commands, nudges RTK usage for token savings |
 | `prompt-submit` | Auto-injects sprint context (BRIEF.md, PLAN.md) into every prompt |
 

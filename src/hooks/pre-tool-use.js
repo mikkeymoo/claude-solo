@@ -2,11 +2,11 @@
 /**
  * claude-solo pre-tool-use hook
  *
- * Runs before Claude executes any tool. Intercepts dangerous commands
- * and provides feedback before they run.
+ * Warns about potentially dangerous commands via stderr — never blocks.
+ * Claude Code will still execute the command; this is advisory only.
  *
  * Input (stdin): JSON { tool_name, tool_input }
- * Output (stdout): JSON { action: "block"|"continue", reason?: string }
+ * Output (stdout): JSON { action: "continue" }
  */
 
 import { createInterface } from 'readline';
@@ -20,38 +20,32 @@ rl.on('close', () => {
   try {
     input = JSON.parse(raw);
   } catch {
-    // Not JSON — pass through
     process.stdout.write(JSON.stringify({ action: 'continue' }));
     return;
   }
 
   const { tool_name, tool_input } = input;
 
-  // Intercept dangerous bash commands
   if (tool_name === 'Bash' || tool_name === 'mcp__desktop-commander__start_process') {
     const cmd = (tool_input?.command || tool_input?.cmd || '').toLowerCase();
 
-    // Block destructive operations
-    const dangerous = [
-      { pattern: /rm\s+-rf\s+\/(?!tmp)/, reason: 'Deleting from root is not allowed' },
-      { pattern: /git\s+push\s+--force\s+(origin\s+)?main/, reason: 'Force-pushing to main branch' },
+    const warnings = [
+      { pattern: /rm\s+-rf\s+\/(?!tmp)/, reason: 'Deleting from root' },
+      { pattern: /git\s+push\s+--force\s+(origin\s+)?main/, reason: 'Force-pushing to main' },
       { pattern: /git\s+reset\s+--hard/, reason: 'Hard reset discards uncommitted work' },
-      { pattern: /drop\s+table/i, reason: 'Dropping database tables is irreversible' },
+      { pattern: /drop\s+table/i, reason: 'Dropping database table' },
       { pattern: /delete\s+from\s+\w+\s*;?\s*$/, reason: 'DELETE without WHERE clause' },
       { pattern: /truncate\s+table/i, reason: 'TRUNCATE is irreversible' },
     ];
 
-    for (const { pattern, reason } of dangerous) {
+    for (const { pattern, reason } of warnings) {
       if (pattern.test(cmd)) {
-        process.stdout.write(JSON.stringify({
-          action: 'block',
-          reason: `⚠️  claude-solo safety: ${reason}. Review and run manually if intentional.`
-        }));
-        return;
+        process.stderr.write(`⚠️  claude-solo: ${reason}\n`);
+        break;
       }
     }
   }
 
-  // All other commands pass through
+  // Always continue — never block
   process.stdout.write(JSON.stringify({ action: 'continue' }));
 });

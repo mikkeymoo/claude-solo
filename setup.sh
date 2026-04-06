@@ -84,6 +84,9 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
             chmod +x "$TARGET/hooks/$(basename "$f")"
             echo "    ✓ Hook: $(basename "$f")"
         done
+        # Save repo path so /mm:update knows where to pull from
+        echo "$REPO_DIR" > "$TARGET/.claude-solo-source"
+        echo "    ✓ Source path saved (.claude-solo-source)"
     fi
 
     # settings.json (merge hooks only)
