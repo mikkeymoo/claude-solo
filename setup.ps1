@@ -55,15 +55,15 @@ function Backup-Existing($TARGET) {
         }
     }
 
-    # Backup skills that would be overwritten
-    Get-ChildItem "$REPO_DIR\src\skills\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-        $existing = "$TARGET\skills\$($_.Name)"
+    # Backup commands that would be overwritten
+    Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $existing = "$TARGET\commands\mm\$($_.Name)"
         if (Test-Path $existing) {
             if (-not $backedUp) {
-                New-Item -ItemType Directory -Force -Path "$backupDir\skills" | Out-Null
+                New-Item -ItemType Directory -Force -Path "$backupDir\commands\mm" | Out-Null
                 $backedUp = $true
             }
-            Copy-Item $existing "$backupDir\skills\$($_.Name)"
+            Copy-Item $existing "$backupDir\commands\mm\$($_.Name)"
         }
     }
 
@@ -91,7 +91,7 @@ function Install-To($TARGET) {
     Backup-Existing $TARGET
 
     New-Item -ItemType Directory -Force -Path "$TARGET\agents" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$TARGET\skills" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$TARGET\commands\mm" | Out-Null
     New-Item -ItemType Directory -Force -Path "$TARGET\hooks" | Out-Null
     New-Item -ItemType Directory -Force -Path "$TARGET\logs"  | Out-Null
 
@@ -120,10 +120,14 @@ function Install-To($TARGET) {
         Write-Host "    ✓ Agent: $($_.Name)" -ForegroundColor Green
     }
 
-    # Skills
-    Get-ChildItem "$REPO_DIR\src\skills\*.md" | ForEach-Object {
-        Copy-Item $_.FullName "$TARGET\skills\$($_.Name)" -Force
-        Write-Host "    ✓ Skill: $($_.Name)" -ForegroundColor Green
+    # Commands
+    Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item $_.FullName "$TARGET\commands\mm\$($_.Name)" -Force
+        Write-Host "    ✓ Command: $($_.Name)" -ForegroundColor Green
+    }
+    # Remove old skills dir mm-* files if they exist from previous installs
+    if (Test-Path "$TARGET\skills") {
+        Get-ChildItem "$TARGET\skills\mm-*.md" -ErrorAction SilentlyContinue | Remove-Item -Force
     }
 
     # Hooks (only global hooks make sense — skip for project-level)
@@ -202,13 +206,17 @@ function Uninstall-From($TARGET) {
         }
     }
 
-    # Remove installed agents/skills/hooks
-    @("agents","skills","hooks") | ForEach-Object {
+    # Remove installed agents/commands/hooks
+    @("agents","hooks") | ForEach-Object {
         $dir = "$TARGET\$_"
         if (Test-Path $dir) {
             $files = Get-ChildItem $dir
             if ($files.Count -eq 0) { Remove-Item $dir -Force }
         }
+    }
+    # Remove mm commands
+    if (Test-Path "$TARGET\commands\mm") {
+        Get-ChildItem "$TARGET\commands\mm\*.md" -ErrorAction SilentlyContinue | Remove-Item -Force
     }
 
     Write-Host "    ✓ Done. Your own files are untouched." -ForegroundColor Green
@@ -241,7 +249,7 @@ if ($uninstall) {
 
 Write-Host ""
 Write-Host "Open Claude Code and use:" -ForegroundColor Cyan
-Write-Host "  /brief  /plan  /build  /review  /test  /verify  /ship  /retro"
+Write-Host "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 Write-Host ""
-Write-Host "Power skills: /handoff  /release  /incident  /docsync  /doctor  /verify" -ForegroundColor Gray
+Write-Host "Power commands: /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor  /mm:verify" -ForegroundColor Gray
 Write-Host ""

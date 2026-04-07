@@ -1,6 +1,6 @@
 ---
 name: mm:update
-description: "Pull the latest version of claude-solo from GitHub and reinstall hooks, skills, agents, and settings."
+description: "Pull the latest version of claude-solo from GitHub and reinstall hooks, commands, agents, and settings."
 ---
 
 Pull the latest version of claude-solo from GitHub and reinstall.
@@ -24,9 +24,9 @@ Pull the latest version of claude-solo from GitHub and reinstall.
    bash setup.sh     # or: bash setup.sh --project / --both
    ```
 
-4. **Verify** — list installed skills and agents:
+4. **Verify** — list installed commands and agents:
    ```bash
-   ls ~/.claude/skills/
+   ls ~/.claude/commands/mm/
    ls ~/.claude/agents/
    ```
 

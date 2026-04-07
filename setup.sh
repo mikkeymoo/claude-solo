@@ -67,17 +67,17 @@ backup_existing() {
         fi
     done
 
-    # Backup skills that would be overwritten
-    for f in "$REPO_DIR/src/skills/"*.md; do
+    # Backup commands that would be overwritten
+    for f in "$REPO_DIR/src/commands/mm/"*.md; do
         [ -f "$f" ] || continue
         local basename="$(basename "$f")"
-        local existing="$TARGET/skills/$basename"
+        local existing="$TARGET/commands/mm/$basename"
         if [ -f "$existing" ]; then
             if ! $BACKED_UP; then
-                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/commands/mm"
                 BACKED_UP=true
             fi
-            cp "$existing" "$BACKUP_DIR/skills/$basename"
+            cp "$existing" "$BACKUP_DIR/commands/mm/$basename"
         fi
     done
 
@@ -112,7 +112,7 @@ install_to() {
     # Backup existing files before overwriting
     backup_existing "$TARGET"
 
-    mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/hooks" "$TARGET/logs"
+    mkdir -p "$TARGET/agents" "$TARGET/commands/mm" "$TARGET/hooks" "$TARGET/logs"
 
     # CLAUDE.md
     local CLAUDE_MD="$TARGET/CLAUDE.md"
@@ -146,12 +146,16 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Agent: $(basename "$f")"
     done
 
-    # Skills
-    for f in "$REPO_DIR/src/skills/"*.md; do
+    # Commands
+    for f in "$REPO_DIR/src/commands/mm/"*.md; do
         [ -f "$f" ] || continue
-        cp "$f" "$TARGET/skills/$(basename "$f")"
-        echo "    ✓ Skill: $(basename "$f")"
+        cp "$f" "$TARGET/commands/mm/$(basename "$f")"
+        echo "    ✓ Command: $(basename "$f")"
     done
+    # Remove old skills dir if it exists from previous installs
+    if [ -d "$TARGET/skills" ]; then
+        rm -f "$TARGET/skills/mm-"*.md
+    fi
 
     # Hooks — global only (hooks run globally)
     if [ "$TARGET" = "$GLOBAL_DIR" ]; then
@@ -255,7 +259,7 @@ fi
 
 echo ""
 echo "Open Claude Code and use:"
-echo "  /brief  /plan  /build  /review  /test  /verify  /ship  /retro"
+echo "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 echo ""
-echo "Power skills: /handoff  /release  /incident  /docsync  /doctor  /verify"
+echo "Power commands: /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor  /mm:verify"
 echo ""
