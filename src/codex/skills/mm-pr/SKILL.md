@@ -1,13 +1,18 @@
 ---
 name: mm-pr
-description: "Create a well-structured pull request with description, test plan, breaking changes, and review checklist."
+description: "Claude-solo command skill"
 ---
 
 # mm-pr
 
-Create a well-structured pull request with description, test plan, breaking changes, and review checklist.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:pr
+description: "Create a well-structured pull request with description, test plan, breaking changes, and review checklist."
+---
+
 Create a well-structured pull request for the current branch.
 
 1. **Gather context**:

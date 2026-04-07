@@ -1,13 +1,18 @@
 ---
 name: mm-changelog
-description: "Generate CHANGELOG entries from git history since last release tag. Groups by type: features, fixes, breaking changes."
+description: "Claude-solo command skill"
 ---
 
 # mm-changelog
 
-Generate CHANGELOG entries from git history since last release tag. Groups by type: features, fixes, breaking changes.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:changelog
+description: "Generate CHANGELOG entries from git history since last release tag. Groups by type: features, fixes, breaking changes."
+---
+
 Generate a CHANGELOG entry from git history since the last release tag.
 
 1. **Find the last tag**:

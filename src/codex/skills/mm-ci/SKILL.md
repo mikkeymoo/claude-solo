@@ -1,13 +1,18 @@
 ---
 name: mm-ci
-description: "Review or generate GitHub Actions CI/CD workflows. Detects existing config and suggests improvements or creates new pipelines."
+description: "Claude-solo command skill"
 ---
 
 # mm-ci
 
-Review or generate GitHub Actions CI/CD workflows. Detects existing config and suggests improvements or creates new pipelines.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:ci
+description: "Review or generate GitHub Actions CI/CD workflows. Detects existing config and suggests improvements or creates new pipelines."
+---
+
 Review or generate CI/CD pipeline configuration for the current project.
 
 First, detect what's already there:

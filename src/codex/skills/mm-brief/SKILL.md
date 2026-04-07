@@ -1,13 +1,18 @@
 ---
 name: mm-brief
-description: "Define scope, acceptance criteria, constraints, and effort estimate for a feature or fix. First stage of the sprint pipeline."
+description: "Claude-solo command skill"
 ---
 
 # mm-brief
 
-Define scope, acceptance criteria, constraints, and effort estimate for a feature or fix. First stage of the sprint pipeline.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:brief
+description: "Define scope, acceptance criteria, constraints, and effort estimate for a feature or fix. First stage of the sprint pipeline."
+---
+
 Ask me these questions one at a time (wait for my answer each time):
 
 1. What are we building or fixing? (one sentence)

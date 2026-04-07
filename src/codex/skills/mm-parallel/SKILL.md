@@ -1,13 +1,18 @@
 ---
 name: mm-parallel
-description: "Execute independent tasks simultaneously in waves. Reads PLAN.md to identify tasks with no dependencies between them."
+description: "Claude-solo command skill"
 ---
 
 # mm-parallel
 
-Execute independent tasks simultaneously in waves. Reads PLAN.md to identify tasks with no dependencies between them.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:parallel
+description: "Execute independent tasks simultaneously in waves. Reads PLAN.md to identify tasks with no dependencies between them."
+---
+
 Execute independent tasks simultaneously to cut wall-clock time.
 
 Read `.planning/PLAN.md` and identify which tasks have no dependencies between them.

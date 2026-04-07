@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet('claude','codex','both')]
     [string]$provider = 'both',
     [Parameter(Mandatory=$true)]

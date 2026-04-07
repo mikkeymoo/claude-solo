@@ -1,13 +1,18 @@
 ---
 name: mm-ready
-description: "Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation."
+description: "Claude-solo command skill"
 ---
 
 # mm-ready
 
-Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:ready
+description: "Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation."
+---
+
 Pre-build readiness gate. Verify everything needed to build is actually in place.
 
 Run before /mm:build to catch gaps before they cost time mid-implementation.

@@ -10,6 +10,7 @@
 #   bash setup.sh --no-backup → skip automatic backup of existing files
 
 set -e
+export PYTHONUTF8=1
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLOBAL_DIR="$HOME/.claude"
@@ -122,7 +123,7 @@ install_to() {
     if [ -f "$CLAUDE_MD" ]; then
         echo "    Found existing CLAUDE.md — appending"
         # Strip previous claude-solo block
-        python3 -c "
+        python -c "
 import re, sys
 with open(sys.argv[1], 'r', encoding='utf-8') as f:
     c = f.read()
@@ -133,9 +134,9 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
     fi
 
     # Append our block
-    python3 -c "
+    python -c "
 import sys
-existing = open(sys.argv[1]).read().rstrip() if __import__('os').path.exists(sys.argv[1]) else ''
+existing = open(sys.argv[1], encoding='utf-8').read().rstrip() if __import__('os').path.exists(sys.argv[1]) else ''
 our = open(sys.argv[2]).read()
 result = existing + '\n\n<!-- claude-solo:start -->\n' + our + '\n<!-- claude-solo:end -->\n'
 open(sys.argv[1], 'w', encoding='utf-8').write(result)
@@ -190,14 +191,14 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
 
     # settings.json (merge hooks only)
     local SETTINGS="$TARGET/settings.json"
-    python3 - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
+    python - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
 import json, sys, os
 settings_path, our_path = sys.argv[1], sys.argv[2]
 with open(our_path) as f:
     our = json.load(f)
 if os.path.exists(settings_path):
     try:
-        existing = json.load(open(settings_path))
+        existing = json.load(open(settings_path, encoding='utf-8'))
     except Exception:
         existing = {}
 else:
@@ -209,7 +210,7 @@ for k, v in our.get("hooks", {}).items():
         existing["hooks"][k] = v
 with open(settings_path, "w") as f:
     json.dump(existing, f, indent=2)
-print("    ✓ settings.json")
+print("    [OK] settings.json")
 PYEOF
 }
 
@@ -221,7 +222,7 @@ uninstall_from() {
 
     local CLAUDE_MD="$TARGET/CLAUDE.md"
     if [ -f "$CLAUDE_MD" ]; then
-        python3 -c "
+        python -c "
 import re, sys
 with open(sys.argv[1], 'r', encoding='utf-8') as f:
     c = f.read()

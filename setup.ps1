@@ -1,4 +1,4 @@
-# claude-solo setup — Windows PowerShell
+﻿# claude-solo setup — Windows PowerShell
 #
 # Usage:
 #   .\setup.ps1              → installs globally (~/.claude) — default

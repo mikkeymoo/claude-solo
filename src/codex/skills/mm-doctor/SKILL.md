@@ -1,13 +1,18 @@
 ---
 name: mm-doctor
-description: "Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you."
+description: "Claude-solo command skill"
 ---
 
 # mm-doctor
 
-Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:doctor
+description: "Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you."
+---
+
 Diagnose your project and Claude Code environment. Find problems before they find you.
 
 Run a full health check across 6 areas:

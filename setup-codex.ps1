@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$project,
     [switch]$both,
     [switch]$uninstall

@@ -1,13 +1,19 @@
 ---
 name: mm-autopilot
-description: "Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions."
+description: "Claude-solo command skill"
 ---
 
 # mm-autopilot
 
-Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:autopilot
+description: "Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions."
+argument-hint: "[brief description of what to build]"
+---
+
 Run the full sprint pipeline end-to-end with minimal interruptions.
 
 Usage: `/mm:autopilot [brief description of what to build]`

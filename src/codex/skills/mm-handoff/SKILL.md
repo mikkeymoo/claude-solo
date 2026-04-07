@@ -1,13 +1,18 @@
 ---
 name: mm-handoff
-description: "Create a structured resume packet: status, completed work, blockers, next steps, key decisions, and recommended command for next session."
+description: "Claude-solo command skill"
 ---
 
 # mm-handoff
 
-Create a structured resume packet: status, completed work, blockers, next steps, key decisions, and recommended command for next session.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:handoff
+description: "Create a structured resume packet: status, completed work, blockers, next steps, key decisions, and recommended command for next session."
+---
+
 Create a resume packet so the next session (or next developer) can pick up exactly where you left off.
 
 This replaces /mm:pause with a richer, more structured handoff document.

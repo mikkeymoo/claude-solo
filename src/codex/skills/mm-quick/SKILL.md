@@ -1,13 +1,19 @@
 ---
 name: mm-quick
-description: "Rapid flow for small tasks — skips full pipeline. Use for bug fixes, config changes, and refactors under 2 hours."
+description: "Claude-solo command skill"
 ---
 
 # mm-quick
 
-Rapid flow for small tasks — skips full pipeline. Use for bug fixes, config changes, and refactors under 2 hours.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:quick
+description: "Rapid flow for small tasks — skips full pipeline. Use for bug fixes, config changes, and refactors under 2 hours."
+argument-hint: "[what to do]"
+---
+
 Rapid unified flow for small tasks. Skips the full pipeline for changes that don't need it.
 
 Use when: bug fixes, small features (<2h), config changes, refactors with clear scope.

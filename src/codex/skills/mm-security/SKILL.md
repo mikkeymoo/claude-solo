@@ -1,13 +1,18 @@
 ---
 name: mm-security
-description: "Full OWASP-based security audit: injection, auth, secrets exposure, API security, dependency vulnerabilities, and data handling."
+description: "Claude-solo command skill"
 ---
 
 # mm-security
 
-Full OWASP-based security audit: injection, auth, secrets exposure, API security, dependency vulnerabilities, and data handling.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:security
+description: "Full OWASP-based security audit: injection, auth, secrets exposure, API security, dependency vulnerabilities, and data handling."
+---
+
 Full security audit. OWASP-based. Run before any /mm:ship on enterprise or user-facing code.
 
 Scope: the files changed since last tag, or files listed in `.planning/PLAN.md`, or specified path.

@@ -1,13 +1,18 @@
 ---
 name: mm-release
-description: "Structured release workflow: version bump, changelog, release notes, tag, rollout checklist, and rollback documentation."
+description: "Claude-solo command skill"
 ---
 
 # mm-release
 
-Structured release workflow: version bump, changelog, release notes, tag, rollout checklist, and rollback documentation.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:release
+description: "Structured release workflow: version bump, changelog, release notes, tag, rollout checklist, and rollback documentation."
+---
+
 Structured release workflow. Takes you from "code is done" to "version is shipped and documented."
 
 **1. Pre-flight**

@@ -6,7 +6,7 @@ Combines the best patterns from gstack, GSD, and SuperClaude. No domain lock-in.
 
 ## Install
 
-**Windows (PowerShell):**
+**Windows (PowerShell 5+):**
 ```powershell
 git clone https://github.com/mikkeymoo/claude-solo.git
 cd claude-solo
@@ -16,7 +16,7 @@ cd claude-solo
 .\setup.ps1 --both       # Install globally AND into current project
 ```
 
-**Linux / WSL / macOS (Claude only):**
+**Linux / WSL / macOS / Windows (Git Bash):**
 ```bash
 git clone https://github.com/mikkeymoo/claude-solo.git
 cd claude-solo
@@ -25,6 +25,8 @@ bash setup.sh             # Install globally (all projects)
 bash setup.sh --project   # Install into current project only
 bash setup.sh --both      # Install globally AND into current project
 ```
+
+> **Requirements:** Python 3 on PATH. On Windows (Git Bash), use `python` — install from python.org if needed.
 
 **Linux / WSL / macOS (Codex only):**
 ```bash

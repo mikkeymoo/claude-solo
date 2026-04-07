@@ -1,4 +1,4 @@
-# claude-solo auto-mode (ralph pattern) — Windows PowerShell
+﻿# claude-solo auto-mode (ralph pattern) — Windows PowerShell
 #
 # Runs Claude Code autonomously in a loop until the task is complete.
 # Uses --dangerouslySkipPermissions — Claude acts without confirmation prompts.

@@ -1,13 +1,18 @@
 ---
 name: mm-resume
-description: "Restore context from a paused session (PAUSE.md, HANDOFF.md, or CHECKPOINT.md) and continue exactly where you left off."
+description: "Claude-solo command skill"
 ---
 
 # mm-resume
 
-Restore context from a paused session (PAUSE.md, HANDOFF.md, or CHECKPOINT.md) and continue exactly where you left off.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:resume
+description: "Restore context from a paused session (PAUSE.md, HANDOFF.md, or CHECKPOINT.md) and continue exactly where you left off."
+---
+
 Restore context from a previous session and continue exactly where we left off.
 
 Check for resume files in priority order:

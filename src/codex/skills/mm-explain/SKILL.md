@@ -1,13 +1,19 @@
 ---
 name: mm-explain
-description: "Deep code explanation — traces data flow, explains architectural decisions, answers \"why\" not just \"what\"."
+description: "Claude-solo command skill"
 ---
 
 # mm-explain
 
-Deep code explanation — traces data flow, explains architectural decisions, answers "why" not just "what".
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:explain
+description: "Deep code explanation — traces data flow, explains architectural decisions, answers "why" not just "what"."
+argument-hint: "[file, function, or concept]"
+---
+
 Deep code explanation — traces data flow, explains decisions, answers "why" not just "what".
 
 Usage: `/mm:explain [file, function, or concept]`
