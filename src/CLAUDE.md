@@ -5,14 +5,14 @@
 Every feature — run through all 7 stages in order:
 
 ```
-/mm:brief    → Define scope, success criteria, estimate     (15 min)
-/mm:plan     → Atomic tasks, architecture, test matrix      (30 min)
-/mm:build    → Implement in waves, commit atomically        (60-120 min)
-/mm:review   → Security, perf, cross-platform, edge cases   (30 min)
-/mm:test     → Unit + integration + cross-platform tests    (30-45 min)
-/mm:verify   → Hard pass/fail gate: lint, types, tests      (10 min)
-/mm:ship     → Merge, verify deploy, monitor 1 hour         (15-30 min)
-/mm:retro    → What shipped, what to fix, next priorities   (15 min)
+/mm-brief    → Define scope, success criteria, estimate     (15 min)
+/mm-plan     → Atomic tasks, architecture, test matrix      (30 min)
+/mm-build    → Implement in waves, commit atomically        (60-120 min)
+/mm-review   → Security, perf, cross-platform, edge cases   (30 min)
+/mm-test     → Unit + integration + cross-platform tests    (30-45 min)
+/mm-verify   → Hard pass/fail gate: lint, types, tests      (10 min)
+/mm-ship     → Merge, verify deploy, monitor 1 hour         (15-30 min)
+/mm-retro    → What shipped, what to fix, next priorities   (15 min)
 ```
 
 Rules:
@@ -76,14 +76,14 @@ Never commit: `.env`, credentials, `*.pyc`, `dist/`, `build/`, `node_modules/`
 ## Power Skills (Beyond the Sprint)
 
 ```
-/mm:verify   → Hard verification gate (lint, types, tests, secrets scan)
-/mm:handoff  → Save rich resume packet for next session
-/mm:release  → Version bump, changelog, release notes, rollout checklist
-/mm:incident → Production debug: repro, root cause, fix, retro
-/mm:docsync  → Sync README, CLAUDE.md, API docs with current code
-/mm:quick    → Rapid flow for small tasks (skip full pipeline)
-/mm:doctor   → Full project health check
-/mm:resume   → Restore context from handoff/pause/checkpoint
+/mm-verify   → Hard verification gate (lint, types, tests, secrets scan)
+/mm-handoff  → Save rich resume packet for next session
+/mm-release  → Version bump, changelog, release notes, rollout checklist
+/mm-incident → Production debug: repro, root cause, fix, retro
+/mm-docsync  → Sync README, CLAUDE.md, API docs with current code
+/mm-quick    → Rapid flow for small tasks (skip full pipeline)
+/mm-doctor   → Full project health check
+/mm-resume   → Restore context from handoff/pause/checkpoint
 ```
 
 ---
