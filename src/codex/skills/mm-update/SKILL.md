@@ -1,3 +1,8 @@
+---
+name: mm-update
+description: "Pull the latest version of claude-solo from GitHub and reinstall hooks, commands, agents, and settings."
+---
+
 # mm-update
 
 Pull the latest version of claude-solo from GitHub and reinstall hooks, commands, agents, and settings.

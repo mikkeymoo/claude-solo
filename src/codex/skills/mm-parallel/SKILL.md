@@ -1,3 +1,8 @@
+---
+name: mm-parallel
+description: "Execute independent tasks simultaneously in waves. Reads PLAN.md to identify tasks with no dependencies between them."
+---
+
 # mm-parallel
 
 Execute independent tasks simultaneously in waves. Reads PLAN.md to identify tasks with no dependencies between them.

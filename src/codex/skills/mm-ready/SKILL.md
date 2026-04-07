@@ -1,3 +1,8 @@
+---
+name: mm-ready
+description: "Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation."
+---
+
 # mm-ready
 
 Pre-build readiness gate. Verifies brief, plan, environment, and clarity before starting implementation.

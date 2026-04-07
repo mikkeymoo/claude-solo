@@ -1,3 +1,8 @@
+---
+name: mm-deepsearch
+description: "Multi-source research with synthesis and citations. Use before building something unfamiliar."
+---
+
 # mm-deepsearch
 
 Multi-source research with synthesis and citations. Use before building something unfamiliar.

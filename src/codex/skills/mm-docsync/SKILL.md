@@ -1,3 +1,8 @@
+---
+name: mm-docsync
+description: "Synchronize documentation with current code state. Detects and fixes drift in README, CLAUDE.md, API docs, env files, and code comments."
+---
+
 # mm-docsync
 
 Synchronize documentation with current code state. Detects and fixes drift in README, CLAUDE.md, API docs, env files, and code comments.

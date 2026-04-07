@@ -1,3 +1,8 @@
+---
+name: mm-estimate
+description: "Structured effort estimate with confidence intervals, risk flags, and task breakdown. Reads PLAN.md or BRIEF.md for context."
+---
+
 # mm-estimate
 
 Structured effort estimate with confidence intervals, risk flags, and task breakdown. Reads PLAN.md or BRIEF.md for context.

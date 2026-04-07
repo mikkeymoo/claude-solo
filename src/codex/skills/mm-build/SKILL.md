@@ -1,3 +1,8 @@
+---
+name: mm-build
+description: "Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline."
+---
+
 # mm-build
 
 Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline.

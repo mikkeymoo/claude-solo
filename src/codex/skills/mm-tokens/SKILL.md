@@ -1,3 +1,8 @@
+---
+name: mm-tokens
+description: "Show estimated token usage breakdown for today — total, by tool, and session cost estimate."
+---
+
 # mm-tokens
 
 Show estimated token usage breakdown for today — total, by tool, and session cost estimate.

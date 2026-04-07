@@ -1,3 +1,8 @@
+---
+name: mm-incident
+description: "Production incident workflow: capture symptoms, reproduce, gather evidence, root cause analysis, fix, verify, and document."
+---
+
 # mm-incident
 
 Production incident workflow: capture symptoms, reproduce, gather evidence, root cause analysis, fix, verify, and document.

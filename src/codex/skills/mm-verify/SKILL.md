@@ -1,3 +1,8 @@
+---
+name: mm-verify
+description: "Hard verification gate: lint, typecheck, tests, smoke check, changed files review, and secrets scan. Produces pass/fail evidence report."
+---
+
 # mm-verify
 
 Hard verification gate: lint, typecheck, tests, smoke check, changed files review, and secrets scan. Produces pass/fail evidence report.

@@ -1,3 +1,8 @@
+---
+name: mm-doctor
+description: "Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you."
+---
+
 # mm-doctor
 
 Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you.

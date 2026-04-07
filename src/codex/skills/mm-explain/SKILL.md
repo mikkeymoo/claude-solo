@@ -1,3 +1,8 @@
+---
+name: mm-explain
+description: "Deep code explanation — traces data flow, explains architectural decisions, answers \"why\" not just \"what\"."
+---
+
 # mm-explain
 
 Deep code explanation — traces data flow, explains architectural decisions, answers "why" not just "what".

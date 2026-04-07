@@ -1,3 +1,8 @@
+---
+name: mm-release
+description: "Structured release workflow: version bump, changelog, release notes, tag, rollout checklist, and rollback documentation."
+---
+
 # mm-release
 
 Structured release workflow: version bump, changelog, release notes, tag, rollout checklist, and rollback documentation.

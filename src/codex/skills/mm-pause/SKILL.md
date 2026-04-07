@@ -1,3 +1,8 @@
+---
+name: mm-pause
+description: "Save current session context to .planning/PAUSE.md for resuming in a fresh window. Lighter alternative to /mm:handoff."
+---
+
 # mm-pause
 
 Save current session context to .planning/PAUSE.md for resuming in a fresh window. Lighter alternative to /mm:handoff.

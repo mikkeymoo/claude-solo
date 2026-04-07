@@ -55,7 +55,7 @@ function renderCodexAgentToml(md, fileName) {
   const name = attrs.name || fileName.replace(/\.md$/, '');
   const description = attrs.description || `${name} specialist`;
   const prompt = shellEscapeTomlMultiline(body.trim());
-  return `name = "${name}"\ndescription = "${description.replace(/"/g, '\\"')}"\nmodel = "gpt-5.4-mini"\nreasoning_effort = "medium"\nprompt = """\n${prompt}\n"""\n`;
+  return `name = "${name}"\ndescription = "${description.replace(/"/g, '\\"')}"\nmodel = "gpt-5.4-mini"\nmodel_reasoning_effort = "medium"\ndeveloper_instructions = """\n${prompt}\n"""\n`;
 }
 
 function buildCommands() {
@@ -81,7 +81,8 @@ function buildCommands() {
     const skillDir = join(codexSkillsRoot, skillName);
     ensure(skillDir);
 
-    const skill = `# ${skillName}\n\n${description}\n\n## Instructions\n${body.trim()}\n`;
+    const escapedDescription = description.replace(/"/g, '\\"');
+    const skill = `---\nname: ${skillName}\ndescription: "${escapedDescription}"\n---\n\n# ${skillName}\n\n${description}\n\n## Instructions\n${body.trim()}\n`;
     writeFileSync(join(skillDir, 'SKILL.md'), skill);
 
     mapping.push({ command: `/${commandName}`, skill: `$${skillName}` });

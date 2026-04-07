@@ -1,3 +1,8 @@
+---
+name: mm-quick
+description: "Rapid flow for small tasks — skips full pipeline. Use for bug fixes, config changes, and refactors under 2 hours."
+---
+
 # mm-quick
 
 Rapid flow for small tasks — skips full pipeline. Use for bug fixes, config changes, and refactors under 2 hours.

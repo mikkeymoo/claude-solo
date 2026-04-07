@@ -1,3 +1,8 @@
+---
+name: mm-tdd
+description: "Strict Test-Driven Development mode. No production code before a failing test. Red → green → refactor cycle."
+---
+
 # mm-tdd
 
 Strict Test-Driven Development mode. No production code before a failing test. Red → green → refactor cycle.

@@ -1,3 +1,8 @@
+---
+name: mm-compliance
+description: "Enterprise compliance review — audit logging, PII handling, multi-tenancy isolation, SOC2 surface area, and regulatory checklist."
+---
+
 # mm-compliance
 
 Enterprise compliance review — audit logging, PII handling, multi-tenancy isolation, SOC2 surface area, and regulatory checklist.

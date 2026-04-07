@@ -1,3 +1,8 @@
+---
+name: mm-ci
+description: "Review or generate GitHub Actions CI/CD workflows. Detects existing config and suggests improvements or creates new pipelines."
+---
+
 # mm-ci
 
 Review or generate GitHub Actions CI/CD workflows. Detects existing config and suggests improvements or creates new pipelines.

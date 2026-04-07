@@ -1,3 +1,8 @@
+---
+name: mm-pr
+description: "Create a well-structured pull request with description, test plan, breaking changes, and review checklist."
+---
+
 # mm-pr
 
 Create a well-structured pull request with description, test plan, breaking changes, and review checklist.

@@ -1,3 +1,8 @@
+---
+name: mm-brief
+description: "Define scope, acceptance criteria, constraints, and effort estimate for a feature or fix. First stage of the sprint pipeline."
+---
+
 # mm-brief
 
 Define scope, acceptance criteria, constraints, and effort estimate for a feature or fix. First stage of the sprint pipeline.

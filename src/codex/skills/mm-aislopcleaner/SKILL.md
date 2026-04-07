@@ -1,3 +1,8 @@
+---
+name: mm-aislopcleaner
+description: "Regression-tests-first AI slop cleanup. Removes dead code, duplication, over-abstraction, and AI-generated padding without changing behavior."
+---
+
 # mm-aislopcleaner
 
 Regression-tests-first AI slop cleanup. Removes dead code, duplication, over-abstraction, and AI-generated padding without changing behavior.

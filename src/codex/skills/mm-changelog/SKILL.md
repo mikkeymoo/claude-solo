@@ -1,3 +1,8 @@
+---
+name: mm-changelog
+description: "Generate CHANGELOG entries from git history since last release tag. Groups by type: features, fixes, breaking changes."
+---
+
 # mm-changelog
 
 Generate CHANGELOG entries from git history since last release tag. Groups by type: features, fixes, breaking changes.

@@ -1,3 +1,8 @@
+---
+name: mm-adversarial
+description: "Adversarial security review — think like an attacker trying to break the system. Finds exploit vectors, logic abuse, privilege escalation, and insider threats."
+---
+
 # mm-adversarial
 
 Adversarial security review — think like an attacker trying to break the system. Finds exploit vectors, logic abuse, privilege escalation, and insider threats.

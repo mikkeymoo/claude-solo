@@ -1,3 +1,8 @@
+---
+name: mm-security
+description: "Full OWASP-based security audit: injection, auth, secrets exposure, API security, dependency vulnerabilities, and data handling."
+---
+
 # mm-security
 
 Full OWASP-based security audit: injection, auth, secrets exposure, API security, dependency vulnerabilities, and data handling.

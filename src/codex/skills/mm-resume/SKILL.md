@@ -1,3 +1,8 @@
+---
+name: mm-resume
+description: "Restore context from a paused session (PAUSE.md, HANDOFF.md, or CHECKPOINT.md) and continue exactly where you left off."
+---
+
 # mm-resume
 
 Restore context from a paused session (PAUSE.md, HANDOFF.md, or CHECKPOINT.md) and continue exactly where you left off.

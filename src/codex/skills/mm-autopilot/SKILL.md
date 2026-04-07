@@ -1,3 +1,8 @@
+---
+name: mm-autopilot
+description: "Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions."
+---
+
 # mm-autopilot
 
 Full hands-off sprint pipeline: spec → build → QA → validate. Runs brief through ship with minimal interruptions.

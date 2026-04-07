@@ -1,3 +1,8 @@
+---
+name: mm-review
+description: "Staff-engineer code review: security, performance, cross-platform, edge cases, error handling, and code clarity. Auto-fixes critical issues."
+---
+
 # mm-review
 
 Staff-engineer code review: security, performance, cross-platform, edge cases, error handling, and code clarity. Auto-fixes critical issues.

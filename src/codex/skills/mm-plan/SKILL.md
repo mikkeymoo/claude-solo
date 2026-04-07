@@ -1,3 +1,8 @@
+---
+name: mm-plan
+description: "Create implementation plan with atomic tasks, dependencies, test matrix, and architecture decisions. Writes .planning/PLAN.md."
+---
+
 # mm-plan
 
 Create implementation plan with atomic tasks, dependencies, test matrix, and architecture decisions. Writes .planning/PLAN.md.

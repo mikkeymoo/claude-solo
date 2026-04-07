@@ -1,3 +1,8 @@
+---
+name: mm-distill
+description: "Compress a large document for LLM consumption without losing information. Reduces token cost for context injection."
+---
+
 # mm-distill
 
 Compress a large document for LLM consumption without losing information. Reduces token cost for context injection.

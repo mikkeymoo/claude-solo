@@ -1,3 +1,8 @@
+---
+name: mm-ship
+description: "Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist."
+---
+
 # mm-ship
 
 Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist.

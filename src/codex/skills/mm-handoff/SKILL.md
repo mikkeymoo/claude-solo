@@ -1,3 +1,8 @@
+---
+name: mm-handoff
+description: "Create a structured resume packet: status, completed work, blockers, next steps, key decisions, and recommended command for next session."
+---
+
 # mm-handoff
 
 Create a structured resume packet: status, completed work, blockers, next steps, key decisions, and recommended command for next session.
