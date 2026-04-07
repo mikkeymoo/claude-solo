@@ -16,10 +16,10 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..', '..', '..');
-const claudeHooksDir = join(repoRoot, 'src', 'hooks');
+const projectRoot = join(__dirname, '..', '..');
 
 const hookMap = {
   'session-start': 'session-start.js',
@@ -31,6 +31,31 @@ const hookMap = {
   'subagent-stop': 'subagent-stop.js',
   'session-end': 'session-end.js',
 };
+
+function resolveHooksDir() {
+  const localProjectHooks = join(projectRoot, '.claude', 'hooks');
+  const globalHooks = join(homedir(), '.claude', 'hooks');
+
+  const sourcePointer = join(projectRoot, '.codex', '.claude-solo-source');
+  let sourceHooks = '';
+  if (existsSync(sourcePointer)) {
+    try {
+      const sourceRepo = readFileSync(sourcePointer, 'utf8').trim();
+      if (sourceRepo) {
+        sourceHooks = join(sourceRepo, 'src', 'hooks');
+      }
+    } catch {}
+  }
+
+  const legacyRelativeHooks = join(__dirname, '..', '..', '..', 'src', 'hooks');
+
+  const candidates = [localProjectHooks, globalHooks, sourceHooks, legacyRelativeHooks].filter(Boolean);
+  for (const dir of candidates) {
+    const probe = join(dir, 'session-start.js');
+    if (existsSync(probe)) return dir;
+  }
+  return '';
+}
 
 function parseArgs(argv) {
   const out = { event: argv[2], cwd: process.cwd() };
@@ -102,7 +127,13 @@ function main() {
     process.exit(2);
   }
 
-  const scriptPath = join(claudeHooksDir, hookFile);
+  const hooksDir = resolveHooksDir();
+  if (!hooksDir) {
+    process.stderr.write('No claude-solo hooks directory found. Checked project, global, source, and legacy paths.\n');
+    process.exit(2);
+  }
+
+  const scriptPath = join(hooksDir, hookFile);
   if (!existsSync(scriptPath)) {
     process.stderr.write(`Hook script not found: ${scriptPath}\n`);
     process.exit(2);

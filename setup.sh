@@ -46,7 +46,7 @@ backup_existing() {
         local existing="$TARGET/hooks/$basename"
         if [ -f "$existing" ]; then
             if ! $BACKED_UP; then
-                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills" "$BACKUP_DIR/commands/mm"
                 BACKED_UP=true
             fi
             cp "$existing" "$BACKUP_DIR/hooks/$basename"
@@ -60,7 +60,7 @@ backup_existing() {
         local existing="$TARGET/agents/$basename"
         if [ -f "$existing" ]; then
             if ! $BACKED_UP; then
-                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills"
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills" "$BACKUP_DIR/commands/mm"
                 BACKED_UP=true
             fi
             cp "$existing" "$BACKUP_DIR/agents/$basename"
@@ -74,7 +74,7 @@ backup_existing() {
         local existing="$TARGET/commands/mm/$basename"
         if [ -f "$existing" ]; then
             if ! $BACKED_UP; then
-                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/commands/mm"
+                mkdir -p "$BACKUP_DIR/hooks" "$BACKUP_DIR/agents" "$BACKUP_DIR/skills" "$BACKUP_DIR/commands/mm"
                 BACKED_UP=true
             fi
             cp "$existing" "$BACKUP_DIR/commands/mm/$basename"

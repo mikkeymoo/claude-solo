@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repo = process.cwd();
+const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const sharedCommandsDir = join(repo, 'src', 'shared', 'commands', 'mm');
 const sharedAgentsDir = join(repo, 'src', 'shared', 'agents');
 const claudeCommandsDir = join(repo, 'src', 'commands', 'mm');
