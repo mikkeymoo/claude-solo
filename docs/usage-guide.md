@@ -205,3 +205,17 @@ After installation, files live in:
 | Status line | `~/.claude/statusline.json` |
 | Token logs | `~/.claude/logs/` |
 | Sprint state | `.planning/` (per project) |
+
+## Codex Locations
+
+When installed with `setup-codex.sh` / `setup-codex.ps1`:
+
+| What | Location |
+|------|----------|
+| Generated skills | `~/.codex/skills/mm-*/SKILL.md` |
+| Generated agents | `~/.codex/agents/*.toml` |
+| Hook wrapper | `~/.codex/hooks/mm-hook.js` |
+| Provider mapping | `~/.codex/AGENTS.md` |
+| Optional config sidecar | `~/.codex/config.claude-solo.toml` |
+
+Run `node scripts/render-providers.mjs` after editing `src/shared/*` to regenerate Claude and Codex outputs.

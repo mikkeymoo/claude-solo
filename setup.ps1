@@ -87,6 +87,9 @@ function Install-To($TARGET) {
     Write-Host "  Installing to: $TARGET" -ForegroundColor Cyan
     Write-Host ""
 
+    # Render provider artifacts from shared canonical source
+    node "$REPO_DIR\scripts\render-providers.mjs" | Out-Null
+
     # Backup existing files before overwriting
     Backup-Existing $TARGET
 

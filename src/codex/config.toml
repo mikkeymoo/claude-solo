@@ -1,0 +1,49 @@
+# claude-solo Codex template
+# Installer appends this as a managed block in ~/.codex/config.toml or ./.codex/config.toml
+
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+
+[features]
+multi_agent = true
+child_agents_md = true
+
+[agents]
+max_threads = 6
+max_depth = 2
+
+# MCP template (disabled by default for safe install)
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+enabled = false
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+enabled = false
+
+[mcp_servers.postgres]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-postgres"]
+enabled = false
+
+[mcp_servers.filesystem]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "--allowed-directories", "."]
+enabled = false
+
+[mcp_servers.brave_search]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-brave-search"]
+enabled = false
+
+[mcp_servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+enabled = false
+
+[mcp_servers.sentry]
+command = "npx"
+args = ["-y", "@sentry/mcp-server"]
+enabled = false

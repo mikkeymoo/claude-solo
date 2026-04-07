@@ -109,6 +109,9 @@ install_to() {
     echo "  Installing to: $TARGET"
     echo ""
 
+    # Render provider artifacts from shared canonical source
+    node "$REPO_DIR/scripts/render-providers.mjs" >/dev/null
+
     # Backup existing files before overwriting
     backup_existing "$TARGET"
 
