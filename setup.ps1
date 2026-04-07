@@ -133,6 +133,9 @@ function Install-To($TARGET) {
             Copy-Item $_.FullName "$TARGET\hooks\$($_.Name)" -Force
             Write-Host "    ✓ Hook: $($_.Name)" -ForegroundColor Green
         }
+        # Ensure hooks are treated as ES modules
+        Copy-Item "$REPO_DIR\src\hooks\package.json" "$TARGET\hooks\package.json" -Force
+        Write-Host "    ✓ hooks/package.json (ES module support)" -ForegroundColor Green
         # Save repo path so /mm:update knows where to pull from
         Set-Content -Path "$TARGET\.claude-solo-source" -Value $REPO_DIR -Encoding UTF8
         Write-Host "    ✓ Source path saved (.claude-solo-source)" -ForegroundColor Green
