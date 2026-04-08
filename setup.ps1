@@ -47,10 +47,8 @@ function Backup-Existing($TARGET) {
     Get-ChildItem "$REPO_DIR\src\agents\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
         $existing = "$TARGET\agents\$($_.Name)"
         if (Test-Path $existing) {
-            if (-not $backedUp) {
-                New-Item -ItemType Directory -Force -Path "$backupDir\agents" | Out-Null
-                $backedUp = $true
-            }
+            New-Item -ItemType Directory -Force -Path "$backupDir\agents" | Out-Null
+            if (-not $backedUp) { $backedUp = $true }
             Copy-Item $existing "$backupDir\agents\$($_.Name)"
         }
     }
@@ -59,10 +57,8 @@ function Backup-Existing($TARGET) {
     Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
         $existing = "$TARGET\commands\mm\$($_.Name)"
         if (Test-Path $existing) {
-            if (-not $backedUp) {
-                New-Item -ItemType Directory -Force -Path "$backupDir\commands\mm" | Out-Null
-                $backedUp = $true
-            }
+            New-Item -ItemType Directory -Force -Path "$backupDir\commands\mm" | Out-Null
+            if (-not $backedUp) { $backedUp = $true }
             Copy-Item $existing "$backupDir\commands\mm\$($_.Name)"
         }
     }
