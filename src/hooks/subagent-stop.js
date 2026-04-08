@@ -5,8 +5,8 @@
  * Captures subagent outputs as durable artifacts under .planning/agent-outputs/.
  * Reviewer findings, debugger diagnoses, and test results survive context compaction.
  *
- * Input (stdin): JSON { agent_name, agent_type, result, duration_ms }
- * Output: none required
+ * Input (stdin): JSON from Claude Code's SubagentStop event
+ * { agent_id, agent_type, last_assistant_message, cwd, duration_ms, ... }
  */
 
 import { createInterface } from 'readline';
@@ -25,7 +25,12 @@ rl.on('close', () => {
     return;
   }
 
-  const { agent_name, agent_type, result, duration_ms } = input;
+  // Claude Code sends: agent_id, agent_type, last_assistant_message, cwd, duration_ms
+  const agent_id = input.agent_id || input.agent_name || 'unknown-agent';
+  const agent_type = input.agent_type || 'unknown';
+  const result = input.last_assistant_message || input.result;
+  const duration_ms = input.duration_ms;
+  const cwd = input.cwd || process.cwd();
 
   // Only capture agents with meaningful output
   if (!result || (typeof result === 'string' && result.length < 50)) {
@@ -33,18 +38,17 @@ rl.on('close', () => {
   }
 
   // Determine agent label
-  const label = agent_name || agent_type || 'unknown-agent';
+  const label = agent_id || agent_type;
   const safeLabel = label.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 50);
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
-  const cwd = process.cwd();
   const outputDir = join(cwd, '.planning', 'agent-outputs');
   const outputFile = join(outputDir, `${safeLabel}-${timestamp}.md`);
 
   const content = [
     `# Agent Output: ${label}`,
     ``,
-    `- Type: ${agent_type || 'unknown'}`,
+    `- Type: ${agent_type}`,
     `- Captured: ${new Date().toISOString()}`,
     duration_ms ? `- Duration: ${(duration_ms / 1000).toFixed(1)}s` : '',
     ``,

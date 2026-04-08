@@ -107,9 +107,9 @@ function buildFallbackPayload(parsed) {
     case 'subagent-stop':
       return {
         ...base,
-        agent_name: 'codex-agent',
+        agent_id: 'codex-agent',
         agent_type: 'default',
-        result: '',
+        last_assistant_message: '',
         duration_ms: 0,
       };
     default:
