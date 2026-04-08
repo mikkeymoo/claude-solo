@@ -148,7 +148,18 @@ node scripts/render-providers.mjs
 | `release-manager` | Release engineering — version bumps, changelogs, rollout checklists, rollback |
 | `docs-librarian` | Documentation accuracy — drift detection, README updates, stale comment cleanup |
 
-### Hooks (8 — all automatic)
+**Swarm Agents (for agent teams):**
+| Agent | Role | Model | Key Feature |
+|-------|------|-------|-------------|
+| `swarm-lead` | Team coordinator — decomposes tasks, spawns teammates, synthesizes results | Opus | Project memory, auto delegation |
+| `swarm-implementer` | Code writer — focused implementation with atomic commits | Sonnet | Isolated git worktree per teammate |
+| `swarm-researcher` | Read-only investigator — codebase analysis, API research, architecture review | Sonnet | Cannot modify files |
+| `swarm-reviewer` | Senior reviewer — three-pass review (defects, edge cases, acceptance) | Opus | Auto-fixes critical issues |
+| `swarm-tester` | Test specialist — runs suites, writes tests, reports regressions | Sonnet | Baseline-first testing |
+
+### Hooks (8 core + 5 swarm — all automatic)
+
+**Core Hooks:**
 | Hook | What it does |
 |------|-------------|
 | `session-start` | Injects git branch, sprint state, pending verification on session start |
@@ -159,6 +170,15 @@ node scripts/render-providers.mjs
 | `pre-compact` | Saves checkpoint to .planning/CHECKPOINT.md before context compression |
 | `subagent-stop` | Captures agent outputs as durable artifacts in .planning/agent-outputs/ |
 | `session-end` | Writes session summary to .planning/SESSION-END.md |
+
+**Swarm Hooks (for agent teams):**
+| Hook | Event | What it does |
+|------|-------|-------------|
+| `swarm/subagent-start` | SubagentStart | Injects git state, sprint context, and role-specific coordination rules into every agent |
+| `swarm/teammate-idle` | TeammateIdle | Quality gate — blocks idle until work is committed/documented |
+| `swarm/task-created` | TaskCreated | Blocks vague or oversized tasks, enforces atomic decomposition |
+| `swarm/task-completed` | TaskCompleted | Verifies evidence of completion (git changes, test files, docs) |
+| `swarm/stop-gate` | Stop | Prevents lead from stopping while teammates are active (opt-in via `--gate`) |
 
 ### Codex Hook Wrappers (Claude-Like Behavior)
 Codex does not expose the same native hook event system as Claude. This repo ships wrappers that call the same hook logic:
@@ -224,6 +244,104 @@ bash run-auto.sh --max 5
 **Requires**: Claude Code CLI installed + authenticated. Uses `--dangerouslySkipPermissions`.
 **Stops when**: Claude outputs `TASK_COMPLETE` or max iterations reached.
 **Use for**: well-scoped tasks with a clear PLAN.md. Not for vague open-ended work.
+
+---
+
+## Swarm Mode (Agent Teams)
+
+Run multiple Claude Code agents in parallel — coordinated through shared task lists, inter-agent messaging, and quality gate hooks. Uses Claude Code's experimental [agent teams](https://code.claude.com/docs/en/agent-teams) feature.
+
+```bash
+# Start a swarm session (Linux/WSL/macOS)
+bash run-swarm.sh
+
+# Swarm with a specific task
+bash run-swarm.sh "Refactor the auth module into JWT validation, session management, and password hashing"
+
+# Windows
+.\run-swarm.ps1 "Refactor the auth module"
+```
+
+### How It Works
+
+```
+You (user)
+ └─> Swarm Lead (coordinator — decomposes work, tracks progress)
+      ├─> Researcher (explores codebase, gathers context — read-only)
+      ├─> Implementer A (writes code in isolated worktree A)
+      ├─> Implementer B (writes code in isolated worktree B)
+      ├─> Tester (runs tests, writes new test cases)
+      └─> Reviewer (reviews all changes last — auto-fixes critical issues)
+```
+
+The lead decomposes your task into parallel work items, spawns specialized teammates, and synthesizes results. Quality gate hooks enforce standards at every stage — tasks must be atomic, completion requires evidence, and teammates can't go idle with uncommitted work.
+
+### Examples
+
+**Feature implementation — parallel across modules:**
+```bash
+bash run-swarm.sh "Implement user profile page with avatar upload, bio editing, and activity feed"
+```
+The lead spawns a researcher (analyze existing models), 2-3 implementers (avatar, bio, feed), a tester, and a reviewer.
+
+**Parallel investigation — competing hypotheses:**
+```bash
+bash run-swarm.sh "Users report the app crashes after login. Investigate from 3 angles: auth flow, session management, and frontend state"
+```
+Three researchers investigate simultaneously, message each other to challenge findings, and converge on the root cause.
+
+**Code review from multiple angles:**
+```bash
+bash run-swarm.sh "Review PR #142 from three angles: security, performance, and test coverage" --teammates 3
+```
+
+**Codebase refactor — parallel module extraction:**
+```bash
+bash run-swarm.sh "Refactor monolithic routes.ts into separate route modules by domain" --teammates 4
+```
+
+**Use swarm-lead as the main agent:**
+```bash
+bash run-swarm.sh --agent swarm-lead "Build the notification system"
+```
+
+### Launcher Options
+
+```bash
+bash run-swarm.sh [task]              # Start swarm with optional task
+bash run-swarm.sh --teammates 5       # Suggest team size
+bash run-swarm.sh --gate              # Block premature shutdown
+bash run-swarm.sh --split             # tmux split-pane mode
+bash run-swarm.sh --in-process        # In-process mode (Shift+Down to cycle)
+bash run-swarm.sh --agent swarm-lead  # Use specific agent as lead
+```
+
+### Swarm vs Subagents vs Auto-Mode
+
+| | Auto-Mode | Subagents | Swarm (Agent Teams) |
+|---|---|---|---|
+| **Agents** | 1 | 1 + helpers | 3-6 parallel |
+| **Communication** | N/A | Report back to caller | Teammates message each other |
+| **Best for** | Sequential execution | Quick focused tasks | Complex parallel work |
+| **Token cost** | Lowest | Low | Higher (each teammate = separate context) |
+| **File conflicts** | N/A | N/A | Prevented via worktree isolation |
+
+**Rule of thumb:** If it takes one agent 4+ hours with sequential steps, use swarm. If steps depend on each other, use auto-mode. If you need a quick focused helper, use a subagent.
+
+### Enable Agent Teams
+
+Agent teams are experimental and require opt-in. The `run-swarm.sh` launcher sets this automatically, or add it to your settings:
+
+```json
+// In ~/.claude/settings.json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
+```
+
+For full details: [docs/swarm-guide.md](docs/swarm-guide.md)
 
 ---
 
