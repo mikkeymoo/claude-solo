@@ -251,15 +251,99 @@ bash run-auto.sh --max 5
 
 Run multiple Claude Code agents in parallel — coordinated through shared task lists, inter-agent messaging, and quality gate hooks. Uses Claude Code's experimental [agent teams](https://code.claude.com/docs/en/agent-teams) feature.
 
+### Quick Setup
+
+Enable agent teams (one-time), then just talk to Claude:
+
+```json
+// Add to ~/.claude/settings.json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
+```
+
+Or set it per-session:
 ```bash
-# Start a swarm session (Linux/WSL/macOS)
-bash run-swarm.sh
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
+```
 
-# Swarm with a specific task
-bash run-swarm.sh "Refactor the auth module into JWT validation, session management, and password hashing"
+### Start a Swarm from the Claude Code Terminal
 
-# Windows
-.\run-swarm.ps1 "Refactor the auth module"
+Once agent teams are enabled, just type what you want in the Claude Code prompt. No special syntax needed — Claude creates the team from natural language:
+
+**Example 1 — Feature build with parallel workers:**
+```
+Create an agent team to implement the user profile page. Spawn:
+- A researcher to analyze the existing user model and API endpoints
+- An implementer for the avatar upload component
+- An implementer for the bio editing form
+- An implementer for the activity feed
+- A tester to write integration tests after implementation
+Use the swarm-implementer agent type for the implementers.
+```
+
+**Example 2 — Competing hypothesis investigation:**
+```
+I need to debug why the app crashes after login. Create an agent team
+with 3 researchers investigating different angles:
+- One checking the auth token flow
+- One checking session management and cookies
+- One checking frontend state management
+Have them challenge each other's findings.
+```
+
+**Example 3 — Parallel code review:**
+```
+Create an agent team to review the changes in src/auth/. Spawn 3
+reviewers using the swarm-reviewer agent type:
+- One focused on security (injection, auth bypass, secrets)
+- One focused on performance (N+1 queries, blocking I/O)
+- One validating test coverage
+Synthesize findings when done.
+```
+
+**Example 4 — Codebase refactor with conflict prevention:**
+```
+Refactor routes.ts into separate modules by domain. Create an agent
+team with 4 swarm-implementer teammates. Assign each one a different
+domain (auth, users, products, orders) so they don't touch the same
+files. Have a swarm-reviewer check everything after.
+```
+
+**Example 5 — Research swarm:**
+```
+I'm evaluating whether to migrate from Express to Fastify. Create a
+team: one teammate researches migration effort, one researches
+performance differences, one checks plugin compatibility. Use the
+swarm-researcher agent type. Report a recommendation.
+```
+
+**Example 6 — Simple team with model control:**
+```
+Create an agent team with 3 teammates using Sonnet to refactor these
+test files in parallel. Each teammate owns one test file.
+```
+
+**Example 7 — Plan approval for risky changes:**
+```
+Spawn an architect teammate to redesign the database schema.
+Require plan approval before they make any changes.
+```
+
+### Navigating Teammates
+
+Once teammates are running:
+- **Shift+Down** — cycle through active teammates
+- **Enter** — view a teammate's full session
+- **Escape** — interrupt a teammate's current turn
+- **Ctrl+T** — toggle the shared task list
+- **Type** — send a message to whichever teammate is selected
+
+Or use tmux split panes to see all teammates at once:
+```bash
+claude --teammate-mode tmux
 ```
 
 ### How It Works
@@ -276,44 +360,46 @@ You (user)
 
 The lead decomposes your task into parallel work items, spawns specialized teammates, and synthesizes results. Quality gate hooks enforce standards at every stage — tasks must be atomic, completion requires evidence, and teammates can't go idle with uncommitted work.
 
-### Examples
+### Swarm Agents (installed with claude-solo)
 
-**Feature implementation — parallel across modules:**
-```bash
-bash run-swarm.sh "Implement user profile page with avatar upload, bio editing, and activity feed"
-```
-The lead spawns a researcher (analyze existing models), 2-3 implementers (avatar, bio, feed), a tester, and a reviewer.
+These agent types are available for teammates to use. Reference them by name when asking Claude to spawn a team:
 
-**Parallel investigation — competing hypotheses:**
-```bash
-bash run-swarm.sh "Users report the app crashes after login. Investigate from 3 angles: auth flow, session management, and frontend state"
-```
-Three researchers investigate simultaneously, message each other to challenge findings, and converge on the root cause.
+| Say this in the prompt | What it does |
+|------------------------|-------------|
+| `"use the swarm-lead agent type"` | Coordinator with project memory — decomposes, delegates, synthesizes |
+| `"use the swarm-implementer agent type"` | Code writer in isolated git worktree — no file conflicts |
+| `"use the swarm-researcher agent type"` | Read-only investigator — can't modify files |
+| `"use the swarm-reviewer agent type"` | Three-pass senior reviewer — auto-fixes critical issues |
+| `"use the swarm-tester agent type"` | Test specialist — baseline-first, writes real tests |
 
-**Code review from multiple angles:**
-```bash
-bash run-swarm.sh "Review PR #142 from three angles: security, performance, and test coverage" --teammates 3
-```
+You can also use the base claude-solo agents as teammates (e.g. `security-auditor`, `database-architect`, `planner`).
 
-**Codebase refactor — parallel module extraction:**
-```bash
-bash run-swarm.sh "Refactor monolithic routes.ts into separate route modules by domain" --teammates 4
-```
+### Swarm Quality Hooks
 
-**Use swarm-lead as the main agent:**
-```bash
-bash run-swarm.sh --agent swarm-lead "Build the notification system"
-```
+These fire automatically when agent teams are active:
 
-### Launcher Options
+| What happens | Hook checks |
+|-------------|-------------|
+| Teammate tries to go idle | Must have committed code / documented findings / produced test output |
+| Task is created | Must be specific (>10 chars), not vague, not compound |
+| Task marked complete | Must have git evidence (changes, test files, or docs modified) |
+| Lead tries to stop | (opt-in) Blocks if teammates still active or tasks pending |
+
+### Launcher Script (Alternative)
+
+If you prefer a one-liner from your shell instead of typing in the Claude terminal:
 
 ```bash
-bash run-swarm.sh [task]              # Start swarm with optional task
-bash run-swarm.sh --teammates 5       # Suggest team size
-bash run-swarm.sh --gate              # Block premature shutdown
-bash run-swarm.sh --split             # tmux split-pane mode
-bash run-swarm.sh --in-process        # In-process mode (Shift+Down to cycle)
-bash run-swarm.sh --agent swarm-lead  # Use specific agent as lead
+# Linux/macOS/WSL
+bash run-swarm.sh "Implement the notification system"
+bash run-swarm.sh --teammates 5 "Refactor the auth module"
+bash run-swarm.sh --split "Review PR #42 from 3 angles"    # tmux panes
+bash run-swarm.sh --gate "Build the payment flow"           # block premature stop
+bash run-swarm.sh --agent swarm-lead "Design the API"       # use swarm-lead as main agent
+
+# Windows
+.\run-swarm.ps1 "Implement the notification system"
+.\run-swarm.ps1 -Teammates 5 "Refactor the auth module"
 ```
 
 ### Swarm vs Subagents vs Auto-Mode
@@ -327,19 +413,6 @@ bash run-swarm.sh --agent swarm-lead  # Use specific agent as lead
 | **File conflicts** | N/A | N/A | Prevented via worktree isolation |
 
 **Rule of thumb:** If it takes one agent 4+ hours with sequential steps, use swarm. If steps depend on each other, use auto-mode. If you need a quick focused helper, use a subagent.
-
-### Enable Agent Teams
-
-Agent teams are experimental and require opt-in. The `run-swarm.sh` launcher sets this automatically, or add it to your settings:
-
-```json
-// In ~/.claude/settings.json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
-}
-```
 
 For full details: [docs/swarm-guide.md](docs/swarm-guide.md)
 
