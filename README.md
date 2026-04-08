@@ -271,65 +271,42 @@ CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude
 
 ### Start a Swarm from the Claude Code Terminal
 
-Once agent teams are enabled, just type what you want in the Claude Code prompt. No special syntax needed — Claude creates the team from natural language:
+Once agent teams are enabled, just type what you want in the Claude Code prompt. **You don't need to specify team size, agent types, or roles** — Claude figures all of that out from your task description. Just say what you want done:
 
-**Example 1 — Feature build with parallel workers:**
 ```
-Create an agent team to implement the user profile page. Spawn:
-- A researcher to analyze the existing user model and API endpoints
-- An implementer for the avatar upload component
-- An implementer for the bio editing form
-- An implementer for the activity feed
-- A tester to write integration tests after implementation
-Use the swarm-implementer agent type for the implementers.
+Refactor the auth module and add a new settings page with password change and 2FA setup
 ```
 
-**Example 2 — Competing hypothesis investigation:**
+That's it. Claude will decide it needs ~4 teammates (researcher, 2 implementers, tester), create a shared task list, and coordinate everything. You watch and steer.
+
+**More examples — just paste these into your Claude Code session:**
+
 ```
-I need to debug why the app crashes after login. Create an agent team
-with 3 researchers investigating different angles:
-- One checking the auth token flow
-- One checking session management and cookies
-- One checking frontend state management
-Have them challenge each other's findings.
+Start an agent swarm to review this codebase for security issues and performance bottlenecks
 ```
 
-**Example 3 — Parallel code review:**
 ```
-Create an agent team to review the changes in src/auth/. Spawn 3
-reviewers using the swarm-reviewer agent type:
-- One focused on security (injection, auth bypass, secrets)
-- One focused on performance (N+1 queries, blocking I/O)
-- One validating test coverage
-Synthesize findings when done.
+Use an agent team to debug why tests fail on CI but pass locally
 ```
 
-**Example 4 — Codebase refactor with conflict prevention:**
 ```
-Refactor routes.ts into separate modules by domain. Create an agent
-team with 4 swarm-implementer teammates. Assign each one a different
-domain (auth, users, products, orders) so they don't touch the same
-files. Have a swarm-reviewer check everything after.
+Swarm on this: migrate the Express routes to Fastify, update all tests, and update the README
 ```
 
-**Example 5 — Research swarm:**
 ```
-I'm evaluating whether to migrate from Express to Fastify. Create a
-team: one teammate researches migration effort, one researches
-performance differences, one checks plugin compatibility. Use the
-swarm-researcher agent type. Report a recommendation.
+I need a team to build a notification system — email templates, API endpoints, and a preferences page
 ```
 
-**Example 6 — Simple team with model control:**
 ```
-Create an agent team with 3 teammates using Sonnet to refactor these
-test files in parallel. Each teammate owns one test file.
+Investigate why the app is slow after the last deploy. Have the team look at it from multiple angles.
 ```
 
-**Example 7 — Plan approval for risky changes:**
+**You _can_ be specific if you want to — but you don't have to:**
+
 ```
-Spawn an architect teammate to redesign the database schema.
-Require plan approval before they make any changes.
+Create an agent team with 5 teammates. Use swarm-implementer for the coders
+and swarm-reviewer to check their work. Require plan approval before any
+database schema changes.
 ```
 
 ### Navigating Teammates
@@ -362,17 +339,17 @@ The lead decomposes your task into parallel work items, spawns specialized teamm
 
 ### Swarm Agents (installed with claude-solo)
 
-These agent types are available for teammates to use. Reference them by name when asking Claude to spawn a team:
+Claude picks the right agent types automatically, but these are available if you want to request them:
 
-| Say this in the prompt | What it does |
-|------------------------|-------------|
-| `"use the swarm-lead agent type"` | Coordinator with project memory — decomposes, delegates, synthesizes |
-| `"use the swarm-implementer agent type"` | Code writer in isolated git worktree — no file conflicts |
-| `"use the swarm-researcher agent type"` | Read-only investigator — can't modify files |
-| `"use the swarm-reviewer agent type"` | Three-pass senior reviewer — auto-fixes critical issues |
-| `"use the swarm-tester agent type"` | Test specialist — baseline-first, writes real tests |
+| Agent | Role |
+|-------|------|
+| `swarm-lead` | Coordinator — decomposes tasks, spawns teammates, synthesizes results |
+| `swarm-implementer` | Code writer — runs in isolated git worktree so teammates don't clash |
+| `swarm-researcher` | Read-only explorer — investigates codebase, APIs, docs without modifying anything |
+| `swarm-reviewer` | Senior reviewer — three-pass review, auto-fixes critical issues |
+| `swarm-tester` | Test specialist — runs existing tests first, writes new ones, reports regressions |
 
-You can also use the base claude-solo agents as teammates (e.g. `security-auditor`, `database-architect`, `planner`).
+All base claude-solo agents (`security-auditor`, `database-architect`, `planner`, etc.) also work as teammates.
 
 ### Swarm Quality Hooks
 
