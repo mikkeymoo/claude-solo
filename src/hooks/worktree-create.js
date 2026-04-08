@@ -42,13 +42,13 @@ rl.on('close', () => {
   }
 
   const cwd = input.cwd || process.cwd();
-  const clauDeDir = join(cwd, '.claude');
-  const copyListPath = join(clauDeDir, 'worktree-copy-list');
+  const claudeDir = join(cwd, '.claude');
+  const copyListPath = join(claudeDir, 'worktree-copy-list');
 
   // Create default copy list if absent
   if (!existsSync(copyListPath)) {
     try {
-      mkdirSync(clauDeDir, { recursive: true });
+      mkdirSync(claudeDir, { recursive: true });
       writeFileSync(copyListPath, DEFAULT_COPY_LIST);
       process.stderr.write('📄 claude-solo: created .claude/worktree-copy-list with defaults (.env, .env.local, .env.development, secrets.json)\n');
     } catch {
@@ -70,7 +70,14 @@ rl.on('close', () => {
   let skipped = 0;
 
   for (const relPath of filesToCopy) {
+    // Guard against path traversal (absolute paths or .. sequences)
     const srcPath = resolve(cwd, relPath);
+    if (!srcPath.startsWith(cwd + '/') && !srcPath.startsWith(cwd + '\\') && srcPath !== cwd) {
+      process.stderr.write(`⚠️  claude-solo: skipping "${relPath}" — path resolves outside project root\n`);
+      skipped++;
+      continue;
+    }
+
     const destPath = join(worktreePath, relPath);
 
     if (!existsSync(srcPath)) {

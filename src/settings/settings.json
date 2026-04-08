@@ -117,7 +117,7 @@
     ],
     "FileChanged": [
       {
-        "matcher": "package.json|pyproject.toml|requirements.txt|Cargo.toml|go.mod|\\.env\\.example",
+        "matcher": "package.json|pyproject.toml|requirements.txt|Cargo.toml|go.mod|.env.example",
         "hooks": [
           {
             "type": "command",

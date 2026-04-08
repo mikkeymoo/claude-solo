@@ -118,6 +118,15 @@ check('no-op when worktree_path missing', () => {
   assert(r.stderr.includes('no worktree_path'), 'should warn');
 });
 
+check('blocks path traversal in copy list', () => {
+  writeFileSync(join(srcDir, '.claude', 'worktree-copy-list'), '../../etc/passwd\n.env\n');
+  const dest3 = join(tmpBase, 'wt-dest3');
+  mkdirSync(dest3, { recursive: true });
+  const r = run('worktree-create.js', { worktree_path: dest3, cwd: srcDir });
+  assert(r.status === 0, 'should not crash');
+  assert(r.stderr.includes('outside project root'), 'should warn about traversal');
+});
+
 // ── 3. post-tool-use-failure.js ─────────────────────────────────────────────
 console.log('\npost-tool-use-failure.js');
 
@@ -163,6 +172,24 @@ check('Edit old_string not found', () => {
   const out = JSON.parse(r.stdout);
   assert(out.additionalContext.includes('old_string'), 'should mention old_string');
   assert(out.additionalContext.includes('Read'), 'should suggest re-reading file');
+});
+
+check('error as object (not string) — no crash', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'node app.js' },
+    exit_code: 1, error: { code: 'ENOENT', path: '/app.js' },
+  });
+  assert(r.status === 0, `should not throw: ${r.stderr}`);
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext, 'should produce context even with object error');
+});
+
+check('exit_code as string "127" — still matches', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'foobar' }, exit_code: '127', error: '',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('127'), 'string exit code should still trigger hint');
 });
 
 check('unknown error → generic hint', () => {

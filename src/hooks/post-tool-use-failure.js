@@ -18,30 +18,30 @@ rl.on('line', line => raw += line);
 // Map failure signatures to triage hints
 function triage(toolName, toolInput, error, exitCode) {
   const cmd = toolInput?.command || toolInput?.cmd || '';
-  const errStr = (error || '').toLowerCase();
+  const errStr = String(error || '').toLowerCase();
   const hints = [];
 
   // ── Exit code patterns ──────────────────────────────────────────────────
-  if (exitCode === 127) {
+  if (Number(exitCode) === 127) {
     hints.push('Exit 127 = command not found.');
     hints.push('Checks: `which <cmd>`, `echo $PATH`, is the tool installed?');
     const match = cmd.match(/^(\S+)/);
     if (match) hints.push(`Missing binary: \`${match[1]}\``);
   }
 
-  if (exitCode === 126) {
+  if (Number(exitCode) === 126) {
     hints.push('Exit 126 = permission denied (file exists but not executable).');
     hints.push('Fix: `chmod +x <file>` or run with interpreter (`node file.js`, `python file.py`).');
   }
 
-  if (exitCode === 1 && cmd.match(/^git\s/)) {
+  if (Number(exitCode) === 1 && cmd.match(/^git\s/)) {
     hints.push('Git exited with error. Common causes:');
     hints.push('- Nothing to commit (check `git status`)');
     hints.push('- Merge conflict (check `git status` for conflict markers)');
     hints.push('- Wrong branch or remote (check `git remote -v`)');
   }
 
-  if (exitCode === 128) {
+  if (Number(exitCode) === 128) {
     hints.push('Exit 128 = git fatal error (bad repo state or invalid argument).');
     hints.push('Checks: are you in a git repo? (`git rev-parse --git-dir`)');
   }
@@ -122,7 +122,7 @@ rl.on('close', () => {
     return;
   }
 
-  const { tool_name, tool_input, error, exit_code } = input;
+  const { tool_name = 'unknown', tool_input, error, exit_code } = input;
   const hints = triage(tool_name, tool_input, error, exit_code);
 
   const additionalContext = [
