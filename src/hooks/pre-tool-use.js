@@ -37,7 +37,7 @@ rl.on('close', () => {
       // Git danger
       { pattern: /git\s+push\s+(?!.*--dry-run)(--force|-f)/, reason: 'Force-pushing (overwrites remote history)' },
       { pattern: /git\s+reset\s+--hard/, reason: 'Hard reset discards uncommitted work' },
-      { pattern: /git\s+clean\s+(-\w*f\w*|-\w+\s+){0,3}(-\w*d\w*|-\w+\s+)?/, reason: 'git clean -f removes untracked files permanently' },
+      { pattern: /git\s+clean\s+(?!.*-n)(?!.*--dry-run).*-\w*f/, reason: 'git clean -f removes untracked files permanently' },
 
       // Database
       { pattern: /drop\s+table/i, reason: 'Dropping database table' },

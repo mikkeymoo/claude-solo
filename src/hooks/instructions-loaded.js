@@ -34,29 +34,37 @@ rl.on('close', () => {
 
   const home = os.homedir();
 
-  // Shorten home directory for readability
-  const display = paths.map(p =>
-    typeof p === 'string' ? p.replace(home, '~') : String(p)
-  );
+  // Shorten home dir — use startsWith+slice to handle mixed separators on Windows
+  const shorten = (p) => {
+    if (typeof p !== 'string') return String(p);
+    // Normalize separators for comparison only
+    const normalized = p.replace(/\\/g, '/');
+    const homeNorm   = home.replace(/\\/g, '/');
+    return normalized.startsWith(homeNorm)
+      ? '~' + normalized.slice(homeNorm.length)
+      : p;
+  };
 
-  // Categorize
-  const global = display.filter(p => p.includes('~/.claude') && !p.includes('/rules/'));
-  const rules  = display.filter(p => p.includes('/rules/'));
-  const project = display.filter(p => !p.includes('~/.claude') || p.includes('/rules/'));
-  const other  = display.filter(p => !global.includes(p) && !rules.includes(p));
+  // Three clean buckets — no overlaps
+  const globalPaths  = [];  // ~/.claude/** but not rules
+  const rulesPaths   = [];  // any path containing /rules/
+  const projectPaths = [];  // everything else
+
+  for (const p of paths) {
+    const short = shorten(p);
+    if (short.includes('/rules/')) {
+      rulesPaths.push(short);
+    } else if (short.startsWith('~/.claude')) {
+      globalPaths.push(short);
+    } else {
+      projectPaths.push(short);
+    }
+  }
 
   const lines = ['📚 claude-solo instructions loaded:'];
-
-  if (global.length > 0)  lines.push(`   Global:  ${global.join(', ')}`);
-  if (rules.length > 0)   lines.push(`   Rules:   ${rules.join(', ')}`);
-  if (project.length > 0 && project.some(p => !global.includes(p) && !rules.includes(p))) {
-    const proj = project.filter(p => !global.includes(p) && !rules.includes(p));
-    if (proj.length > 0) lines.push(`   Project: ${proj.join(', ')}`);
-  }
-  if (other.length > 0) {
-    const unique = other.filter(p => !global.includes(p) && !rules.includes(p));
-    if (unique.length > 0) lines.push(`   Other:   ${unique.join(', ')}`);
-  }
+  if (globalPaths.length > 0)  lines.push(`   Global:  ${globalPaths.join(', ')}`);
+  if (rulesPaths.length > 0)   lines.push(`   Rules:   ${rulesPaths.join(', ')}`);
+  if (projectPaths.length > 0) lines.push(`   Project: ${projectPaths.join(', ')}`);
 
   process.stderr.write(lines.join('\n') + '\n');
 });

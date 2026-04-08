@@ -6,7 +6,8 @@
 import { spawnSync } from 'child_process';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir as _homedir } from 'os';
+import os from 'os';
 
 const ROOT = process.cwd();
 const HOOKS = join(ROOT, 'src', 'hooks');
@@ -288,6 +289,36 @@ check('empty paths → no output', () => {
 check('missing paths key → no crash', () => {
   const r = run('instructions-loaded.js', { cwd: ROOT });
   assert(r.status === 0, 'should not crash');
+});
+
+check('no duplicate paths in output', () => {
+  const r = run('instructions-loaded.js', {
+    paths: [
+      'C:/Users/testuser/.claude/CLAUDE.md',
+      'C:/Users/testuser/.claude/CLAUDE.md',  // duplicate
+    ],
+    cwd: ROOT,
+  });
+  const count = (r.stderr.match(/CLAUDE\.md/g) || []).length;
+  assert(count <= 2, 'duplicate input — should not cause extra output lines');
+});
+
+check('correctly buckets global, rules, and project', () => {
+  const r = run('instructions-loaded.js', {
+    paths: [
+      os.homedir().replace(/\\/g, '/') + '/.claude/CLAUDE.md',
+      '/project/.claude/rules/migrations.md',
+      '/project/CLAUDE.md',
+    ],
+    cwd: ROOT,
+  });
+  const out = r.stderr;
+  assert(out.includes('Global:'),  'should have Global bucket');
+  assert(out.includes('Rules:'),   'should have Rules bucket');
+  assert(out.includes('Project:'), 'should have Project bucket');
+  // Each file should appear exactly once
+  assert((out.match(/CLAUDE\.md/g) || []).length === 2, 'two CLAUDE.md files, each once');
+  assert((out.match(/migrations\.md/g) || []).length === 1, 'migrations once');
 });
 
 // ── 7. pre-tool-use.js (extended patterns) ───────────────────────────────────

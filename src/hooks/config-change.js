@@ -12,6 +12,7 @@
 
 import { createInterface } from 'readline';
 import { existsSync, readFileSync } from 'fs';
+import { basename } from 'path';
 
 // The hook events claude-solo registers — warn if any go missing
 const CLAUDE_SOLO_HOOKS = [
@@ -47,7 +48,8 @@ rl.on('close', () => {
   const filePath = input.file_path || '';
 
   // Only care about settings.json changes
-  if (!filePath.endsWith('settings.json') && !filePath.endsWith('settings.local.json')) {
+  const fileName = basename(filePath);
+  if (fileName !== 'settings.json' && fileName !== 'settings.local.json') {
     process.stdout.write(JSON.stringify({}));
     return;
   }
