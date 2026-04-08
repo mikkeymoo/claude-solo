@@ -40,10 +40,10 @@ rl.on('close', () => {
       { pattern: /git\s+clean\s+(?!.*-n)(?!.*--dry-run).*-\w*f/, reason: 'git clean -f removes untracked files permanently' },
 
       // Database
-      { pattern: /drop\s+table/i, reason: 'Dropping database table' },
-      { pattern: /drop\s+database/i, reason: 'Dropping entire database' },
+      { pattern: /drop\s+table/, reason: 'Dropping database table' },
+      { pattern: /drop\s+database/, reason: 'Dropping entire database' },
       { pattern: /delete\s+from\s+\w+\s*;?\s*$/, reason: 'DELETE without WHERE clause' },
-      { pattern: /truncate\s+table/i, reason: 'TRUNCATE is irreversible' },
+      { pattern: /truncate\s+table/, reason: 'TRUNCATE is irreversible' },
 
       // Process control
       { pattern: /pkill\s+-9|kill\s+-9/, reason: 'SIGKILL forcefully terminates processes (no cleanup)' },

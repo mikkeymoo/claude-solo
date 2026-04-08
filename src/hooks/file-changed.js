@@ -27,16 +27,6 @@ const FILE_ADVICE = {
     action: 'Run `npm install` or `pnpm install` to sync node_modules.',
     note: 'Check for new/removed packages before suggesting imports.',
   },
-  'pnpm-lock.yaml': {
-    label: 'pnpm lockfile',
-    action: 'Run `pnpm install` to apply lockfile changes.',
-    note: null,
-  },
-  'package-lock.json': {
-    label: 'npm lockfile',
-    action: 'Run `npm install` to apply lockfile changes.',
-    note: null,
-  },
   'pyproject.toml': {
     label: 'Python project config',
     action: 'Run `pip install -e .` or `uv sync` to update environment.',
