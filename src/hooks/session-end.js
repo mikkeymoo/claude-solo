@@ -10,9 +10,9 @@
  */
 
 import { createInterface } from 'readline';
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import os from 'os';
 
 const rl = createInterface({ input: process.stdin });
@@ -104,4 +104,30 @@ rl.on('close', () => {
   } catch (err) {
     process.stderr.write(`⚠️  claude-solo: failed to save session summary: ${err.message}\n`);
   }
+
+  // ── Cleanup: remove stale worktrees and agent-outputs ──────────────────
+  // 1. Prune dead git worktree refs
+  try {
+    spawnSync('git', ['worktree', 'prune'], { cwd });
+  } catch { /* skip */ }
+
+  // 2. Remove any remaining worktree directories
+  const worktreesDir = join(cwd, '.claude', 'worktrees');
+  try {
+    const dirs = readdirSync(worktreesDir);
+    for (const dir of dirs) {
+      const wtPath = join(worktreesDir, dir);
+      spawnSync('git', ['worktree', 'remove', '--force', wtPath], { cwd });
+    }
+    // Remove the now-empty worktrees dir
+    rmSync(worktreesDir, { recursive: true, force: true });
+    process.stderr.write('🧹 claude-solo: cleaned .claude/worktrees/\n');
+  } catch { /* dir doesn't exist — skip */ }
+
+  // 3. Remove agent-outputs directory
+  const agentOutputsDir = join(cwd, '.planning', 'agent-outputs');
+  try {
+    rmSync(agentOutputsDir, { recursive: true, force: true });
+    process.stderr.write('🧹 claude-solo: cleaned .planning/agent-outputs/\n');
+  } catch { /* skip */ }
 });

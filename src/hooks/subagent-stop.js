@@ -10,8 +10,9 @@
  */
 
 import { createInterface } from 'readline';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { spawnSync } from 'child_process';
 
 const rl = createInterface({ input: process.stdin });
 let raw = '';
@@ -65,4 +66,25 @@ rl.on('close', () => {
   } catch (err) {
     process.stderr.write(`⚠️  claude-solo: failed to save agent output: ${err.message}\n`);
   }
+
+  // ── Cleanup: remove this agent's worktree if one exists ─────────────────
+  const worktreesDir = join(cwd, '.claude', 'worktrees');
+  const shortId = agent_id.slice(0, 8);
+
+  try {
+    const dirs = readdirSync(worktreesDir);
+    for (const dir of dirs) {
+      if (dir.includes(shortId)) {
+        const wtPath = join(worktreesDir, dir);
+        spawnSync('git', ['worktree', 'remove', '--force', wtPath], { cwd });
+        process.stderr.write(`🧹 claude-solo: removed worktree ${dir}\n`);
+        break;
+      }
+    }
+  } catch { /* worktrees dir doesn't exist or read failed — skip */ }
+
+  // Prune stale git worktree refs regardless
+  try {
+    spawnSync('git', ['worktree', 'prune'], { cwd });
+  } catch { /* skip */ }
 });
