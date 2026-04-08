@@ -30,12 +30,40 @@ rl.on('close', () => {
     const cmd = (tool_input?.command || tool_input?.cmd || '').toLowerCase();
 
     const warnings = [
+      // Filesystem destruction
       { pattern: /rm\s+-rf\s+\/(?!tmp)/, reason: 'Deleting from root' },
-      { pattern: /git\s+push\s+--force\s+(origin\s+)?main/, reason: 'Force-pushing to main' },
+      { pattern: /rm\s+(-\w+\s+)*--no-preserve-root/, reason: 'Bypassing root preservation guard' },
+
+      // Git danger
+      { pattern: /git\s+push\s+(?!.*--dry-run)(--force|-f)/, reason: 'Force-pushing (overwrites remote history)' },
       { pattern: /git\s+reset\s+--hard/, reason: 'Hard reset discards uncommitted work' },
+      { pattern: /git\s+clean\s+(-\w*f\w*|-\w+\s+){0,3}(-\w*d\w*|-\w+\s+)?/, reason: 'git clean -f removes untracked files permanently' },
+
+      // Database
       { pattern: /drop\s+table/i, reason: 'Dropping database table' },
+      { pattern: /drop\s+database/i, reason: 'Dropping entire database' },
       { pattern: /delete\s+from\s+\w+\s*;?\s*$/, reason: 'DELETE without WHERE clause' },
       { pattern: /truncate\s+table/i, reason: 'TRUNCATE is irreversible' },
+
+      // Process control
+      { pattern: /pkill\s+-9|kill\s+-9/, reason: 'SIGKILL forcefully terminates processes (no cleanup)' },
+      { pattern: /killall\s+-9/, reason: 'SIGKILL to all matching processes (no cleanup)' },
+
+      // Permissions
+      { pattern: /chmod\s+-r\s+777|chmod\s+777\s+-r|chmod\s+a\+rwx\s+-r/, reason: 'World-writable recursive permission change' },
+      { pattern: /chmod\s+777\s+\/|chmod\s+777\s+~/, reason: 'World-writable on root or home directory' },
+
+      // Remote code execution
+      { pattern: /curl\s+.+\|\s*(ba)?sh|wget\s+.+\|\s*(ba)?sh/, reason: 'Piping remote content directly to shell (RCE risk)' },
+      { pattern: /curl\s+.+\|\s*node|wget\s+.+\|\s*node/, reason: 'Piping remote content directly to Node (RCE risk)' },
+
+      // Disk write
+      { pattern: /\bdd\s+if=/, reason: 'Direct disk write (dd) — can destroy data' },
+
+      // Publishing
+      { pattern: /npm\s+publish(?!\s+--dry-run)/, reason: 'Publishing to npm registry (use --dry-run first)' },
+      { pattern: /cargo\s+publish(?!\s+--dry-run)/, reason: 'Publishing to crates.io (use --dry-run first)' },
+      { pattern: /pip\s+install\s+--upload|twine\s+upload(?!\s+--repository\s+testpypi)/, reason: 'Publishing to PyPI' },
     ];
 
     for (const { pattern, reason } of warnings) {
