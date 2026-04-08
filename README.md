@@ -129,6 +129,24 @@ node scripts/render-providers.mjs
 | `/mm:ci` | Review or generate GitHub Actions workflow for the current project |
 | `/mm:pr` | Create structured PR with description, test plan, breaking changes |
 | `/mm:changelog` | Generate CHANGELOG from git history, tag release |
+| `/mm:github-setup` | Install GitHub App for PR @mentions + autonomous issue handling, or generate CI workflow |
+
+**Path Rules & Scheduling:**
+| Command | What it does |
+|---------|-------------|
+| `/mm:rules` | Create and manage path-specific Claude rules in `.claude/rules/` (per-filetype behavior) |
+| `/mm:schedule` | Create, list, manage scheduled recurring tasks — daily PR reviews, nightly test runs |
+
+**Dev Workflow Accelerators:**
+| Command | What it does |
+|---------|-------------|
+| `/mm:build-and-fix` | Run build, auto-fix errors ≤ 5 (TypeScript, module resolution, syntax), re-verify |
+| `/mm:dev-docs` | Generate plan + context + task checklist docs before starting a feature |
+| `/mm:dev-docs-update` | Refresh dev docs as implementation evolves |
+| `/mm:powershell-dev` | PowerShell module/DSC/script development scaffold and helpers |
+| `/mm:python-dev` | Python project scaffold, virtual env, linting, and testing helpers |
+| `/mm:sql-dev` | SQL schema design, migration, and query development helpers |
+| `/mm:test-route` | Trace and test a specific API route end-to-end |
 
 ### Agents
 | Agent | Role |
@@ -140,6 +158,7 @@ node scripts/render-providers.mjs
 | `git-workflow` | Branch strategy, atomic commits, conflict resolution, PR descriptions |
 | `sql-specialist` | SQL Server / T-SQL queries, schema design, index tuning, migrations |
 | `python-data` | Pandas/Polars, data pipelines, ETL, memory-efficient data work |
+| `python-expert` | Production-ready, secure, high-performance Python following SOLID principles |
 | `security-auditor` | Enterprise security expert — OWASP, auth design, attack surface, SOC2 |
 | `ci-engineer` | GitHub Actions specialist — workflow design, caching, deploy gating |
 | `performance-optimizer` | Bottleneck diagnosis — profiles before optimizing, measures before/after |
@@ -147,6 +166,15 @@ node scripts/render-providers.mjs
 | `api-designer` | REST API design — consistent shapes, correct status codes, versioning, auth |
 | `release-manager` | Release engineering — version bumps, changelogs, rollout checklists, rollback |
 | `docs-librarian` | Documentation accuracy — drift detection, README updates, stale comment cleanup |
+| `frontend-architect` | Accessible, performant UIs — React, component design, a11y, modern frameworks |
+| `system-architect` | Scalable system architecture with focus on maintainability and long-term decisions |
+| `requirements-analyst` | Transform ambiguous ideas into concrete specs via structured requirements discovery |
+| `root-cause-analyst` | Evidence-based root cause investigation for complex problems — no guessing |
+| `refactoring-expert` | Code quality improvement and technical debt reduction via systematic refactoring |
+| `technical-writer` | Clear, comprehensive technical docs tailored to specific audiences |
+| `build-error-resolver` | Diagnose and fix TypeScript, bundler, module resolution, and dependency build errors |
+| `circular-dependency-resolver` | Detect, analyze, and resolve circular imports with dependency graph analysis |
+| `type-error-analyzer` | Interpret, analyze, and resolve TypeScript type errors with explanations and fixes |
 
 **Swarm Agents (for agent teams):**
 | Agent | Role | Model | Key Feature |
@@ -157,19 +185,29 @@ node scripts/render-providers.mjs
 | `swarm-reviewer` | Senior reviewer — three-pass review (defects, edge cases, acceptance) | Opus | Auto-fixes critical issues |
 | `swarm-tester` | Test specialist — runs suites, writes tests, reports regressions | Sonnet | Baseline-first testing |
 
-### Hooks (8 core + 5 swarm — all automatic)
+### Hooks (18 core + 5 swarm — all automatic)
 
 **Core Hooks:**
-| Hook | What it does |
-|------|-------------|
-| `session-start` | Injects git branch, sprint state, pending verification on session start |
-| `permission-request` | Auto-approves operations (allow-all by default, configurable) |
-| `pre-tool-use` | Warns about dangerous commands via stderr (advisory only, never blocks) |
-| `post-tool-use` | Logs commands, nudges RTK usage for token savings |
-| `prompt-submit` | Auto-injects sprint context (BRIEF.md, PLAN.md) into every prompt |
-| `pre-compact` | Saves checkpoint to .planning/CHECKPOINT.md before context compression |
-| `subagent-stop` | Captures agent outputs as durable artifacts in .planning/agent-outputs/ |
-| `session-end` | Writes session summary to .planning/SESSION-END.md |
+| Hook | Event | What it does |
+|------|-------|-------------|
+| `session-start` | SessionStart | Injects git branch, sprint state, pending verification on session start |
+| `permission-request` | PermissionRequest | Auto-approves operations (allow-all by default, configurable) |
+| `pre-tool-use` | PreToolUse | Warns about dangerous commands via stderr (advisory only, never blocks) |
+| `post-tool-use` | PostToolUse | Logs commands, nudges RTK usage for token savings |
+| `post-tool-use-failure` | PostToolUseFailure | Structured triage when a tool call fails — diagnose instead of looping |
+| `prompt-submit` | PromptSubmit | Auto-injects sprint context (BRIEF.md, PLAN.md) into every prompt |
+| `pre-compact` | PreCompact | Saves checkpoint to `.planning/CHECKPOINT.md` before context compression |
+| `post-compact` | PostCompact | Re-injects the checkpoint after compression — auto-resumes sprint state |
+| `subagent-stop` | SubagentStop | Captures agent outputs as durable artifacts in `.planning/agent-outputs/` |
+| `session-end` | SessionEnd | Writes session summary to `.planning/SESSION-END.md` |
+| `worktree-create` | WorktreeCreate | Copies `.env` and other gitignored files into new worktrees automatically |
+| `stop-event` | Stop | Scans Claude's final response for risky command patterns, warns before output |
+| `build-checker` | PostToolUse | Runs TypeScript/JS build after file edits; surfaces errors when count ≤ 5 |
+| `config-change` | ConfigChange | Warns if claude-solo hooks are being removed from `settings.json` |
+| `context-recovery` | SessionStart | Saves/restores session snapshots to minimize token loss on long sessions |
+| `error-handling-reminder` | PostToolUse | Gentle self-check for empty catch blocks and swallowed exceptions |
+| `file-changed` | FileChanged | Detects `package.json`/dep file changes mid-session and injects drift warning |
+| `instructions-loaded` | InstructionsLoaded | Logs which `CLAUDE.md` and `.claude/rules/*.md` files are active |
 
 **Swarm Hooks (for agent teams):**
 | Hook | Event | What it does |
@@ -179,6 +217,77 @@ node scripts/render-providers.mjs
 | `swarm/task-created` | TaskCreated | Blocks vague or oversized tasks, enforces atomic decomposition |
 | `swarm/task-completed` | TaskCompleted | Verifies evidence of completion (git changes, test files, docs) |
 | `swarm/stop-gate` | Stop | Prevents lead from stopping while teammates are active (opt-in via `--gate`) |
+
+### Hook Examples
+
+**PostCompact auto-recovery** — when Claude compresses its context mid-session, the checkpoint is re-injected automatically so you don't lose sprint state:
+```
+[Context compression happened]
+→ pre-compact.js saves .planning/CHECKPOINT.md
+→ post-compact.js re-injects it: "Restoring sprint context: PLAN.md task 3/7, branch feat/auth..."
+```
+
+**WorktreeCreate auto-copy** — when a subagent spins up in an isolated worktree, your `.env` is already there:
+```json
+// .claude/worktree-copy-list  (one path per line)
+.env
+.env.local
+secrets/service-account.json
+```
+```bash
+# Fires automatically on: EnterWorktree / WorktreeCreate events
+# Copies listed files from repo root → new worktree root
+```
+
+**build-checker in action** — after you edit TypeScript files:
+```
+PostToolUse fires on file edit
+→ build-checker.js detects tsconfig.json present
+→ runs: tsc --noEmit
+→ 3 errors found (≤ 5 threshold)
+→ injects: "TS2339: Property 'foo' does not exist on type 'Bar' — add to interface"
+```
+
+**file-changed drift warning** — when you edit `package.json` mid-session:
+```
+FileChanged fires on package.json save
+→ file-changed.js injects: "package.json changed — dependency context may be stale.
+   Re-run npm install and verify imports if Claude gives module-not-found advice."
+```
+
+**mm:rules — path-specific behavior:**
+```bash
+# In your Claude Code session:
+/mm:rules
+
+# Claude creates .claude/rules/ and prompts:
+# "Which path pattern? (e.g. src/migrations/**, tests/**, *.sql)"
+# → you: "src/migrations/**"
+# → Claude writes .claude/rules/migrations.md with: "Never drop columns. Always use reversible migrations."
+
+# Now whenever you edit src/migrations/*, those rules auto-apply.
+```
+
+**mm:schedule — recurring tasks:**
+```bash
+/mm:schedule
+
+# Examples Claude will help you set up:
+# • Daily: "Review open PRs and summarize stale ones"  →  runs every morning at 9am
+# • Weekly: "Run mm:doctor and report health"          →  every Monday
+# • Nightly: "Run full test suite and save report"     →  11pm daily
+```
+
+**mm:build-and-fix:**
+```bash
+/mm:build-and-fix
+
+# 1. Runs: npm run build (or tsc --noEmit, cargo build, etc.)
+# 2. Finds 3 errors — all under the 5-error threshold
+# 3. Fixes: missing type, bad import path, undefined interface property
+# 4. Re-runs build → clean
+# 5. Optional: --auto-commit to commit the fixes
+```
 
 ### Codex Hook Wrappers (Claude-Like Behavior)
 Codex does not expose the same native hook event system as Claude. This repo ships wrappers that call the same hook logic:
