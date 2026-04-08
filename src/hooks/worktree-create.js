@@ -98,4 +98,7 @@ rl.on('close', () => {
   if (copied > 0) {
     process.stderr.write(`📋 claude-solo: copied ${copied} file(s) into worktree (${skipped} not found, skipped)\n`);
   }
+
+  // Output JSON to stdout so Claude Code treats this hook as successful
+  process.stdout.write(JSON.stringify({ continue: true }) + '\n');
 });
