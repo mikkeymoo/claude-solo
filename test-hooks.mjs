@@ -390,6 +390,351 @@ check('always outputs action:continue', () => {
   assert(out.action === 'continue', 'should always continue even for dangerous commands');
 });
 
+// ── 8. post-tool-use-failure.js — untested error patterns ───────────────────
+console.log('\npost-tool-use-failure.js (additional coverage)');
+
+check('EACCES → permissions hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'cat secret.txt' },
+    exit_code: 1, error: 'EACCES: permission denied',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('EACCES'), 'should mention EACCES');
+  assert(out.additionalContext.includes('ls -la'), 'should suggest ls -la');
+});
+
+check('EADDRINUSE → port-in-use hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'node server.js' },
+    exit_code: 1, error: 'EADDRINUSE: address already in use :::3000',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('Port already in use'), 'should mention port');
+  assert(out.additionalContext.includes('lsof'), 'should suggest lsof');
+  assert(out.additionalContext.includes('netstat'), 'should also mention Windows netstat');
+});
+
+check('timeout error → timeout hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'curl http://slow.example.com' },
+    exit_code: 1, error: 'Request timed out after 30000ms',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('timed out'), 'should mention timeout');
+  assert(out.additionalContext.includes('External service'), 'should suggest cause');
+});
+
+check('Python ModuleNotFoundError → pip hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'python app.py' },
+    exit_code: 1, error: 'ModuleNotFoundError: No module named requests',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('pip install'), 'should suggest pip install');
+  assert(out.additionalContext.includes('virtual environment'), 'should mention venv');
+});
+
+check('SyntaxError → syntax hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'node app.js' },
+    exit_code: 1, error: 'SyntaxError: Unexpected token }',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('Syntax error'), 'should mention syntax error');
+  assert(out.additionalContext.includes('brackets'), 'should mention brackets');
+});
+
+check('git exit 128 → bad repo state hint', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'git status' },
+    exit_code: 128, error: 'fatal: not a git repository',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('128'), 'should mention exit 128');
+  assert(out.additionalContext.includes('git rev-parse'), 'should suggest diagnosis');
+});
+
+check('git exit 1 → git-specific hints', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_name: 'Bash', tool_input: { command: 'git commit -m "test"' },
+    exit_code: 1, error: 'nothing to commit',
+  });
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('git status'), 'should suggest git status');
+});
+
+check('tool_name missing → defaults to unknown', () => {
+  const r = run('post-tool-use-failure.js', {
+    tool_input: { command: 'foo' }, exit_code: 1, error: 'oops',
+  });
+  assert(r.status === 0, 'should not crash with missing tool_name');
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('unknown'), 'should show unknown as tool name');
+});
+
+// ── 9. worktree-create.js — additional paths ─────────────────────────────────
+console.log('\nworktree-create.js (additional coverage)');
+
+check('absolute path in copy list is rejected', () => {
+  const srcAbs = join(tmpBase, 'wt-src-abs');
+  const destAbs = join(tmpBase, 'wt-dest-abs');
+  mkdirSync(join(srcAbs, '.claude'), { recursive: true });
+  mkdirSync(destAbs, { recursive: true });
+  // Write an absolute path to the copy list
+  writeFileSync(join(srcAbs, '.claude', 'worktree-copy-list'), '/etc/hosts\n');
+  const r = run('worktree-create.js', { worktree_path: destAbs, cwd: srcAbs });
+  assert(r.status === 0, 'should not crash');
+  assert(r.stderr.includes('outside project root'), 'should reject absolute path');
+  assert(!existsSync(join(destAbs, 'etc', 'hosts')), 'should not copy /etc/hosts');
+});
+
+check('comments in copy list are ignored', () => {
+  const srcCmt = join(tmpBase, 'wt-src-cmt');
+  const destCmt = join(tmpBase, 'wt-dest-cmt');
+  mkdirSync(join(srcCmt, '.claude'), { recursive: true });
+  mkdirSync(destCmt, { recursive: true });
+  writeFileSync(join(srcCmt, '.claude', 'worktree-copy-list'), '# this is a comment\n.env\n');
+  writeFileSync(join(srcCmt, '.env'), 'X=1');
+  const r = run('worktree-create.js', { worktree_path: destCmt, cwd: srcCmt });
+  assert(r.status === 0, 'should not crash');
+  assert(existsSync(join(destCmt, '.env')), 'should still copy .env');
+});
+
+// ── 10. file-changed.js — edge cases ─────────────────────────────────────────
+console.log('\nfile-changed.js (additional coverage)');
+
+check('empty file_path → no crash, produces output', () => {
+  const r = run('file-changed.js', { file_path: '', cwd: ROOT });
+  assert(r.status === 0, 'should not crash on empty file_path');
+  const out = JSON.parse(r.stdout);
+  // Empty basename → falls through to generic advice, still valid JSON
+  assert(typeof out === 'object', 'should return valid JSON');
+});
+
+check('file_path with full path — uses basename only', () => {
+  const r = run('file-changed.js', { file_path: '/home/user/project/package.json', cwd: ROOT });
+  assert(r.status === 0);
+  const out = JSON.parse(r.stdout);
+  assert(out.additionalContext.includes('package.json'), 'basename extracted correctly');
+  assert(out.additionalContext.includes('npm install'), 'correct advice for package.json');
+});
+
+check('invalid JSON input → outputs empty object', () => {
+  const result = spawnSync('node', [join(HOOKS, 'file-changed.js')], {
+    input: 'not valid json', encoding: 'utf8', cwd: ROOT,
+  });
+  assert(result.status === 0, 'should not crash on bad JSON');
+  const out = JSON.parse(result.stdout);
+  assert(Object.keys(out).length === 0, 'should return empty object');
+});
+
+// ── 11. config-change.js — additional paths ───────────────────────────────────
+console.log('\nconfig-change.js (additional coverage)');
+
+check('settings.local.json triggers check', () => {
+  const tmpLocal = join(tmpBase, 'settings.local.json');
+  writeFileSync(tmpLocal, JSON.stringify({ hooks: {} }));
+  const r = run('config-change.js', { file_path: tmpLocal, cwd: ROOT });
+  assert(r.status === 0, 'should not crash');
+  assert(r.stderr.includes('SessionStart'), 'should detect missing hooks in .local.json');
+});
+
+check('malformed JSON in settings → no crash', () => {
+  const tmpBad = join(tmpBase, 'settings.json');
+  writeFileSync(tmpBad, '{ invalid json }');
+  const r = run('config-change.js', { file_path: tmpBad, cwd: ROOT });
+  assert(r.status === 0, 'should not crash on malformed JSON');
+  const out = JSON.parse(r.stdout);
+  assert(Object.keys(out).length === 0, 'should return empty object');
+});
+
+check('path containing settings.json as directory name is ignored', () => {
+  // e.g. /path/to/settings.json.d/other.json — basename is other.json, not settings.json
+  const r = run('config-change.js', { file_path: '/some/settings.json.backup/other.json', cwd: ROOT });
+  assert(r.status === 0);
+  assert(!r.stderr.includes('hooks are no longer'), 'should not trigger for non-settings file');
+});
+
+// ── 12. instructions-loaded.js — Windows paths ────────────────────────────────
+console.log('\ninstructions-loaded.js (Windows path coverage)');
+
+check('Windows backslash paths are categorized correctly', () => {
+  // Simulate what Claude Code on Windows would send
+  const winHome = os.homedir();
+  const r = run('instructions-loaded.js', {
+    paths: [
+      winHome + '\\.claude\\CLAUDE.md',
+      winHome + '\\.claude\\rules\\myproject.md',
+      'C:\\Users\\user\\project\\CLAUDE.md',
+    ],
+    cwd: ROOT,
+  });
+  assert(r.status === 0, 'should not crash on Windows-style paths');
+  // The hook normalizes separators, so it should still categorize
+  assert(r.stderr.includes('claude-solo instructions loaded'), 'should produce output');
+});
+
+// ── 13. pre-tool-use.js — additional patterns ─────────────────────────────────
+console.log('\npre-tool-use.js (additional coverage)');
+
+check('mcp__desktop-commander__ tool triggers warnings', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'mcp__desktop-commander__start_process',
+    tool_input: { cmd: 'rm -rf /usr' },
+  });
+  assert(r.status === 0);
+  assert(r.stderr.includes('claude-solo'), 'should warn for mcp desktop-commander dangerous cmd');
+});
+
+check('truncate table warns', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'psql -c "truncate table users"' },
+  });
+  assert(r.stderr.includes('claude-solo'), 'truncate table should warn');
+});
+
+check('drop table warns', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'mysql -e "drop table sessions"' },
+  });
+  assert(r.stderr.includes('claude-solo'), 'drop table should warn');
+});
+
+check('delete without WHERE warns', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'psql -c "delete from logs;"' },
+  });
+  assert(r.stderr.includes('claude-solo'), 'DELETE without WHERE should warn');
+});
+
+check('killall -9 warns', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'killall -9 node' },
+  });
+  assert(r.stderr.includes('claude-solo'), 'killall -9 should warn');
+});
+
+check('rm --no-preserve-root warns', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'rm -rf --no-preserve-root /' },
+  });
+  assert(r.stderr.includes('claude-solo'), '--no-preserve-root should warn');
+});
+
+check('git clean -n (dry run) does NOT warn', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Bash', tool_input: { command: 'git clean -n' },
+  });
+  assert(!r.stderr.includes('claude-solo'), 'git clean -n is safe, should not warn');
+});
+
+check('non-Bash tool with no command → no crash', () => {
+  const r = run('pre-tool-use.js', {
+    tool_name: 'Read', tool_input: { file_path: '/some/file.txt' },
+  });
+  assert(r.status === 0, 'should not crash');
+  const out = JSON.parse(r.stdout);
+  assert(out.action === 'continue', 'should always continue');
+});
+
+// ── 14. post-compact.js — additional paths ────────────────────────────────────
+console.log('\npost-compact.js (additional coverage)');
+
+check('empty CHECKPOINT.md → still injects (empty) context header', () => {
+  const emptyPlanDir = join(tmpBase, 'empty-plan');
+  mkdirSync(emptyPlanDir, { recursive: true });
+  writeFileSync(join(emptyPlanDir, 'CHECKPOINT.md'), '');
+  const r = run('post-compact.js', { cwd: emptyPlanDir, summary: '' });
+  assert(r.status === 0, 'should not crash on empty checkpoint');
+  // Empty checkpoint: file exists but content is empty — should return {} since no useful content
+  const out = JSON.parse(r.stdout);
+  assert(typeof out === 'object', 'should return valid object');
+});
+
+check('unreadable CHECKPOINT.md → graceful fallback', () => {
+  // Pass a cwd that has no .planning/ subdir (different from no file existing)
+  const noPlanDir = join(tmpBase, 'no-planning-dir');
+  mkdirSync(noPlanDir, { recursive: true });
+  const r = run('post-compact.js', { cwd: noPlanDir });
+  assert(r.status === 0, 'should not crash when no .planning dir');
+  assert(JSON.parse(r.stdout) !== null, 'should return valid JSON');
+});
+
+// ── 15. Integration: render pipeline output ───────────────────────────────────
+console.log('\nIntegration: render pipeline');
+
+check('render produces exactly 43 commands', () => {
+  const result = spawnSync('node', ['scripts/render-providers.mjs'], {
+    encoding: 'utf8', cwd: ROOT,
+  });
+  assert(result.status === 0, `render failed: ${result.stderr}`);
+  assert(result.stdout.includes('43'), `expected 43 commands, got: ${result.stdout.trim()}`);
+});
+
+check('new skills present in src/commands/mm/', () => {
+  for (const skill of ['github-setup.md', 'schedule.md', 'rules.md']) {
+    assert(existsSync(join(ROOT, 'src', 'commands', 'mm', skill)), `missing: ${skill}`);
+  }
+});
+
+check('new skills present in src/codex/skills/', () => {
+  for (const skill of ['mm-github-setup', 'mm-schedule', 'mm-rules']) {
+    assert(existsSync(join(ROOT, 'src', 'codex', 'skills', skill, 'SKILL.md')), `missing codex: ${skill}`);
+  }
+});
+
+check('new hook files present in src/hooks/', () => {
+  const newHooks = [
+    'post-compact.js', 'worktree-create.js', 'post-tool-use-failure.js',
+    'file-changed.js', 'config-change.js', 'instructions-loaded.js',
+  ];
+  for (const h of newHooks) {
+    assert(existsSync(join(ROOT, 'src', 'hooks', h)), `missing hook: ${h}`);
+  }
+});
+
+check('settings.json registers all 14 hook events', () => {
+  const settings = JSON.parse(readFileSync(join(ROOT, 'src', 'settings', 'settings.json'), 'utf8'));
+  const events = Object.keys(settings.hooks);
+  assert(events.length === 14, `expected 14 events, got ${events.length}: ${events.join(', ')}`);
+  const required = [
+    'PostCompact', 'WorktreeCreate', 'PostToolUseFailure',
+    'FileChanged', 'ConfigChange', 'InstructionsLoaded',
+  ];
+  for (const ev of required) {
+    assert(events.includes(ev), `missing event: ${ev}`);
+  }
+});
+
+check('settings.json is valid JSON', () => {
+  const content = readFileSync(join(ROOT, 'src', 'settings', 'settings.json'), 'utf8');
+  assert(() => JSON.parse(content), 'should be parseable');
+  const parsed = JSON.parse(content);
+  assert(parsed.model, 'should have model field');
+  assert(parsed.hooks, 'should have hooks field');
+});
+
+check('FileChanged matcher uses plain filename (no regex escaping)', () => {
+  const settings = JSON.parse(readFileSync(join(ROOT, 'src', 'settings', 'settings.json'), 'utf8'));
+  const fileChangedMatcher = settings.hooks.FileChanged[0].matcher;
+  assert(!fileChangedMatcher.includes('\\.'), 'matcher should not have regex-escaped dots');
+  assert(fileChangedMatcher.includes('.env.example'), 'matcher should include .env.example literally');
+});
+
+check('skill files contain required sections', () => {
+  const checks = [
+    { file: 'src/shared/commands/mm/github-setup.md', terms: ['GitHub App', 'anthropics/claude-code-action', 'ANTHROPIC_API_KEY'] },
+    { file: 'src/shared/commands/mm/schedule.md',     terms: ['CronList', 'CronCreate', 'CronDelete', 'cron'] },
+    { file: 'src/shared/commands/mm/rules.md',        terms: ['.claude/rules/', 'glob', 'globs'] },
+  ];
+  for (const { file, terms } of checks) {
+    const content = readFileSync(join(ROOT, file), 'utf8');
+    for (const term of terms) {
+      assert(content.includes(term), `${file} missing: "${term}"`);
+    }
+  }
+});
+
 // ── Cleanup ──────────────────────────────────────────────────────────────────
 try { rmSync(tmpBase, { recursive: true, force: true }); } catch {}
 

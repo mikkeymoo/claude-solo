@@ -42,7 +42,7 @@ rl.on('close', () => {
       // Database
       { pattern: /drop\s+table/, reason: 'Dropping database table' },
       { pattern: /drop\s+database/, reason: 'Dropping entire database' },
-      { pattern: /delete\s+from\s+\w+\s*;?\s*$/, reason: 'DELETE without WHERE clause' },
+      { pattern: /delete\s+from\s+\w+\s*(?:;|"|'|$)(?!\s+where)/i, reason: 'DELETE without WHERE clause' },
       { pattern: /truncate\s+table/, reason: 'TRUNCATE is irreversible' },
 
       // Process control
