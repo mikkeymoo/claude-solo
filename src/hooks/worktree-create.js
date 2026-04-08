@@ -2,20 +2,20 @@
 /**
  * claude-solo WorktreeCreate hook
  *
- * Fires when a new git worktree is created (e.g. for a subagent).
- * Copies gitignored files (secrets, .env) into the new worktree so
- * agents can run the app without manual setup.
+ * Fires BEFORE a new git worktree is created. This hook is responsible
+ * for creating the worktree (Claude Code does NOT create it automatically).
+ * After creation, copies gitignored files (.env etc.) into the new worktree.
+ *
+ * Input (stdin): JSON { base_directory, worktree_name, source_ref, isolation_scope, ... }
+ * Output (stdout): absolute path to the created worktree (single line, plain text)
  *
  * Config: .claude/worktree-copy-list (one relative path per line)
- * If the file doesn't exist, a default one is created automatically.
- *
- * Input (stdin): JSON { worktree_path, branch, cwd, ... }
- * Output: none required
  */
 
 import { createInterface } from 'readline';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, dirname, resolve } from 'path';
+import { execSync } from 'child_process';
 
 const DEFAULT_COPY_LIST = `.env
 .env.local
@@ -32,73 +32,80 @@ rl.on('close', () => {
   try {
     input = JSON.parse(raw);
   } catch {
-    return;
+    process.stderr.write('⚠️  claude-solo worktree-create: failed to parse hook input JSON\n');
+    process.exit(1);
   }
 
-  const worktreePath = input.worktree_path;
-  if (!worktreePath) {
-    process.stderr.write('⚠️  claude-solo worktree-create: no worktree_path in hook input\n');
-    return;
+  const baseDir = input.base_directory || input.cwd;
+  const worktreeName = input.worktree_name || `claude-wt-${Date.now()}`;
+  const sourceRef = input.source_ref || 'HEAD';
+
+  if (!baseDir) {
+    process.stderr.write('⚠️  claude-solo worktree-create: no base_directory in hook input\n');
+    process.exit(1);
   }
 
-  const cwd = input.cwd || process.cwd();
-  const claudeDir = join(cwd, '.claude');
+  // Place worktrees in a standard location outside the repo
+  const worktreePath = resolve(baseDir, '..', '.claude-worktrees', worktreeName);
+
+  // Create worktree — suppress all stdout/stderr from git
+  try {
+    mkdirSync(resolve(baseDir, '..', '.claude-worktrees'), { recursive: true });
+    execSync(
+      `git -C "${baseDir}" worktree add --detach "${worktreePath}" ${sourceRef}`,
+      { stdio: 'pipe' }
+    );
+  } catch (err) {
+    process.stderr.write(`⚠️  claude-solo worktree-create: git worktree add failed: ${err.message}\n`);
+    process.exit(1);
+  }
+
+  // Copy gitignored config files into the new worktree
+  const claudeDir = join(baseDir, '.claude');
   const copyListPath = join(claudeDir, 'worktree-copy-list');
 
-  // Create default copy list if absent
   if (!existsSync(copyListPath)) {
     try {
       mkdirSync(claudeDir, { recursive: true });
       writeFileSync(copyListPath, DEFAULT_COPY_LIST);
-      process.stderr.write('📄 claude-solo: created .claude/worktree-copy-list with defaults (.env, .env.local, .env.development, secrets.json)\n');
     } catch {
       // Not fatal
     }
   }
 
-  let filesToCopy;
+  let filesToCopy = [];
   try {
     filesToCopy = readFileSync(copyListPath, 'utf8')
       .split('\n')
       .map(l => l.trim())
       .filter(l => l && !l.startsWith('#'));
   } catch {
-    return;
+    // Not fatal — proceed without copying
   }
 
   let copied = 0;
-  let skipped = 0;
-
   for (const relPath of filesToCopy) {
-    // Guard against path traversal (absolute paths or .. sequences)
-    const srcPath = resolve(cwd, relPath);
-    if (!srcPath.startsWith(cwd + '/') && !srcPath.startsWith(cwd + '\\') && srcPath !== cwd) {
-      process.stderr.write(`⚠️  claude-solo: skipping "${relPath}" — path resolves outside project root\n`);
-      skipped++;
+    const srcPath = resolve(baseDir, relPath);
+    // Guard against path traversal
+    if (!srcPath.startsWith(baseDir + '/') && !srcPath.startsWith(baseDir + '\\') && srcPath !== baseDir) {
       continue;
     }
-
-    const destPath = join(worktreePath, relPath);
-
-    if (!existsSync(srcPath)) {
-      skipped++;
-      continue;
-    }
-
+    if (!existsSync(srcPath)) continue;
     try {
-      const destDir = dirname(destPath);
-      mkdirSync(destDir, { recursive: true });
+      const destPath = join(worktreePath, relPath);
+      mkdirSync(dirname(destPath), { recursive: true });
       copyFileSync(srcPath, destPath);
       copied++;
-    } catch (err) {
-      process.stderr.write(`⚠️  claude-solo: failed to copy ${relPath} to worktree: ${err.message}\n`);
+    } catch {
+      // Not fatal
     }
   }
 
   if (copied > 0) {
-    process.stderr.write(`📋 claude-solo: copied ${copied} file(s) into worktree (${skipped} not found, skipped)\n`);
+    process.stderr.write(`📋 claude-solo: copied ${copied} file(s) into worktree\n`);
   }
 
-  // Output JSON to stdout so Claude Code treats this hook as successful
-  process.stdout.write(JSON.stringify({ continue: true }) + '\n');
+  // Output the worktree path — this is what Claude Code reads to find the worktree
+  process.stdout.write(worktreePath + '\n');
+  process.exit(0);
 });
