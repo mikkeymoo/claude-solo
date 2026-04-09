@@ -2,6 +2,8 @@
 name: swarm-lead
 description: Team lead for swarm coding sessions. Use when coordinating multiple agents working in parallel on a complex feature, refactor, or investigation. Decomposes work, spawns teammates, tracks progress, and synthesizes results.
 model: opus
+effort: high
+maxTurns: 100
 permissionMode: auto
 memory: project
 color: purple

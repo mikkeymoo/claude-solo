@@ -93,6 +93,7 @@ function Install-To($TARGET) {
     New-Item -ItemType Directory -Force -Path "$TARGET\commands\mm" | Out-Null
     New-Item -ItemType Directory -Force -Path "$TARGET\hooks" | Out-Null
     New-Item -ItemType Directory -Force -Path "$TARGET\logs"  | Out-Null
+    New-Item -ItemType Directory -Force -Path "$TARGET\rules" | Out-Null
 
     # CLAUDE.md
     $CLAUDE_MD = "$TARGET\CLAUDE.md"
@@ -127,6 +128,15 @@ function Install-To($TARGET) {
     # Remove old skills dir mm-* files if they exist from previous installs
     if (Test-Path "$TARGET\skills") {
         Get-ChildItem "$TARGET\skills\mm-*.md" -ErrorAction SilentlyContinue | Remove-Item -Force
+    }
+
+    # Rules (starter rule files — copy, never overwrite user's rules)
+    Get-ChildItem "$REPO_DIR\src\rules\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $dst = "$TARGET\rules\$($_.Name)"
+        if (-not (Test-Path $dst)) {
+            Copy-Item $_.FullName $dst
+            Write-Host "    ✓ Rule: $($_.Name)" -ForegroundColor Green
+        }
     }
 
     # Hooks (only global hooks make sense — skip for project-level)

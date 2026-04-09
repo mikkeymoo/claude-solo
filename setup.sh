@@ -116,7 +116,7 @@ install_to() {
     # Backup existing files before overwriting
     backup_existing "$TARGET"
 
-    mkdir -p "$TARGET/agents" "$TARGET/commands/mm" "$TARGET/hooks" "$TARGET/logs"
+    mkdir -p "$TARGET/agents" "$TARGET/commands/mm" "$TARGET/hooks" "$TARGET/logs" "$TARGET/rules"
 
     # CLAUDE.md
     local CLAUDE_MD="$TARGET/CLAUDE.md"
@@ -160,6 +160,17 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
     if [ -d "$TARGET/skills" ]; then
         rm -f "$TARGET/skills/mm-"*.md
     fi
+
+    # Rules (starter rule files — copy, never overwrite user's rules)
+    for f in "$REPO_DIR/src/rules/"*.md; do
+        [ -f "$f" ] || continue
+        local basename="$(basename "$f")"
+        local dst="$TARGET/rules/$basename"
+        if [ ! -f "$dst" ]; then
+            cp "$f" "$dst"
+            echo "    ✓ Rule: $basename"
+        fi
+    done
 
     # Hooks — global only (hooks run globally)
     if [ "$TARGET" = "$GLOBAL_DIR" ]; then

@@ -2,6 +2,8 @@
 name: swarm-tester
 description: Test writing and execution specialist for swarm sessions. Use as a teammate to write tests, run test suites, verify coverage, and report regressions. Focuses on tests that catch real bugs.
 model: sonnet
+effort: medium
+maxTurns: 40
 memory: project
 color: cyan
 ---

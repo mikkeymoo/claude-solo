@@ -2,6 +2,8 @@
 name: swarm-implementer
 description: Code implementation specialist for swarm sessions. Use as a teammate when parallel coding is needed. Writes production-quality code, commits atomically, and coordinates with other agents.
 model: sonnet
+effort: medium
+maxTurns: 50
 memory: project
 color: blue
 isolation: worktree

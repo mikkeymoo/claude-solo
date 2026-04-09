@@ -2,7 +2,9 @@
 name: swarm-reviewer
 description: Code review specialist for swarm sessions. Use as a teammate to review implementation quality, catch bugs, security issues, and verify requirements. Works after implementers finish.
 model: opus
-tools: Read, Grep, Glob, Bash, Edit
+effort: high
+maxTurns: 50
+tools: Read, Grep, Glob, Bash, Edit, Write
 memory: project
 color: orange
 ---

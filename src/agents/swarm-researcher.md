@@ -2,7 +2,9 @@
 name: swarm-researcher
 description: Research and exploration specialist for swarm sessions. Use as a teammate for codebase analysis, API investigation, dependency evaluation, or architecture review. Read-only — never modifies code.
 model: sonnet
-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
+effort: medium
+maxTurns: 40
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, Write, Edit
 memory: project
 color: green
 ---
