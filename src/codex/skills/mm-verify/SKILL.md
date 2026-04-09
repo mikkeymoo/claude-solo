@@ -17,37 +17,62 @@ Hard verification gate. Run this before /mm:ship to get a pass/fail evidence sum
 
 This is NOT a code review — it's a mechanical check that everything works. Run all checks, report results, block shipping on failures.
 
+First, orient yourself:
+```bash
+rtk git status
+rtk git log --oneline -10
+```
+
 Execute these checks in order:
 
 **1. Lint**
-- Run the project linter (eslint, ruff, clippy, etc.)
-- Report: pass/fail + count of violations
-- If no linter configured: skip and note it
+```bash
+# Pick whichever applies:
+rtk lint               # ESLint / Biome
+rtk pnpm run lint      # npm script
+rtk ruff check .       # Python
+rtk cargo clippy       # Rust
+```
+Report: pass/fail + count of violations. If no linter configured: skip and note it.
 
 **2. Type check**
-- Run typecheck (tsc --noEmit, mypy, cargo check, etc.)
-- Report: pass/fail + count of errors
+```bash
+rtk tsc --noEmit       # TypeScript
+rtk mypy .             # Python
+rtk cargo check        # Rust
+```
+Report: pass/fail + count of errors.
 
 **3. Tests**
-- Run the full test suite (pytest, vitest, jest, cargo test, dotnet test)
-- Report: pass/fail + X passed / Y failed / Z skipped
-- If any test fails, show the failure output
+```bash
+rtk vitest run         # Vitest
+rtk pnpm test          # npm test script
+rtk python -m pytest   # Python
+rtk cargo test         # Rust
+```
+Report: pass/fail + X passed / Y failed / Z skipped. Show failure output.
 
 **4. Smoke check**
 - If the app has a dev server: start it, confirm it responds (HTTP 200)
-- If CLI tool: run --help or a trivial command
+- If CLI tool: run `--help` or a trivial command
 - If library: import it successfully
 - If none apply: skip
 
 **5. Changed files review**
-- List all files changed since the last tag or since PLAN.md was created
-- Flag any files that were changed but have no test coverage
-- Flag any new dependencies added
+```bash
+rtk git diff --stat HEAD~1
+rtk git diff --name-only HEAD~5
+```
+Flag any files changed but with no test coverage. Flag new dependencies added.
 
 **6. Secrets scan**
-- Grep for patterns: API keys, passwords, tokens, connection strings in source files
-- Check .env is in .gitignore
-- Report: clean / X potential secrets found
+```bash
+# Scan for common secret patterns:
+grep -r "sk-\|api_key\|API_KEY\|password\s*=\|token\s*=" --include="*.ts" --include="*.py" --include="*.js" -l .
+# Check .env is gitignored:
+cat .gitignore | grep .env
+```
+Report: clean / X potential secrets found.
 
 Write `.planning/VERIFY.md` with results:
 
