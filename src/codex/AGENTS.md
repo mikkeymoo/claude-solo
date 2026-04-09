@@ -25,6 +25,7 @@ Command routing:
 - `/mm:explain` -> use `$mm-explain`
 - `/mm:github-setup` -> use `$mm-github-setup`
 - `/mm:handoff` -> use `$mm-handoff`
+- `/mm:help` -> use `$mm-help`
 - `/mm:incident` -> use `$mm-incident`
 - `/mm:map` -> use `$mm-map`
 - `/mm:migrate` -> use `$mm-migrate`
