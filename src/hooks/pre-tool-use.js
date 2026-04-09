@@ -2,14 +2,58 @@
 /**
  * claude-solo pre-tool-use hook
  *
- * Warns about potentially dangerous commands via stderr — never blocks.
- * Claude Code will still execute the command; this is advisory only.
+ * 1. Warns about potentially dangerous commands (stderr, advisory only)
+ * 2. Auto-wraps supported commands with `rtk` prefix for token savings.
+ *    RTK's shell-level hook is Unix-only; this provides the same benefit
+ *    on Windows via Claude Code's updatedInput mechanism.
  *
  * Input (stdin): JSON { tool_name, tool_input }
- * Output (stdout): JSON { action: "continue" }
+ * Output (stdout): hookSpecificOutput with updatedInput when rtk wrapping
+ *                  applied, otherwise { action: 'continue' }
  */
 
 import { createInterface } from 'readline';
+
+// Commands rtk supports — auto-wrap these for token savings
+const RTK_PATTERNS = [
+  /^git\s/,
+  /^gh\s+(pr|run|issue|api)\b/,
+  /^pnpm\b/,
+  /^npm\b/,
+  /^npx\b/,
+  /^cargo\s+(test|build|check|clippy)\b/,
+  /^python\s+-m\s+pytest\b/,
+  /^vitest\b/,
+  /^playwright\s+test\b/,
+  /^tsc\b/,
+  /^next\s+(build|dev)\b/,
+  /^docker\s+(ps|images|logs)\b/,
+  /^kubectl\s+(get|logs)\b/,
+  /^lint\b/,
+  /^prettier\b/,
+];
+
+function needsRtk(segment) {
+  const trimmed = segment.trim();
+  if (!trimmed || /^rtk\s/.test(trimmed)) return false;
+  return RTK_PATTERNS.some(p => p.test(trimmed));
+}
+
+// Wrap each && segment independently, preserving whitespace
+function applyRtk(command) {
+  // Split on && boundaries, keeping separators
+  const parts = command.split(/(\s*&&\s*)/);
+  let modified = false;
+  const out = parts.map(part => {
+    if (/^\s*&&\s*$/.test(part)) return part;
+    if (needsRtk(part)) {
+      modified = true;
+      return part.replace(/^(\s*)/, '$1rtk ');
+    }
+    return part;
+  });
+  return { command: out.join(''), modified };
+}
 
 const rl = createInterface({ input: process.stdin });
 let raw = '';
@@ -27,8 +71,10 @@ rl.on('close', () => {
   const { tool_name, tool_input } = input;
 
   if (tool_name === 'Bash' || tool_name === 'mcp__desktop-commander__start_process') {
-    const cmd = (tool_input?.command || tool_input?.cmd || '').toLowerCase();
+    const rawCmd = tool_input?.command || tool_input?.cmd || '';
+    const cmdLower = rawCmd.toLowerCase();
 
+    // ── Danger warnings (advisory, never blocks) ──────────────────────────
     const warnings = [
       // Filesystem destruction
       { pattern: /rm\s+-rf\s+\/(?!tmp)/, reason: 'Deleting from root' },
@@ -67,13 +113,26 @@ rl.on('close', () => {
     ];
 
     for (const { pattern, reason } of warnings) {
-      if (pattern.test(cmd)) {
+      if (pattern.test(cmdLower)) {
         process.stderr.write(`⚠️  claude-solo: ${reason}\n`);
         break;
       }
     }
+
+    // ── RTK auto-wrap (Windows workaround for shell-level hook) ───────────
+    const { command: wrappedCmd, modified } = applyRtk(rawCmd);
+    if (modified) {
+      process.stderr.write(`🔧 rtk: auto-wrapped for token savings\n`);
+      process.stdout.write(JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'allow',
+          updatedInput: { command: wrappedCmd },
+        },
+      }));
+      return;
+    }
   }
 
-  // Always continue — never block
   process.stdout.write(JSON.stringify({ action: 'continue' }));
 });
