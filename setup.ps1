@@ -35,8 +35,6 @@ function Backup-Existing($TARGET) {
         if (Test-Path $existing) {
             if (-not $backedUp) {
                 New-Item -ItemType Directory -Force -Path "$backupDir\hooks" | Out-Null
-                New-Item -ItemType Directory -Force -Path "$backupDir\agents" | Out-Null
-                New-Item -ItemType Directory -Force -Path "$backupDir\skills" | Out-Null
                 $backedUp = $true
             }
             Copy-Item $existing "$backupDir\hooks\$($_.Name)"
@@ -207,6 +205,8 @@ function Uninstall-From($TARGET) {
     Write-Host ""
     Write-Host "  Uninstalling from: $TARGET" -ForegroundColor Yellow
 
+    $isGlobal = ($TARGET -eq $GLOBAL_DIR)
+
     # Strip CLAUDE.md block
     $CLAUDE_MD = "$TARGET\CLAUDE.md"
     if (Test-Path $CLAUDE_MD) {
@@ -220,20 +220,39 @@ function Uninstall-From($TARGET) {
         }
     }
 
-    # Remove installed agents/commands/hooks
-    @("agents","hooks") | ForEach-Object {
-        $dir = "$TARGET\$_"
-        if (Test-Path $dir) {
-            $files = Get-ChildItem $dir
-            if ($files.Count -eq 0) { Remove-Item $dir -Force }
+    # Remove installed agents
+    Get-ChildItem "$REPO_DIR\src\agents\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $target_file = "$TARGET\agents\$($_.Name)"
+        if (Test-Path $target_file) {
+            Remove-Item $target_file -Force
+            Write-Host "    ✓ Removed agent: $($_.Name)" -ForegroundColor Green
         }
     }
-    # Remove mm commands
-    if (Test-Path "$TARGET\commands\mm") {
-        Get-ChildItem "$TARGET\commands\mm\*.md" -ErrorAction SilentlyContinue | Remove-Item -Force
+
+    # Remove installed commands
+    Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        $target_file = "$TARGET\commands\mm\$($_.Name)"
+        if (Test-Path $target_file) {
+            Remove-Item $target_file -Force
+            Write-Host "    ✓ Removed command: $($_.Name)" -ForegroundColor Green
+        }
     }
 
-    Write-Host "    ✓ Done. Your own files are untouched." -ForegroundColor Green
+    # Remove installed hooks (global only)
+    if ($isGlobal) {
+        Get-ChildItem "$REPO_DIR\src\hooks\*.js" -ErrorAction SilentlyContinue | ForEach-Object {
+            $target_file = "$TARGET\hooks\$($_.Name)"
+            if (Test-Path $target_file) {
+                Remove-Item $target_file -Force
+                Write-Host "    ✓ Removed hook: $($_.Name)" -ForegroundColor Green
+            }
+        }
+        if (Test-Path "$TARGET\hooks\package.json") { Remove-Item "$TARGET\hooks\package.json" -Force }
+        if (Test-Path "$TARGET\.claude-solo-source") { Remove-Item "$TARGET\.claude-solo-source" -Force }
+        Write-Host "    ✓ Removed hooks/package.json and .claude-solo-source" -ForegroundColor Green
+    }
+
+    Write-Host "    ✓ Done. Your customized files (rules, mcp.json, custom agents) are untouched." -ForegroundColor Green
 }
 
 # ── Main ────────────────────────────────────────────────────────────────────
@@ -265,5 +284,6 @@ Write-Host ""
 Write-Host "Open Claude Code and use:" -ForegroundColor Cyan
 Write-Host "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 Write-Host ""
-Write-Host "Power commands: /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor  /mm:verify" -ForegroundColor Gray
+Write-Host "Power:   /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor" -ForegroundColor Gray
+Write-Host "New:     /mm:map  /mm:deps  /mm:a11y  /mm:migrate  /mm:onboard  /mm:stale" -ForegroundColor Gray
 Write-Host ""

@@ -234,9 +234,12 @@ PYEOF
 # ── Uninstall function ────────────────────────────────────────────────────
 uninstall_from() {
     local TARGET="$1"
+    local IS_GLOBAL=false
+    [ "$TARGET" = "$GLOBAL_DIR" ] && IS_GLOBAL=true
     echo ""
     echo "  Uninstalling from: $TARGET"
 
+    # Strip CLAUDE.md block
     local CLAUDE_MD="$TARGET/CLAUDE.md"
     if [ -f "$CLAUDE_MD" ]; then
         python -c "
@@ -250,7 +253,42 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
         echo "    ✓ Removed from CLAUDE.md"
     fi
 
-    echo "    ✓ Done. Your own files are untouched."
+    # Remove installed agents
+    for f in "$REPO_DIR/src/agents/"*.md; do
+        [ -f "$f" ] || continue
+        local target_file="$TARGET/agents/$(basename "$f")"
+        if [ -f "$target_file" ]; then
+            rm -f "$target_file"
+            echo "    ✓ Removed agent: $(basename "$f")"
+        fi
+    done
+
+    # Remove installed commands
+    for f in "$REPO_DIR/src/commands/mm/"*.md; do
+        [ -f "$f" ] || continue
+        local target_file="$TARGET/commands/mm/$(basename "$f")"
+        if [ -f "$target_file" ]; then
+            rm -f "$target_file"
+            echo "    ✓ Removed command: $(basename "$f")"
+        fi
+    done
+
+    # Remove installed hooks (global only)
+    if $IS_GLOBAL; then
+        for f in "$REPO_DIR/src/hooks/"*.js; do
+            [ -f "$f" ] || continue
+            local target_file="$TARGET/hooks/$(basename "$f")"
+            if [ -f "$target_file" ]; then
+                rm -f "$target_file"
+                echo "    ✓ Removed hook: $(basename "$f")"
+            fi
+        done
+        rm -f "$TARGET/hooks/package.json"
+        rm -f "$TARGET/.claude-solo-source"
+        echo "    ✓ Removed hooks/package.json and .claude-solo-source"
+    fi
+
+    echo "    ✓ Done. Your customized files (rules, mcp.json, custom agents) are untouched."
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────
@@ -282,5 +320,6 @@ echo ""
 echo "Open Claude Code and use:"
 echo "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 echo ""
-echo "Power commands: /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor  /mm:verify"
+echo "Power:   /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor"
+echo "New:     /mm:map  /mm:deps  /mm:a11y  /mm:migrate  /mm:onboard  /mm:stale"
 echo ""
