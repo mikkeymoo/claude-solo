@@ -1,13 +1,8 @@
 name = "circular-dependency-resolver"
-description = "circular-dependency-resolver specialist"
+description = "Detects, analyzes, and resolves circular dependencies in JavaScript/TypeScript codebases with dependency graph analysis and refactoring strategies"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
----
-name: circular-dependency-resolver
-description: Detects, analyzes, and resolves circular dependencies in JavaScript/TypeScript codebases with dependency graph analysis and refactoring strategies
----
-
 # Circular Dependency Resolver Agent
 
 ## Purpose

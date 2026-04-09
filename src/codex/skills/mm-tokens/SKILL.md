@@ -18,7 +18,7 @@ Show estimated token usage for today's Claude Code session.
 Run this:
 ```bash
 node -e "
-const fs = require('fs') ; const path = require('path') ; const today = new Date().toISOString().slice(0,10) ; const file = path.join(os.homedir(), '.claude', 'logs', \`tokens-\${today}.json\`) ; const os = require('os') ; if (!fs.existsSync(file)) { console.log('No token data yet for today.') ; process.exit(0) ; }
+const fs = require('fs') ; const path = require('path') ; const os = require('os') ; const today = new Date().toISOString().slice(0,10) ; const file = path.join(os.homedir(), '.claude', 'logs', \`tokens-\${today}.json\`) ; if (!fs.existsSync(file)) { console.log('No token data yet for today.') ; process.exit(0) ; }
 const s = JSON.parse(fs.readFileSync(file)) ; const k = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n) ; console.log('') ; console.log(\`Token usage for \${s.date}\`) ; console.log(\`  Total:  ~\${k(s.total_tokens)} tokens across \${s.calls} tool calls\`) ; console.log(\`  Input:  ~\${k(s.input_tokens)}\`) ; console.log(\`  Output: ~\${k(s.output_tokens)}\`) ; console.log('') ; console.log('By tool:') ; Object.entries(s.by_tool)
   .sort((a,b) => b[1].total_tokens - a[1].total_tokens)
   .forEach(([tool, t]) => {

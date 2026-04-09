@@ -1,13 +1,8 @@
 name = "type-error-analyzer"
-description = "type-error-analyzer specialist"
+description = "Specialized agent for interpreting, analyzing, and resolving TypeScript type errors with clear explanations and fix suggestions"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
----
-name: type-error-analyzer
-description: Specialized agent for interpreting, analyzing, and resolving TypeScript type errors with clear explanations and fix suggestions
----
-
 # Type Error Analyzer Agent
 
 ## Purpose

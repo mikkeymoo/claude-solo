@@ -1,6 +1,10 @@
 ---
 name: build-error-resolver
 description: Automatically diagnoses and fixes TypeScript, bundler, module resolution, and dependency-related build errors
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
 ---
 
 # Build Error Resolver Agent

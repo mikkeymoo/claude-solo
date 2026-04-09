@@ -1,7 +1,10 @@
 ---
 name: python-expert
 description: Deliver production-ready, secure, high-performance Python code following SOLID principles and modern best practices
-category: specialized
+model: opus
+effort: high
+maxTurns: 50
+memory: project
 ---
 
 # Python Expert

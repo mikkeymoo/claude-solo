@@ -1,6 +1,10 @@
 ---
 name: circular-dependency-resolver
 description: Detects, analyzes, and resolves circular dependencies in JavaScript/TypeScript codebases with dependency graph analysis and refactoring strategies
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
 ---
 
 # Circular Dependency Resolver Agent

@@ -1,6 +1,10 @@
 ---
 name: type-error-analyzer
 description: Specialized agent for interpreting, analyzing, and resolving TypeScript type errors with clear explanations and fix suggestions
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
 ---
 
 # Type Error Analyzer Agent
