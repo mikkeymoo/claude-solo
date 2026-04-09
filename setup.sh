@@ -143,19 +143,31 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
 " "$CLAUDE_MD" "$REPO_DIR/src/CLAUDE.md"
     echo "    ✓ CLAUDE.md"
 
+    # For project installs, skip agents/commands if global is already installed
+    # (they're already available globally — project copies would create duplicates)
+    local SKIP_AGENTS_COMMANDS=false
+    if [ "$TARGET" != "$GLOBAL_DIR" ] && [ -f "$GLOBAL_DIR/commands/mm/brief.md" ]; then
+        SKIP_AGENTS_COMMANDS=true
+        echo "    ℹ  Global install detected — skipping agents/commands (already available globally)" >&2
+    fi
+
     # Agents
-    for f in "$REPO_DIR/src/agents/"*.md; do
-        [ -f "$f" ] || continue
-        cp "$f" "$TARGET/agents/$(basename "$f")"
-        echo "    ✓ Agent: $(basename "$f")"
-    done
+    if ! $SKIP_AGENTS_COMMANDS; then
+        for f in "$REPO_DIR/src/agents/"*.md; do
+            [ -f "$f" ] || continue
+            cp "$f" "$TARGET/agents/$(basename "$f")"
+            echo "    ✓ Agent: $(basename "$f")"
+        done
+    fi
 
     # Commands
-    for f in "$REPO_DIR/src/commands/mm/"*.md; do
-        [ -f "$f" ] || continue
-        cp "$f" "$TARGET/commands/mm/$(basename "$f")"
-        echo "    ✓ Command: $(basename "$f")"
-    done
+    if ! $SKIP_AGENTS_COMMANDS; then
+        for f in "$REPO_DIR/src/commands/mm/"*.md; do
+            [ -f "$f" ] || continue
+            cp "$f" "$TARGET/commands/mm/$(basename "$f")"
+            echo "    ✓ Command: $(basename "$f")"
+        done
+    fi
     # Remove old skills dir if it exists from previous installs
     if [ -d "$TARGET/skills" ]; then
         rm -f "$TARGET/skills/mm-"*.md

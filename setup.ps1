@@ -112,16 +112,27 @@ function Install-To($TARGET) {
     Set-Content -Path $CLAUDE_MD -Value $combined -Encoding UTF8
     Write-Host "    ✓ CLAUDE.md" -ForegroundColor Green
 
+    # For project installs, skip agents/commands if global is already installed
+    # (they're already available globally — project copies would create duplicates)
+    $skipAgentsCommands = (-not $isGlobal) -and (Test-Path "$GLOBAL_DIR\commands\mm\brief.md")
+    if ($skipAgentsCommands) {
+        Write-Host "    ℹ  Global install detected — skipping agents/commands (already available globally)" -ForegroundColor Gray
+    }
+
     # Agents
-    Get-ChildItem "$REPO_DIR\src\agents\*.md" | ForEach-Object {
-        Copy-Item $_.FullName "$TARGET\agents\$($_.Name)" -Force
-        Write-Host "    ✓ Agent: $($_.Name)" -ForegroundColor Green
+    if (-not $skipAgentsCommands) {
+        Get-ChildItem "$REPO_DIR\src\agents\*.md" | ForEach-Object {
+            Copy-Item $_.FullName "$TARGET\agents\$($_.Name)" -Force
+            Write-Host "    ✓ Agent: $($_.Name)" -ForegroundColor Green
+        }
     }
 
     # Commands
-    Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-        Copy-Item $_.FullName "$TARGET\commands\mm\$($_.Name)" -Force
-        Write-Host "    ✓ Command: $($_.Name)" -ForegroundColor Green
+    if (-not $skipAgentsCommands) {
+        Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName "$TARGET\commands\mm\$($_.Name)" -Force
+            Write-Host "    ✓ Command: $($_.Name)" -ForegroundColor Green
+        }
     }
     # Remove old skills dir mm-* files if they exist from previous installs
     if (Test-Path "$TARGET\skills") {
