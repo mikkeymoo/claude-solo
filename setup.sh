@@ -183,13 +183,14 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ MCP template (mcp.json) — enable servers you need"
     fi
 
-    # Status line config (copy but don't overwrite)
-    if [ -f "$REPO_DIR/src/settings/statusline.json" ] && [ ! -f "$TARGET/statusline.json" ]; then
-        cp "$REPO_DIR/src/settings/statusline.json" "$TARGET/statusline.json"
-        echo "    ✓ Status line config (statusline.json)"
+    # Status line shell script (global only; bash required)
+    if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/settings/statusline.sh" ]; then
+        cp "$REPO_DIR/src/settings/statusline.sh" "$TARGET/statusline.sh"
+        chmod +x "$TARGET/statusline.sh"
+        echo "    ✓ Status line script (statusline.sh) — requires bash + jq"
     fi
 
-    # settings.json (merge hooks only)
+    # settings.json (merge — add missing keys, never overwrite user values)
     local SETTINGS="$TARGET/settings.json"
     python - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
 import json, sys, os
@@ -203,6 +204,11 @@ if os.path.exists(settings_path):
         existing = {}
 else:
     existing = {}
+# Merge top-level keys that don't exist yet (never overwrite user values)
+for key in ("model", "effortLevel", "statusLine", "permissions", "worktree"):
+    if key not in existing and key in our:
+        existing[key] = our[key]
+# Merge hooks: add event keys that don't exist yet
 if "hooks" not in existing:
     existing["hooks"] = {}
 for k, v in our.get("hooks", {}).items():

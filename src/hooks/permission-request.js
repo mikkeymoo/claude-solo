@@ -17,9 +17,10 @@
 import { createInterface } from 'readline';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Configuration: set to false for a more conservative approval mode
-// that only auto-approves read-only operations and asks for the rest.
-const ALLOW_ALL = true;
+// Configuration: set CLAUDE_SOLO_ALLOW_ALL=1 to auto-approve everything
+// (useful for --dangerouslySkipPermissions or fully trusted environments).
+// Default: conservative mode — only auto-approves read-only operations.
+const ALLOW_ALL = process.env.CLAUDE_SOLO_ALLOW_ALL === '1';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const rl = createInterface({ input: process.stdin });

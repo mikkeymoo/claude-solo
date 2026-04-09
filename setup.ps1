@@ -152,15 +152,12 @@ function Install-To($TARGET) {
         Write-Host "    ✓ MCP template (mcp.json) — enable servers you need" -ForegroundColor Green
     }
 
-    # Status line config (copy but don't overwrite)
-    $SL_SRC = "$REPO_DIR\src\settings\statusline.json"
-    $SL_DST = "$TARGET\statusline.json"
-    if ((Test-Path $SL_SRC) -and -not (Test-Path $SL_DST)) {
-        Copy-Item $SL_SRC $SL_DST
-        Write-Host "    ✓ Status line config (statusline.json)" -ForegroundColor Green
-    }
+    # Status line — Windows: bash not available by default, skip the sh script
+    # The statusLine is wired in settings.json to bash ~/.claude/statusline.sh
+    # Users on Windows can enable this via WSL or skip it entirely.
+    Write-Host "    ℹ  Status line requires bash+jq (WSL or Git Bash) — see statusline.sh" -ForegroundColor Gray
 
-    # settings.json
+    # settings.json (merge — add missing keys, never overwrite user values)
     $SETTINGS_PATH = "$TARGET\settings.json"
     $OUR_SETTINGS  = Get-Content "$REPO_DIR\src\settings\settings.json" -Raw | ConvertFrom-Json
 
@@ -174,6 +171,14 @@ function Install-To($TARGET) {
         $existing_settings = [PSCustomObject]@{}
     }
 
+    # Merge top-level keys that don't exist yet (never overwrite user values)
+    foreach ($key in @("model","effortLevel","statusLine","permissions","worktree")) {
+        if (-not $existing_settings.PSObject.Properties[$key] -and $OUR_SETTINGS.PSObject.Properties[$key]) {
+            $existing_settings | Add-Member -MemberType NoteProperty -Name $key -Value $OUR_SETTINGS.$key
+        }
+    }
+
+    # Merge hooks: add event keys that don't exist yet
     if (-not $existing_settings.PSObject.Properties["hooks"]) {
         $existing_settings | Add-Member -MemberType NoteProperty -Name "hooks" -Value $OUR_SETTINGS.hooks
     } else {
