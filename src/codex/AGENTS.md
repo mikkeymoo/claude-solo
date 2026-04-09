@@ -4,6 +4,7 @@
 This project supports the same /mm workflow in Codex using generated skills.
 
 Command routing:
+- `/mm:a11y` -> use `$mm-a11y`
 - `/mm:adversarial` -> use `$mm-adversarial`
 - `/mm:aislopcleaner` -> use `$mm-aislopcleaner`
 - `/mm:autopilot` -> use `$mm-autopilot`
@@ -14,6 +15,7 @@ Command routing:
 - `/mm:ci` -> use `$mm-ci`
 - `/mm:compliance` -> use `$mm-compliance`
 - `/mm:deepsearch` -> use `$mm-deepsearch`
+- `/mm:deps` -> use `$mm-deps`
 - `/mm:dev-docs-update` -> use `$mm-dev-docs-update`
 - `/mm:dev-docs` -> use `$mm-dev-docs`
 - `/mm:distill` -> use `$mm-distill`
@@ -24,6 +26,9 @@ Command routing:
 - `/mm:github-setup` -> use `$mm-github-setup`
 - `/mm:handoff` -> use `$mm-handoff`
 - `/mm:incident` -> use `$mm-incident`
+- `/mm:map` -> use `$mm-map`
+- `/mm:migrate` -> use `$mm-migrate`
+- `/mm:onboard` -> use `$mm-onboard`
 - `/mm:parallel` -> use `$mm-parallel`
 - `/mm:pause` -> use `$mm-pause`
 - `/mm:plan` -> use `$mm-plan`
@@ -41,6 +46,7 @@ Command routing:
 - `/mm:security` -> use `$mm-security`
 - `/mm:ship` -> use `$mm-ship`
 - `/mm:sql-dev` -> use `$mm-sql-dev`
+- `/mm:stale` -> use `$mm-stale`
 - `/mm:tdd` -> use `$mm-tdd`
 - `/mm:test-route` -> use `$mm-test-route`
 - `/mm:test` -> use `$mm-test`
