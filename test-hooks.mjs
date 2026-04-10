@@ -663,12 +663,12 @@ check('unreadable CHECKPOINT.md → graceful fallback', () => {
 // ── 15. Integration: render pipeline output ───────────────────────────────────
 console.log('\nIntegration: render pipeline');
 
-check('render produces exactly 43 commands', () => {
+check('render produces exactly 50 commands', () => {
   const result = spawnSync('node', ['scripts/render-providers.mjs'], {
     encoding: 'utf8', cwd: ROOT,
   });
   assert(result.status === 0, `render failed: ${result.stderr}`);
-  assert(result.stdout.includes('43'), `expected 43 commands, got: ${result.stdout.trim()}`);
+  assert(result.stdout.includes('50'), `expected 50 commands, got: ${result.stdout.trim()}`);
 });
 
 check('new skills present in src/commands/mm/', () => {
@@ -687,16 +687,18 @@ check('new hook files present in src/hooks/', () => {
   const newHooks = [
     'post-compact.js', 'worktree-create.js', 'post-tool-use-failure.js',
     'file-changed.js', 'config-change.js', 'instructions-loaded.js',
+    'lsp-first-guard.js', 'bash-grep-block.js', 'lsp-first-read-guard.js',
+    'lsp-pre-delegation.js', 'lsp-usage-tracker.js',
   ];
   for (const h of newHooks) {
     assert(existsSync(join(ROOT, 'src', 'hooks', h)), `missing hook: ${h}`);
   }
 });
 
-check('settings.json registers all 14 hook events', () => {
+check('settings.json registers all 18 hook events', () => {
   const settings = JSON.parse(readFileSync(join(ROOT, 'src', 'settings', 'settings.json'), 'utf8'));
   const events = Object.keys(settings.hooks);
-  assert(events.length === 14, `expected 14 events, got ${events.length}: ${events.join(', ')}`);
+  assert(events.length === 18, `expected 18 events, got ${events.length}: ${events.join(', ')}`);
   const required = [
     'PostCompact', 'WorktreeCreate', 'PostToolUseFailure',
     'FileChanged', 'ConfigChange', 'InstructionsLoaded',
@@ -733,6 +735,211 @@ check('skill files contain required sections', () => {
       assert(content.includes(term), `${file} missing: "${term}"`);
     }
   }
+});
+
+// ── 16. LSP enforcement hooks ─────────────────────────────────────────────────
+console.log('\nlsp-first-guard.js');
+
+function runAt(hookFile, payload, cwd) {
+  return spawnSync('node', [join(HOOKS, hookFile)], {
+    input: JSON.stringify(payload),
+    encoding: 'utf8',
+    cwd: cwd || ROOT,
+  });
+}
+
+check('blocks Grep with PascalCase symbol', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Grep', tool_input: { pattern: 'MyComponent', path: 'src/' } });
+  const out = JSON.parse(r.stdout);
+  assert(out.decision === 'block', `expected block, got: ${out.decision}`);
+});
+
+check('blocks Grep with camelCase symbol', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Grep', tool_input: { pattern: 'handleSubmit', path: 'src/' } });
+  const out = JSON.parse(r.stdout);
+  assert(out.decision === 'block', `expected block, got: ${out.decision}`);
+});
+
+check('allows Grep with TODO pattern', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Grep', tool_input: { pattern: 'TODO', path: 'src/' } });
+  assert(r.stdout.trim() === '', `expected no output, got: ${r.stdout}`);
+  assert(r.status === 0);
+});
+
+check('allows Grep on .md glob', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Grep', tool_input: { pattern: 'handleSubmit', glob: '*.md' } });
+  assert(r.stdout.trim() === '', `expected no output for .md glob`);
+  assert(r.status === 0);
+});
+
+check('allows Grep on node_modules path', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Grep', tool_input: { pattern: 'handleSubmit', path: 'node_modules/' } });
+  assert(r.stdout.trim() === '', `expected no output for node_modules`);
+  assert(r.status === 0);
+});
+
+check('passes through non-Grep tool', () => {
+  const r = run('lsp-first-guard.js', { tool_name: 'Read', tool_input: { file_path: 'src/index.ts' } });
+  assert(r.status === 0);
+  assert(r.stdout.trim() === '');
+});
+
+console.log('\nbash-grep-block.js');
+
+check('blocks grep with camelCase symbol targeting src/', () => {
+  const r = run('bash-grep-block.js', { tool_name: 'Bash', tool_input: { command: 'grep -r "handleSubmit" src/' } });
+  const out = JSON.parse(r.stdout);
+  assert(out.decision === 'block', `expected block, got: ${out.decision}`);
+});
+
+check('allows git grep', () => {
+  const r = run('bash-grep-block.js', { tool_name: 'Bash', tool_input: { command: 'git grep "handleSubmit"' } });
+  assert(r.stdout.trim() === '', 'git grep should be allowed');
+  assert(r.status === 0);
+});
+
+check('allows grep on .sql files', () => {
+  const r = run('bash-grep-block.js', { tool_name: 'Bash', tool_input: { command: 'grep "handleSubmit" --include=*.sql' } });
+  assert(r.stdout.trim() === '', 'sql grep should be allowed');
+  assert(r.status === 0);
+});
+
+check('passes through non-grep bash command', () => {
+  const r = run('bash-grep-block.js', { tool_name: 'Bash', tool_input: { command: 'ls src/' } });
+  assert(r.status === 0);
+  assert(r.stdout.trim() === '');
+});
+
+console.log('\nlsp-first-read-guard.js');
+
+const lspStateDir = join(os.homedir(), '.claude', 'state');
+const crypto = await import('crypto');
+function lspStatePath(cwd) {
+  const hash = crypto.createHash('md5').update(cwd).digest('hex').slice(0, 12);
+  return join(lspStateDir, `lsp-ready-${hash}`);
+}
+
+check('blocks .ts read with no warmup state', () => {
+  const coldDir = join(tmpBase, 'cold-lsp');
+  mkdirSync(coldDir, { recursive: true });
+  const stateFile = lspStatePath(coldDir);
+  try { rmSync(stateFile); } catch {}
+  const r = runAt('lsp-first-read-guard.js',
+    { tool_name: 'Read', tool_input: { file_path: join(coldDir, 'index.ts') } },
+    coldDir
+  );
+  assert(r.status === 2, `expected exit 2 (block), got: ${r.status}\nstderr: ${r.stderr}`);
+});
+
+check('allows .md read without warmup', () => {
+  const coldDir = join(tmpBase, 'cold-lsp-md');
+  mkdirSync(coldDir, { recursive: true });
+  const stateFile = lspStatePath(coldDir);
+  try { rmSync(stateFile); } catch {}
+  const r = runAt('lsp-first-read-guard.js',
+    { tool_name: 'Read', tool_input: { file_path: join(coldDir, 'README.md') } },
+    coldDir
+  );
+  assert(r.status === 0, `expected exit 0, got: ${r.status}`);
+});
+
+check('allows .ts read after warmup (nav_count >= 2)', () => {
+  const warmDir = join(tmpBase, 'warm-lsp');
+  mkdirSync(warmDir, { recursive: true });
+  const stateFile = lspStatePath(warmDir);
+  writeFileSync(stateFile, JSON.stringify({
+    cwd: warmDir, warmup_done: true, nav_count: 2,
+    read_count: 0, read_files: [], timestamp: Date.now(),
+  }));
+  const r = runAt('lsp-first-read-guard.js',
+    { tool_name: 'Read', tool_input: { file_path: join(warmDir, 'index.ts') } },
+    warmDir
+  );
+  assert(r.status === 0, `expected exit 0 after warmup, got: ${r.status}\nstderr: ${r.stderr}`);
+  try { rmSync(stateFile); } catch {}
+});
+
+check('allows package.json read without warmup', () => {
+  const coldDir = join(tmpBase, 'cold-pkg');
+  mkdirSync(coldDir, { recursive: true });
+  const stateFile = lspStatePath(coldDir);
+  try { rmSync(stateFile); } catch {}
+  const r = runAt('lsp-first-read-guard.js',
+    { tool_name: 'Read', tool_input: { file_path: join(coldDir, 'package.json') } },
+    coldDir
+  );
+  assert(r.status === 0, `package.json should be exempt`);
+});
+
+console.log('\nlsp-pre-delegation.js');
+
+check('allows short prompts (< 200 chars)', () => {
+  const r = run('lsp-pre-delegation.js', {
+    tool_name: 'Agent',
+    tool_input: { prompt: 'short prompt', subagent_type: 'swarm-implementer' },
+  });
+  assert(r.status === 0, 'short prompt should be allowed');
+});
+
+check('allows exempt agent types (planner)', () => {
+  const r = run('lsp-pre-delegation.js', {
+    tool_name: 'Agent',
+    tool_input: { prompt: 'x'.repeat(250), subagent_type: 'planner' },
+  });
+  assert(r.status === 0, 'planner should be exempt');
+});
+
+check('allows when no .task dir exists', () => {
+  const r = runAt('lsp-pre-delegation.js', {
+    tool_name: 'Agent',
+    tool_input: { prompt: 'x'.repeat(250), subagent_type: 'swarm-implementer' },
+  }, tmpBase);
+  assert(r.status === 0, 'no .task dir → should pass');
+});
+
+check('passes through non-Agent tool', () => {
+  const r = run('lsp-pre-delegation.js', {
+    tool_name: 'Bash',
+    tool_input: { command: 'ls' },
+  });
+  assert(r.status === 0);
+});
+
+console.log('\nlsp-usage-tracker.js');
+
+check('ignores non-cclsp tool names', () => {
+  const r = run('lsp-usage-tracker.js', {
+    tool_name: 'Bash', tool_response: { content: 'ok' },
+  });
+  assert(r.status === 0, 'non-cclsp should exit 0');
+  assert(r.stdout.trim() === '', 'should produce no output');
+});
+
+check('emits systemMessage on cold-start No Project error', () => {
+  const r = run('lsp-usage-tracker.js', {
+    tool_name: 'mcp__cclsp__find_workspace_symbols',
+    tool_response: { error: 'No Project. ThrowNoProject' },
+  });
+  assert(r.status === 0);
+  const out = JSON.parse(r.stdout);
+  assert(out.systemMessage, 'should emit systemMessage for cold-start error');
+  assert(out.systemMessage.includes('No Project'), `unexpected message: ${out.systemMessage}`);
+});
+
+check('creates state file on successful LSP call', () => {
+  const trackerDir = join(tmpBase, 'lsp-tracker');
+  mkdirSync(trackerDir, { recursive: true });
+  const stateFile = lspStatePath(trackerDir);
+  try { rmSync(stateFile); } catch {}
+  const r = runAt('lsp-usage-tracker.js', {
+    tool_name: 'mcp__cclsp__get_diagnostics',
+    tool_response: { content: [{ type: 'text', text: '[]' }] },
+  }, trackerDir);
+  assert(r.status === 0);
+  assert(existsSync(stateFile), 'state file should be created after successful call');
+  const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+  assert(state.warmup_done === true, 'warmup_done should be true');
+  try { rmSync(stateFile); } catch {}
 });
 
 // ── Cleanup ──────────────────────────────────────────────────────────────────
