@@ -8,7 +8,7 @@
  * Exit 0: task creation proceeds
  * Exit 2: task creation blocked with feedback
  *
- * Input (stdin): JSON { session_id, cwd, hook_event_name, task }
+ * Input (stdin): JSON { session_id, cwd, hook_event_name, task_id, task_subject, task_description }
  */
 
 import { createInterface } from 'readline';
@@ -25,8 +25,9 @@ rl.on('close', () => {
     process.exit(0);
   }
 
-  const task = input.task || {};
-  const title = task.title || task.name || task.description || '';
+  // Fields are top-level: task_subject, task_description (not nested under task)
+  const title = input.task_subject || input.task_description || '';
+  const desc = input.task_description || '';
   const issues = [];
 
   // Rule 1: Task must have a meaningful title (>10 chars)
@@ -49,7 +50,6 @@ rl.on('close', () => {
   }
 
   // Rule 3: Warn about mega-tasks (very long descriptions suggest scope creep)
-  const desc = task.description || '';
   if (desc.length > 2000) {
     issues.push('Task description is very long (>2000 chars). Consider splitting into smaller tasks.');
   }
