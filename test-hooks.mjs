@@ -3,7 +3,7 @@
  * Tests all new hooks with simulated Claude Code payloads.
  */
 
-import { spawnSync } from 'child_process';
+import { spawnSync, execSync } from 'child_process';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir as _homedir } from 'os';
@@ -82,13 +82,14 @@ const srcDir = join(tmpBase, 'wt-src');
 const destDir = join(tmpBase, 'wt-dest');
 mkdirSync(join(srcDir, '.claude'), { recursive: true });
 mkdirSync(destDir, { recursive: true });
+// Init a git repo so `git worktree add` succeeds
+execSync('git init && git config user.email "test@test.com" && git config user.name "Test" && git commit --allow-empty -m "init"', { cwd: srcDir });
 
 check('creates default worktree-copy-list when absent', () => {
   const srcNoList = join(tmpBase, 'wt-src-nolist');
-  const destNoList = join(tmpBase, 'wt-dest-nolist');
   mkdirSync(join(srcNoList, '.claude'), { recursive: true });
-  mkdirSync(destNoList, { recursive: true });
-  const r = run('worktree-create.js', { worktree_path: destNoList, cwd: srcNoList });
+  execSync('git init && git config user.email "test@test.com" && git config user.name "Test" && git commit --allow-empty -m "init"', { cwd: srcNoList });
+  const r = run('worktree-create.js', { cwd: srcNoList });
   assert(r.status === 0, `exit ${r.status}`);
   assert(existsSync(join(srcNoList, '.claude', 'worktree-copy-list')), 'should create default list');
   const content = readFileSync(join(srcNoList, '.claude', 'worktree-copy-list'), 'utf8');
@@ -98,32 +99,29 @@ check('creates default worktree-copy-list when absent', () => {
 check('copies listed files to worktree', () => {
   writeFileSync(join(srcDir, '.claude', 'worktree-copy-list'), '.env\n');
   writeFileSync(join(srcDir, '.env'), 'SECRET=test123\n');
-  const r = run('worktree-create.js', { worktree_path: destDir, cwd: srcDir });
+  const r = run('worktree-create.js', { cwd: srcDir });
   assert(r.status === 0, `exit ${r.status}`);
-  assert(existsSync(join(destDir, '.env')), 'should copy .env to worktree');
-  const content = readFileSync(join(destDir, '.env'), 'utf8');
+  const actualWorktreePath = r.stdout.trim();
+  assert(existsSync(join(actualWorktreePath, '.env')), 'should copy .env to worktree');
+  const content = readFileSync(join(actualWorktreePath, '.env'), 'utf8');
   assert(content.includes('SECRET=test123'), 'content should match');
 });
 
 check('skips missing files silently', () => {
   writeFileSync(join(srcDir, '.claude', 'worktree-copy-list'), '.env\nnonexistent.secret\n');
-  const dest2 = join(tmpBase, 'wt-dest2');
-  mkdirSync(dest2, { recursive: true });
-  const r = run('worktree-create.js', { worktree_path: dest2, cwd: srcDir });
+  const r = run('worktree-create.js', { cwd: srcDir });
   assert(r.status === 0, `exit ${r.status}: ${r.stderr}`);
 });
 
-check('no-op when worktree_path missing', () => {
-  const r = run('worktree-create.js', { cwd: srcDir });
-  assert(r.status === 0, `should not crash`);
-  assert(r.stderr.includes('no worktree_path'), 'should warn');
+check('no-op when base_directory missing', () => {
+  const r = run('worktree-create.js', { worktree_name: 'test-wt' });
+  assert(r.status === 1, `should exit with error`);
+  assert(r.stderr.includes('no base_directory'), 'should warn');
 });
 
 check('blocks path traversal in copy list', () => {
   writeFileSync(join(srcDir, '.claude', 'worktree-copy-list'), '../../etc/passwd\n.env\n');
-  const dest3 = join(tmpBase, 'wt-dest3');
-  mkdirSync(dest3, { recursive: true });
-  const r = run('worktree-create.js', { worktree_path: dest3, cwd: srcDir });
+  const r = run('worktree-create.js', { cwd: srcDir });
   assert(r.status === 0, 'should not crash');
   assert(r.stderr.includes('outside project root'), 'should warn about traversal');
 });
@@ -477,27 +475,27 @@ console.log('\nworktree-create.js (additional coverage)');
 
 check('absolute path in copy list is rejected', () => {
   const srcAbs = join(tmpBase, 'wt-src-abs');
-  const destAbs = join(tmpBase, 'wt-dest-abs');
   mkdirSync(join(srcAbs, '.claude'), { recursive: true });
-  mkdirSync(destAbs, { recursive: true });
+  execSync('git init && git config user.email "test@test.com" && git config user.name "Test" && git commit --allow-empty -m "init"', { cwd: srcAbs });
   // Write an absolute path to the copy list
   writeFileSync(join(srcAbs, '.claude', 'worktree-copy-list'), '/etc/hosts\n');
-  const r = run('worktree-create.js', { worktree_path: destAbs, cwd: srcAbs });
+  const r = run('worktree-create.js', { cwd: srcAbs });
   assert(r.status === 0, 'should not crash');
   assert(r.stderr.includes('outside project root'), 'should reject absolute path');
-  assert(!existsSync(join(destAbs, 'etc', 'hosts')), 'should not copy /etc/hosts');
+  const actualWorktreePath = r.stdout.trim();
+  assert(!existsSync(join(actualWorktreePath, 'etc', 'hosts')), 'should not copy /etc/hosts');
 });
 
 check('comments in copy list are ignored', () => {
   const srcCmt = join(tmpBase, 'wt-src-cmt');
-  const destCmt = join(tmpBase, 'wt-dest-cmt');
   mkdirSync(join(srcCmt, '.claude'), { recursive: true });
-  mkdirSync(destCmt, { recursive: true });
+  execSync('git init && git config user.email "test@test.com" && git config user.name "Test" && git commit --allow-empty -m "init"', { cwd: srcCmt });
   writeFileSync(join(srcCmt, '.claude', 'worktree-copy-list'), '# this is a comment\n.env\n');
   writeFileSync(join(srcCmt, '.env'), 'X=1');
-  const r = run('worktree-create.js', { worktree_path: destCmt, cwd: srcCmt });
+  const r = run('worktree-create.js', { cwd: srcCmt });
   assert(r.status === 0, 'should not crash');
-  assert(existsSync(join(destCmt, '.env')), 'should still copy .env');
+  const actualWorktreePath = r.stdout.trim();
+  assert(existsSync(join(actualWorktreePath, '.env')), 'should still copy .env');
 });
 
 // ── 10. file-changed.js — edge cases ─────────────────────────────────────────

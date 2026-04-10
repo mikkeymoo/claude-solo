@@ -88,6 +88,7 @@ rl.on('close', () => {
     const srcPath = resolve(baseDir, relPath);
     // Guard against path traversal
     if (!srcPath.startsWith(baseDir + '/') && !srcPath.startsWith(baseDir + '\\') && srcPath !== baseDir) {
+      process.stderr.write(`⚠️  claude-solo worktree-create: skipping "${relPath}" — outside project root\n`);
       continue;
     }
     if (!existsSync(srcPath)) continue;
