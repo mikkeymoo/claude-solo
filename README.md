@@ -1,6 +1,6 @@
 # claude-solo
 
-Best-of Claude Code config — 7-stage pipeline, 28 smart agents, 20 hooks, 49 skills, and starter rules in one install.
+Best-of Claude Code config — 7-stage pipeline, 28 smart agents, 25 hooks, 49 skills, and 9 starter rules in one install.
 
 Combines the best patterns from the Claude Code community. No domain lock-in.
 
@@ -205,7 +205,7 @@ node scripts/render-providers.mjs
 
 ---
 
-### Hooks — 20 hook events (all automatic)
+### Hooks — 25 hook events (all automatic)
 
 **Core Hooks:**
 | Hook file | Event | What it does |
@@ -230,6 +230,15 @@ node scripts/render-providers.mjs
 | `cwd-changed.js` | CwdChanged | Logs directory changes to stderr so Claude knows the active project switched |
 | `notification-idle.js` | Notification | Optional desktop/terminal notification when Claude finishes. Opt-in: `CLAUDE_SOLO_NOTIFY=bell\|os` |
 
+**LSP-First Hooks (require cclsp MCP — enforce symbol navigation over Grep/Read):**
+| Hook file | Event | What it does |
+|-----------|-------|-------------|
+| `lsp-first-guard.js` | PreToolUse (Grep) | Blocks Grep on camelCase/PascalCase/dotted code symbols — redirects to `find_references` or `find_workspace_symbols` |
+| `bash-grep-block.js` | PreToolUse (Bash) | Blocks shell `grep`/`rg`/`ag`/`ack` on code symbols — allows `git grep`, non-code paths, non-code file types |
+| `lsp-first-read-guard.js` | PreToolUse (Read) | 5-gate progressive system: requires LSP warmup first, 2 free reads, then blocks until LSP nav calls are made |
+| `lsp-pre-delegation.js` | PreToolUse (Agent) | Blocks implementation agents launched without `## LSP CONTEXT` in prompt (subagents have no MCP access) |
+| `lsp-usage-tracker.js` | PostToolUse (mcp__cclsp__*) | Tracks LSP tool usage per-project in `~/.claude/state/` — unlocks read gates after warmup + nav calls |
+
 **Swarm Hooks (for agent teams):**
 | Hook | Event | What it does |
 |------|-------|-------------|
@@ -241,7 +250,7 @@ node scripts/render-providers.mjs
 
 ---
 
-### Starter Rules — 8 rule files
+### Starter Rules — 9 rule files
 
 Installed to `~/.claude/rules/` (never overwrites your existing rules):
 
@@ -255,6 +264,7 @@ Installed to `~/.claude/rules/` (never overwrites your existing rules):
 | `security-sensitive.md` | No DIY crypto, constant-time comparison, parameterized queries, security headers |
 | `config-files.md` | No `strict: false`, no blanket eslint-disable, pin tool versions |
 | `documentation.md` | Update docs in same commit, document the why not the what, no stale TODOs |
+| `lsp-first.md` | When cclsp MCP connected, use LSP tools over Grep for all symbol navigation |
 
 Rules auto-apply when you edit files matching their path patterns via `/mm:rules` or Claude Code's native rules system.
 
