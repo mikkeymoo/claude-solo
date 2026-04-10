@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-'use strict';
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const FORCE_LSP_CONTEXT_AGENTS = [
   'backend-explorer', 'frontend-explorer', 'db-explorer',
