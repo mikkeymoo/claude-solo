@@ -95,7 +95,7 @@ function triage(toolName, toolInput, error, exitCode) {
 
   // ── Tool-specific patterns ──────────────────────────────────────────────
   if (toolName === 'Edit' || toolName === 'Write') {
-    if (errStr.includes('old_string not found') || errStr.includes('no match')) {
+    if (errStr.includes('old_string not found') || errStr.includes('no match') || errStr.includes('string to replace not found')) {
       hints.push('Edit failed: old_string not found in file.');
       hints.push('- Re-read the file with Read tool — it may have changed');
       hints.push('- Check for invisible characters or line ending differences');

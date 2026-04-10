@@ -8,8 +8,7 @@
  *    on Windows via Claude Code's updatedInput mechanism.
  *
  * Input (stdin): JSON { tool_name, tool_input }
- * Output (stdout): hookSpecificOutput with updatedInput when rtk wrapping
- *                  applied, otherwise { action: 'continue' }
+ * Output (stdout): updatedInput when rtk wrapping applied, otherwise { action: 'continue' }
  */
 
 import { createInterface } from 'readline';
@@ -124,11 +123,7 @@ rl.on('close', () => {
     if (modified) {
       process.stderr.write(`🔧 rtk: auto-wrapped for token savings\n`);
       process.stdout.write(JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'allow',
-          updatedInput: { command: wrappedCmd },
-        },
+        updatedInput: { command: wrappedCmd },
       }));
       return;
     }

@@ -51,6 +51,26 @@ process.stdin.on('end', () => {
     const toolName = data.tool_name || '';
     if (!toolName.startsWith('mcp__cclsp__')) process.exit(0);
 
+    // PreToolUse context — no tool_response yet. Write warmup flag optimistically
+    // so the lsp-first-read-guard unblocks even when PostToolUse doesn't fire for MCP tools.
+    const hasResponse = 'tool_response' in data || 'result' in data;
+    if (!hasResponse) {
+      if (!toolName.includes('find_workspace_symbols')) {
+        if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
+        const flagPath = getFlagPath();
+        const existing = readFlag(flagPath) || {
+          cwd: process.cwd(), warmup_done: false, nav_count: 0, read_count: 0, read_files: [],
+        };
+        if (!existing.warmup_done) {
+          existing.warmup_done = true;
+          existing.timestamp = Date.now();
+          existing.last_tool = toolName;
+          fs.writeFileSync(flagPath, JSON.stringify(existing));
+        }
+      }
+      process.exit(0);
+    }
+
     const resp = data.tool_response || data.result || {};
 
     if (isColdStartError(resp)) {
