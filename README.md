@@ -495,8 +495,9 @@ Or add to your shell profile / `settings.json` env block.
 
 ## Optional: MCP Servers
 
-claude-solo works without any MCPs. A template (`mcp.json`) is installed with 7 pre-configured servers — all disabled by default:
+claude-solo works without any MCPs. A template (`mcp.json`) is installed with 8 pre-configured servers — all disabled by default:
 
+- **cclsp** — LSP navigation for code symbols (`find_definition`, `find_references`, `get_diagnostics`). Enables the LSP-first hooks. Requires `npm install -g cclsp` + language servers (`pip install python-lsp-server` for Python)
 - **GitHub** — PRs, issues, Actions, code search
 - **Playwright** — browser automation and E2E testing
 - **PostgreSQL** — read-only database access

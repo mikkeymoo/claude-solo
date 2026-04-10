@@ -3,6 +3,16 @@
   "_comment": "claude-solo recommended MCP servers. Copy to .mcp.json in your project root or ~/.claude/.mcp.json for global use. Fill in credentials where needed.",
 
   "mcpServers": {
+    "cclsp": {
+      "_comment": "LSP navigation — find_definition, find_references, get_diagnostics, find_workspace_symbols. Requires: npm install -g cclsp. Python: pip install python-lsp-server. See https://github.com/ktnyt/cclsp for config.",
+      "command": "cclsp",
+      "args": [],
+      "env": {
+        "CCLSP_CONFIG_PATH": "${CCLSP_CONFIG_PATH}"
+      },
+      "disabled": true
+    },
+
     "github": {
       "_comment": "GitHub API: repos, PRs, issues, code search, Actions. Requires GITHUB_TOKEN.",
       "command": "npx",
