@@ -1,18 +1,13 @@
 ---
 name: mm-tdd
-description: "Claude-solo command skill"
+description: "Strict Test-Driven Development mode. No production code before a failing test. Red → green → refactor cycle."
 ---
 
 # mm-tdd
 
-Claude-solo command skill
+Strict Test-Driven Development mode. No production code before a failing test. Red → green → refactor cycle.
 
 ## Instructions
----
-name: mm:tdd
-description: "Strict Test-Driven Development mode. No production code before a failing test. Red → green → refactor cycle."
----
-
 Strict Test-Driven Development mode. No production code before a failing test.
 
 Activate for the current task or read `.planning/PLAN.md` for the next task.

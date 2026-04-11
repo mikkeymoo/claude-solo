@@ -4,4 +4,7 @@
 .omx/
 .claude/
 .planning/
+.claude-flow/
+.swarm/
+logs/
 convert-skills.mjs

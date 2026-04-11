@@ -1,18 +1,13 @@
 ---
 name: mm-tokens
-description: "Claude-solo command skill"
+description: "Show estimated token usage breakdown for today — total, by tool, and session cost estimate."
 ---
 
 # mm-tokens
 
-Claude-solo command skill
+Show estimated token usage breakdown for today — total, by tool, and session cost estimate.
 
 ## Instructions
----
-name: mm:tokens
-description: "Show estimated token usage breakdown for today — total, by tool, and session cost estimate."
----
-
 Show estimated token usage for today's Claude Code session.
 
 Run this:

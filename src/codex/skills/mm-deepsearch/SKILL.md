@@ -1,19 +1,13 @@
 ---
 name: mm-deepsearch
-description: "Claude-solo command skill"
+description: "Multi-source research with synthesis and citations. Use before building something unfamiliar."
 ---
 
 # mm-deepsearch
 
-Claude-solo command skill
+Multi-source research with synthesis and citations. Use before building something unfamiliar.
 
 ## Instructions
----
-name: mm:deepsearch
-description: "Multi-source research with synthesis and citations. Use before building something unfamiliar."
-argument-hint: "[research question]"
----
-
 Multi-source research with synthesis and citations. Use when you need to understand something deeply before building it.
 
 Usage: `/mm:deepsearch [research question]`

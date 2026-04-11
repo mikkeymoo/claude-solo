@@ -1,18 +1,13 @@
 ---
 name: mm-compliance
-description: "Claude-solo command skill"
+description: "Enterprise compliance review — audit logging, PII handling, multi-tenancy isolation, SOC2 surface area, and regulatory checklist."
 ---
 
 # mm-compliance
 
-Claude-solo command skill
+Enterprise compliance review — audit logging, PII handling, multi-tenancy isolation, SOC2 surface area, and regulatory checklist.
 
 ## Instructions
----
-name: mm:compliance
-description: "Enterprise compliance review — audit logging, PII handling, multi-tenancy isolation, SOC2 surface area, and regulatory checklist."
----
-
 Enterprise compliance review. Checks audit logging, data handling, PII, and regulatory surface area.
 
 Not a legal opinion — a technical checklist for building software that won't fail an enterprise security review.

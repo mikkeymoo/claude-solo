@@ -1,18 +1,13 @@
 ---
 name: mm-retro
-description: "Claude-solo command skill"
+description: "Sprint retrospective — what shipped, what worked, what to fix, and priorities for next sprint. Final pipeline stage."
 ---
 
 # mm-retro
 
-Claude-solo command skill
+Sprint retrospective — what shipped, what worked, what to fix, and priorities for next sprint. Final pipeline stage.
 
 ## Instructions
----
-name: mm:retro
-description: "Sprint retrospective — what shipped, what worked, what to fix, and priorities for next sprint. Final pipeline stage."
----
-
 Sprint retrospective. Be concise and honest.
 
 Write `.planning/RETRO-[date].md` with:

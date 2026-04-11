@@ -1,19 +1,13 @@
 ---
 name: mm-distill
-description: "Claude-solo command skill"
+description: "Compress a large document for LLM consumption without losing information. Reduces token cost for context injection."
 ---
 
 # mm-distill
 
-Claude-solo command skill
+Compress a large document for LLM consumption without losing information. Reduces token cost for context injection.
 
 ## Instructions
----
-name: mm:distill
-description: "Compress a large document for LLM consumption without losing information. Reduces token cost for context injection."
-argument-hint: "[file path]"
----
-
 Compress a large document for LLM consumption without losing any information.
 
 Usage: `/mm:distill [file path]` — or distill `.planning/PLAN.md` if no file given.

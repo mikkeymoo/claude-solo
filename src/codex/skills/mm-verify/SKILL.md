@@ -1,18 +1,13 @@
 ---
 name: mm-verify
-description: "Claude-solo command skill"
+description: "Hard verification gate: lint, typecheck, tests, smoke check, changed files review, and secrets scan. Produces pass/fail evidence report."
 ---
 
 # mm-verify
 
-Claude-solo command skill
+Hard verification gate: lint, typecheck, tests, smoke check, changed files review, and secrets scan. Produces pass/fail evidence report.
 
 ## Instructions
----
-name: mm:verify
-description: "Hard verification gate: lint, typecheck, tests, smoke check, changed files review, and secrets scan. Produces pass/fail evidence report."
----
-
 Hard verification gate. Run this before /mm:ship to get a pass/fail evidence summary.
 
 This is NOT a code review — it's a mechanical check that everything works. Run all checks, report results, block shipping on failures.

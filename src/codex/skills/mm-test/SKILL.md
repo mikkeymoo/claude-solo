@@ -1,18 +1,13 @@
 ---
 name: mm-test
-description: "Claude-solo command skill"
+description: "Write and run unit, integration, and E2E tests. Reports coverage, flags gaps, and validates cross-platform compatibility."
 ---
 
 # mm-test
 
-Claude-solo command skill
+Write and run unit, integration, and E2E tests. Reports coverage, flags gaps, and validates cross-platform compatibility.
 
 ## Instructions
----
-name: mm:test
-description: "Write and run unit, integration, and E2E tests. Reports coverage, flags gaps, and validates cross-platform compatibility."
----
-
 Read `.planning/PLAN.md` (test matrix section) and the current codebase.
 
 Write and run tests:

@@ -1,18 +1,13 @@
 ---
 name: mm-ship
-description: "Claude-solo command skill"
+description: "Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist."
 ---
 
 # mm-ship
 
-Claude-solo command skill
+Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist.
 
 ## Instructions
----
-name: mm:ship
-description: "Prepare and ship: final test run, PR creation, merge, CI verification, and monitoring checklist."
----
-
 Prepare and ship the feature.
 
 1. **Final check** — run all tests one more time. If anything fails, stop and tell me.

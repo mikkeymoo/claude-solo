@@ -1,18 +1,13 @@
 ---
 name: mm-incident
-description: "Claude-solo command skill"
+description: "Production incident workflow: capture symptoms, reproduce, gather evidence, root cause analysis, fix, verify, and document."
 ---
 
 # mm-incident
 
-Claude-solo command skill
+Production incident workflow: capture symptoms, reproduce, gather evidence, root cause analysis, fix, verify, and document.
 
 ## Instructions
----
-name: mm:incident
-description: "Production incident workflow: capture symptoms, reproduce, gather evidence, root cause analysis, fix, verify, and document."
----
-
 Production incident workflow. Systematic debugging for when something is broken in production.
 
 This is not a code review or a general debugging session — this is triage for a live issue.

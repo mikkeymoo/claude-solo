@@ -1,18 +1,13 @@
 ---
 name: mm-aislopcleaner
-description: "Claude-solo command skill"
+description: "Regression-tests-first AI slop cleanup. Removes dead code, duplication, over-abstraction, and AI-generated padding without changing behavior."
 ---
 
 # mm-aislopcleaner
 
-Claude-solo command skill
+Regression-tests-first AI slop cleanup. Removes dead code, duplication, over-abstraction, and AI-generated padding without changing behavior.
 
 ## Instructions
----
-name: mm:aislopcleaner
-description: "Regression-tests-first AI slop cleanup. Removes dead code, duplication, over-abstraction, and AI-generated padding without changing behavior."
----
-
 Regression-tests-first AI slop cleanup. Removes noise without changing behavior.
 
 Use when code works but feels bloated, repetitive, over-abstracted, or obviously AI-generated.

@@ -1,18 +1,13 @@
 ---
 name: mm-docsync
-description: "Claude-solo command skill"
+description: "Synchronize documentation with current code state. Detects and fixes drift in README, CLAUDE.md, API docs, env files, and code comments."
 ---
 
 # mm-docsync
 
-Claude-solo command skill
+Synchronize documentation with current code state. Detects and fixes drift in README, CLAUDE.md, API docs, env files, and code comments.
 
 ## Instructions
----
-name: mm:docsync
-description: "Synchronize documentation with current code state. Detects and fixes drift in README, CLAUDE.md, API docs, env files, and code comments."
----
-
 Synchronize documentation with the current state of the code.
 
 Run this after significant code changes to catch doc/code drift before it compounds.
