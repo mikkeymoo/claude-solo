@@ -1,6 +1,6 @@
 {
   "$schema": "https://code.claude.com/schemas/mcp.json",
-  "_comment": "claude-solo recommended MCP servers. Copy to .mcp.json in your project root or ~/.claude/.mcp.json for global use. Fill in credentials where needed.",
+  "_comment": "claude-solo MCP servers. Copy to .mcp.json in your project root or ~/.claude/.mcp.json for global use. Fill in credentials where needed.",
 
   "mcpServers": {
     "cclsp": {
@@ -19,61 +19,6 @@
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-      },
-      "disabled": true
-    },
-
-    "playwright": {
-      "_comment": "Browser automation and E2E testing. No credentials needed.",
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"],
-      "env": {},
-      "disabled": true
-    },
-
-    "postgres": {
-      "_comment": "Read-only PostgreSQL access. Set your connection string.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
-      },
-      "disabled": true
-    },
-
-    "filesystem": {
-      "_comment": "File system access with configurable allowed directories.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "--allowed-directories", "."],
-      "env": {},
-      "disabled": true
-    },
-
-    "brave-search": {
-      "_comment": "Web search via Brave Search API. Free tier: 2000 queries/month.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": {
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
-      },
-      "disabled": true
-    },
-
-    "memory": {
-      "_comment": "Persistent knowledge graph for cross-session context.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {},
-      "disabled": true
-    },
-
-    "sentry": {
-      "_comment": "Query production errors and stack traces from Sentry.",
-      "command": "npx",
-      "args": ["-y", "@sentry/mcp-server"],
-      "env": {
-        "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}",
-        "SENTRY_ORG": "${SENTRY_ORG}"
       },
       "disabled": true
     }
