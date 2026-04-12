@@ -213,6 +213,12 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Status line script (statusline.sh) — requires bash + jq"
     fi
 
+    # Safe-mode settings (global only)
+    if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/settings/settings-safe.json" ]; then
+        cp "$REPO_DIR/src/settings/settings-safe.json" "$TARGET/settings-safe.json"
+        echo "    ✓ Safe-mode settings (settings-safe.json) — use: claude --safe"
+    fi
+
     # settings.json (merge — add missing keys, never overwrite user values)
     local SETTINGS="$TARGET/settings.json"
     python - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
@@ -297,7 +303,8 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
         done
         rm -f "$TARGET/hooks/package.json"
         rm -f "$TARGET/.claude-solo-source"
-        echo "    ✓ Removed hooks/package.json and .claude-solo-source"
+        rm -f "$TARGET/settings-safe.json"
+        echo "    ✓ Removed hooks/package.json, .claude-solo-source, settings-safe.json"
     fi
 
     echo "    ✓ Done. Your customized files (rules, mcp.json, custom agents) are untouched."
@@ -334,4 +341,6 @@ echo "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:sh
 echo ""
 echo "Power:   /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor"
 echo "New:     /mm:map  /mm:deps  /mm:a11y  /mm:migrate  /mm:onboard  /mm:stale"
+echo ""
+echo "Safe mode for untrusted repos:  claude --safe"
 echo ""
