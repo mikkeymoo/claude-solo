@@ -219,6 +219,28 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Safe-mode settings (settings-safe.json) — use: claude --safe"
     fi
 
+    # Claude wrapper script (global only, requires claude-code-cache-fix)
+    if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/bin/claude" ]; then
+        local WRAPPER_SRC="$REPO_DIR/src/bin/claude"
+        local WRAPPER_DST="$HOME/.local/bin/claude"
+        local CACHE_FIX_PKG="$HOME/.npm-global/lib/node_modules/claude-code-cache-fix/preload.mjs"
+        if [ -f "$CACHE_FIX_PKG" ]; then
+            mkdir -p "$HOME/.local/bin"
+            if [ -f "$WRAPPER_DST" ]; then
+                # Backup existing wrapper if it differs
+                if ! diff -q "$WRAPPER_SRC" "$WRAPPER_DST" >/dev/null 2>&1; then
+                    cp "$WRAPPER_DST" "$WRAPPER_DST.bak"
+                    echo "    📦 Backed up existing wrapper to ~/.local/bin/claude.bak"
+                fi
+            fi
+            cp "$WRAPPER_SRC" "$WRAPPER_DST"
+            chmod +x "$WRAPPER_DST"
+            echo "    ✓ Claude wrapper (~/.local/bin/claude) — safe mode + cache-fix"
+        else
+            echo "    ⊘ Skipped wrapper: claude-code-cache-fix not installed (npm i -g claude-code-cache-fix)"
+        fi
+    fi
+
     # settings.json (merge — add missing keys, never overwrite user values)
     local SETTINGS="$TARGET/settings.json"
     python - "$SETTINGS" "$REPO_DIR/src/settings/settings.json" <<'PYEOF'
@@ -305,6 +327,12 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
         rm -f "$TARGET/.claude-solo-source"
         rm -f "$TARGET/settings-safe.json"
         echo "    ✓ Removed hooks/package.json, .claude-solo-source, settings-safe.json"
+        # Remove wrapper only if it matches ours (don't delete user's custom wrapper)
+        local WRAPPER_DST="$HOME/.local/bin/claude"
+        if [ -f "$WRAPPER_DST" ] && grep -q "claude-solo" "$WRAPPER_DST" 2>/dev/null; then
+            rm -f "$WRAPPER_DST"
+            echo "    ✓ Removed wrapper (~/.local/bin/claude)"
+        fi
     fi
 
     echo "    ✓ Done. Your customized files (rules, mcp.json, custom agents) are untouched."
