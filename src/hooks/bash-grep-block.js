@@ -19,6 +19,14 @@ process.stdin.on('end', () => {
   if (/supabase[\\/]migrations|\.task[\\/]|\.claude[\\/]|node_modules|knowledge-vault/i.test(cmd)) process.exit(0);
   if (/--include=?\S*\.(sql|md|json|yaml|yml|txt|env|sh|css|scss|log)\b/i.test(cmd)) process.exit(0);
 
+  // Skip commands where grep/rg only appears inside a python/ruby/node inline script
+  // e.g. `python -c "import re; print('Trade')"` — the "Trade" is not a grep pattern
+  if (/\b(python3?|ruby|node)\s+-[ce]\s/.test(cmd)) {
+    // Strip the inline script content, then re-check if grep/rg is still present
+    const withoutInline = cmd.replace(/\b(?:python3?|ruby|node)\s+-[ce]\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '');
+    if (!/\b(grep|rg|ag|ack)\b/.test(withoutInline)) process.exit(0);
+  }
+
   const cleaned = cmd.replace(/\\"/g, '"');
   const patternMatch =
     cleaned.match(/\b(?:grep|rg|ag|ack)\s+(?:-\S+\s+)*"([^"]+)"/) ||
