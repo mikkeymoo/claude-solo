@@ -1,18 +1,46 @@
 #!/usr/bin/env bash
 # claude-solo wrapper — cache-fix preload + safe mode support
+# https://github.com/cnighswonger/claude-code-cache-fix
 set -euo pipefail
-CLAUDE_NPM_CLI="$HOME/.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js"
-CACHE_FIX_PRELOAD="$HOME/.npm-global/lib/node_modules/claude-code-cache-fix/preload.mjs"
-if [ ! -f "$CLAUDE_NPM_CLI" ]; then
-  echo "Error: Claude Code npm package not found at $CLAUDE_NPM_CLI" >&2
-  echo "Try reinstalling with: npm install -g @anthropic-ai/claude-code" >&2
+
+# Resolve npm global prefix dynamically (works with nvm, brew, system npm, scoop)
+NPM_PREFIX="$(npm config get prefix 2>/dev/null || echo "$HOME/.npm-global")"
+
+# Fallback search order for claude-code CLI
+_find_npm_module() {
+  local mod="$1"
+  local candidates=(
+    "$NPM_PREFIX/lib/node_modules/$mod"
+    "$HOME/.npm-global/lib/node_modules/$mod"
+    "$HOME/.npm/lib/node_modules/$mod"
+    "/usr/local/lib/node_modules/$mod"
+    "/usr/lib/node_modules/$mod"
+  )
+  # Also check nvm active version
+  if [ -n "${NVM_BIN:-}" ]; then
+    candidates+=("$(dirname "$NVM_BIN")/lib/node_modules/$mod")
+  fi
+  for p in "${candidates[@]}"; do
+    [ -e "$p" ] && echo "$p" && return 0
+  done
+  return 1
+}
+
+CLAUDE_PKG="$(_find_npm_module "@anthropic-ai/claude-code" 2>/dev/null || true)"
+if [ -z "$CLAUDE_PKG" ] || [ ! -f "$CLAUDE_PKG/cli.js" ]; then
+  echo "Error: Claude Code npm package not found." >&2
+  echo "Install with: npm install -g @anthropic-ai/claude-code" >&2
   exit 1
 fi
-if [ ! -f "$CACHE_FIX_PRELOAD" ]; then
-  echo "Error: claude-code-cache-fix preload not found at $CACHE_FIX_PRELOAD" >&2
-  echo "Try reinstalling with: npm install -g claude-code-cache-fix" >&2
+CLAUDE_NPM_CLI="$CLAUDE_PKG/cli.js"
+
+CACHE_FIX_PKG="$(_find_npm_module "claude-code-cache-fix" 2>/dev/null || true)"
+if [ -z "$CACHE_FIX_PKG" ] || [ ! -f "$CACHE_FIX_PKG/preload.mjs" ]; then
+  echo "Error: claude-code-cache-fix not found." >&2
+  echo "Install with: npm install -g claude-code-cache-fix" >&2
   exit 1
 fi
+CACHE_FIX_PRELOAD="$CACHE_FIX_PKG/preload.mjs"
 
 # claude-code-cache-fix defaults (user-selected)
 : "${CACHE_FIX_IMAGE_KEEP_LAST:=3}"
