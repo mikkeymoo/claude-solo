@@ -261,13 +261,29 @@ function Install-To($TARGET) {
             $CacheFixPkg = "$(npm config get prefix)\node_modules\claude-code-cache-fix\preload.mjs"
         }
         if (Test-Path $CacheFixPkg) {
-            # On Windows, wrap to a .cmd shim since direct bash wrapper won't run
-            # The actual wrapper is a bash script — users with Git Bash get it via PATH
-            # Copy the bash wrapper and add a .cmd shim for Windows
             $WrapperDir = "$env:USERPROFILE\.local\bin"
             New-Item -ItemType Directory -Force -Path $WrapperDir | Out-Null
+
+            $WrapperPaths = @(
+                "$WrapperDir\claude",
+                "$WrapperDir\claude.cmd",
+                "$WrapperDir\claude.ps1"
+            )
+            $BackupSuffix = ".bak-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+            foreach ($WrapperPath in $WrapperPaths) {
+                if (Test-Path $WrapperPath) {
+                    Move-Item -LiteralPath $WrapperPath -Destination ($WrapperPath + $BackupSuffix) -Force
+                }
+            }
+
             Copy-Item "$REPO_DIR\src\bin\claude" "$WrapperDir\claude" -Force
-            Write-Host "    ✓ claude-code-cache-fix installed + wrapper (~/.local/bin/claude)" -ForegroundColor Green
+            if (Test-Path "$REPO_DIR\src\bin\claude.ps1") {
+                Copy-Item "$REPO_DIR\src\bin\claude.ps1" "$WrapperDir\claude.ps1" -Force
+            }
+            if (Test-Path "$REPO_DIR\src\bin\claude.cmd") {
+                Copy-Item "$REPO_DIR\src\bin\claude.cmd" "$WrapperDir\claude.cmd" -Force
+            }
+            Write-Host "    ✓ claude-code-cache-fix installed + wrappers (~/.local/bin/claude{,.cmd,.ps1})" -ForegroundColor Green
         } else {
             Write-Host "    ⚠  claude-code-cache-fix install failed — wrapper skipped" -ForegroundColor Yellow
             Write-Host "       Run manually: npm install -g claude-code-cache-fix" -ForegroundColor Gray
