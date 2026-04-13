@@ -1,9 +1,22 @@
 #!/usr/bin/env node
+'use strict';
 
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import crypto from 'crypto';
+/**
+ * lsp-usage-tracker.js — PostToolUse hook
+ *
+ * Tracks successful LSP-provider calls in ~/.claude/state/lsp-ready-<hash>.
+ * Sibling hook lsp-first-read-guard.js reads this state to make gate
+ * decisions.
+ *
+ * Provider-aware: counts calls from any known LSP MCP server (cclsp,
+ * Serena, ...) via ./lib/detect-lsp-provider.js — not hardcoded to cclsp.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const crypto = require('crypto');
+const { isLspProviderTool } = require('./lib/detect-lsp-provider.cjs');
 
 const STATE_DIR = path.join(os.homedir(), '.claude', 'state');
 
@@ -22,6 +35,8 @@ function readFlag(fp) {
   } catch { return null; }
 }
 
+// cclsp-specific upstream bug (ktnyt/cclsp#43). Serena has its own LSP
+// wrapper and doesn't hit this class of error — skip the hint for non-cclsp.
 function isColdStartError(resp) {
   const s = typeof resp === 'string' ? resp : JSON.stringify(resp || {});
   return /No Project\.|ThrowNoProject|TypeScript Server Error|Server not initialized|Project not loaded|tsserver.*starting|LSP server.*not ready/i.test(s);
@@ -49,35 +64,16 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(raw);
     const toolName = data.tool_name || '';
-    if (!toolName.startsWith('mcp__cclsp__')) process.exit(0);
-
-    // PreToolUse context — no tool_response yet. Write warmup flag optimistically
-    // so the lsp-first-read-guard unblocks even when PostToolUse doesn't fire for MCP tools.
-    const hasResponse = 'tool_response' in data || 'result' in data;
-    if (!hasResponse) {
-      if (!toolName.includes('find_workspace_symbols')) {
-        if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
-        const flagPath = getFlagPath();
-        const existing = readFlag(flagPath) || {
-          cwd: process.cwd(), warmup_done: false, nav_count: 0, read_count: 0, read_files: [],
-        };
-        if (!existing.warmup_done) {
-          existing.warmup_done = true;
-          existing.timestamp = Date.now();
-          existing.last_tool = toolName;
-          fs.writeFileSync(flagPath, JSON.stringify(existing));
-        }
-      }
-      process.exit(0);
-    }
+    if (!isLspProviderTool(toolName)) process.exit(0);
 
     const resp = data.tool_response || data.result || {};
 
-    if (isColdStartError(resp)) {
+    // Cold-start hint only for cclsp (upstream bug)
+    if (toolName.startsWith('mcp__cclsp__') && isColdStartError(resp)) {
       const isSymbolSearch = toolName.includes('find_workspace_symbols');
       console.log(JSON.stringify({ systemMessage:
-        `⚠️ cclsp "No Project" error (known upstream bug)\n\n` +
-        `${isSymbolSearch ? 'find_workspace_symbols does NOT prime the project.\n' : ''}` +
+        `⚠️ cclsp "No Project" error (known upstream bug ktnyt/cclsp#43)\n\n` +
+        `${isSymbolSearch ? 'find_workspace_symbols does NOT prime the project context.\n' : ''}` +
         `Fix: call mcp__cclsp__get_diagnostics(<any .ts file>) first, then retry.\n` +
         `This is an ordering bug, not a timing issue. Do NOT fall back to Grep.`
       }));

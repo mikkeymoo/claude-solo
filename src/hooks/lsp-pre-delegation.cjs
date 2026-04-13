@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+'use strict';
 
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 const FORCE_LSP_CONTEXT_AGENTS = [
   'backend-explorer', 'frontend-explorer', 'db-explorer',
@@ -26,19 +27,23 @@ process.stdin.on('end', () => {
   if (data.tool_name !== 'Agent') process.exit(0);
 
   const toolInput = data.tool_input || {};
-  const prompt = toolInput.prompt || '';
-  const subagentType = toolInput.subagent_type || '';
+  // String coercion: non-string fields would throw on subsequent string methods.
+  const prompt = String(toolInput.prompt ?? '');
+  const subagentType = String(toolInput.subagent_type ?? '');
   const isForcedExplorer = FORCE_LSP_CONTEXT_AGENTS.includes(subagentType);
 
   if (!isForcedExplorer) {
-    if (EXEMPT_AGENTS.includes(subagentType)) process.exit(0);
-    if (EXEMPT_AGENTS.some(e => subagentType.toLowerCase().includes(e))) process.exit(0);
+    // Exact match only — previously `.includes(e)` allowed substring matches
+    // like `exploit-deep-security-reviewer` to bypass by containing a
+    // legitimate exempt name. Both checks now case-insensitive exact.
+    const subType = subagentType.toLowerCase();
+    if (EXEMPT_AGENTS.some(e => e.toLowerCase() === subType)) process.exit(0);
   }
 
   if (prompt.length < 200) process.exit(0);
 
-  const isolation = toolInput.isolation || '';
-  const cwd = data.cwd || process.cwd();
+  const isolation = String(toolInput.isolation ?? '');
+  const cwd = String(data.cwd ?? process.cwd());
   const taskDir = path.join(cwd, '.task');
 
   if (!isForcedExplorer && isolation !== 'worktree') {
@@ -90,12 +95,17 @@ process.stdin.on('end', () => {
   const agentLabel = isForcedExplorer ? `explorer "${subagentType}"` : 'implement agent';
   process.stderr.write(
     `\n⛔ LSP PRE-DELEGATION BLOCK: ${agentLabel} launched WITHOUT LSP CONTEXT\n` +
-    `Subagents have NO LSP/MCP access. Resolve symbols first, add "## LSP CONTEXT" to prompt.\n\n`
+    `Subagents have NO LSP/MCP access. Resolve symbols first (via cclsp, Serena,\n` +
+    `or any LSP MCP tools available), then add "## LSP CONTEXT" to the agent prompt.\n\n`
   );
 
   const decision = (isForcedExplorer || isolation === 'worktree') ? 'block' : 'warn';
   console.log(JSON.stringify({
     decision,
-    reason: `LSP PRE-DELEGATION: ${agentLabel} without "## LSP CONTEXT". Use cclsp first.`
+    reason: `LSP PRE-DELEGATION: ${agentLabel} without "## LSP CONTEXT". Use LSP MCP tools first.`,
+    hook: 'lsp-pre-delegation',
+    agentType: subagentType,
+    isForcedExplorer,
+    isolation,
   }));
 });

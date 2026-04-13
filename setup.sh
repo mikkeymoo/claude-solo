@@ -41,7 +41,7 @@ backup_existing() {
     local BACKED_UP=false
 
     # Backup hooks that would be overwritten
-    for f in "$REPO_DIR/src/hooks/"*.js; do
+    for f in "$REPO_DIR/src/hooks/"*.js "$REPO_DIR/src/hooks/"*.cjs; do
         [ -f "$f" ] || continue
         local basename="$(basename "$f")"
         local existing="$TARGET/hooks/$basename"
@@ -186,12 +186,36 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
 
     # Hooks — global only (hooks run globally)
     if [ "$TARGET" = "$GLOBAL_DIR" ]; then
+        # Copy .js hooks
         for f in "$REPO_DIR/src/hooks/"*.js; do
             [ -f "$f" ] || continue
             cp "$f" "$TARGET/hooks/$(basename "$f")"
             chmod +x "$TARGET/hooks/$(basename "$f")"
             echo "    ✓ Hook: $(basename "$f")"
         done
+        # Copy .cjs hooks (LSP enforcement guards — CommonJS modules)
+        for f in "$REPO_DIR/src/hooks/"*.cjs; do
+            [ -f "$f" ] || continue
+            cp "$f" "$TARGET/hooks/$(basename "$f")"
+            chmod +x "$TARGET/hooks/$(basename "$f")"
+            echo "    ✓ Hook: $(basename "$f")"
+        done
+        # Copy lib/ shared helpers
+        mkdir -p "$TARGET/hooks/lib"
+        for f in "$REPO_DIR/src/hooks/lib/"*; do
+            [ -f "$f" ] || continue
+            cp "$f" "$TARGET/hooks/lib/$(basename "$f")"
+            echo "    ✓ Hook lib: $(basename "$f")"
+        done
+        # Copy swarm hooks
+        mkdir -p "$TARGET/hooks/swarm"
+        for f in "$REPO_DIR/src/hooks/swarm/"*.js; do
+            [ -f "$f" ] || continue
+            cp "$f" "$TARGET/hooks/swarm/$(basename "$f")"
+            chmod +x "$TARGET/hooks/swarm/$(basename "$f")"
+            echo "    ✓ Hook swarm: $(basename "$f")"
+        done
+        cp "$REPO_DIR/src/hooks/swarm/package.json" "$TARGET/hooks/swarm/package.json" 2>/dev/null || true
         # Ensure hooks are treated as ES modules
         cp "$REPO_DIR/src/hooks/package.json" "$TARGET/hooks/package.json"
         echo "    ✓ hooks/package.json (ES module support)"
@@ -200,10 +224,21 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Source path saved (.claude-solo-source)"
     fi
 
-    # MCP template (copy but don't overwrite)
+    # MCP template — project/discovery list (copy but don't overwrite)
     if [ -f "$REPO_DIR/src/mcp.json" ] && [ ! -f "$TARGET/mcp.json" ]; then
         cp "$REPO_DIR/src/mcp.json" "$TARGET/mcp.json"
         echo "    ✓ MCP template (mcp.json) — enable servers you need"
+    fi
+
+    # Global active MCP config — ~/.claude/.mcp.json (Serena + Playwright enabled)
+    if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/settings/mcp-global.json" ]; then
+        local GLOBAL_MCP="$TARGET/.mcp.json"
+        if [ ! -f "$GLOBAL_MCP" ]; then
+            cp "$REPO_DIR/src/settings/mcp-global.json" "$GLOBAL_MCP"
+            echo "    ✓ Global MCP config (~/.claude/.mcp.json) — Serena + Playwright enabled"
+        else
+            echo "    ℹ  ~/.claude/.mcp.json exists — skipping (edit manually to add Serena/Playwright)"
+        fi
     fi
 
     # Status line shell script (global only; bash required)
@@ -219,15 +254,23 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Safe-mode settings (settings-safe.json) — use: claude --safe"
     fi
 
-    # Claude wrapper script (global only, requires claude-code-cache-fix)
+    # claude-code-cache-fix — install if missing, then install wrapper
     if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/bin/claude" ]; then
         local WRAPPER_SRC="$REPO_DIR/src/bin/claude"
         local WRAPPER_DST="$HOME/.local/bin/claude"
-        local CACHE_FIX_PKG="$HOME/.npm-global/lib/node_modules/claude-code-cache-fix/preload.mjs"
+        # Detect npm global prefix (handles nvm, brew, system npm)
+        local NPM_PREFIX
+        NPM_PREFIX="$(npm config get prefix 2>/dev/null || echo "$HOME/.npm-global")"
+        local CACHE_FIX_PKG="$NPM_PREFIX/lib/node_modules/claude-code-cache-fix/preload.mjs"
+        if [ ! -f "$CACHE_FIX_PKG" ]; then
+            echo "    Installing claude-code-cache-fix..."
+            npm install -g claude-code-cache-fix 2>&1 | grep -E 'added|error|warn' || true
+            # Recompute after install (prefix may be set via .npmrc)
+            CACHE_FIX_PKG="$(npm config get prefix)/lib/node_modules/claude-code-cache-fix/preload.mjs"
+        fi
         if [ -f "$CACHE_FIX_PKG" ]; then
             mkdir -p "$HOME/.local/bin"
             if [ -f "$WRAPPER_DST" ]; then
-                # Backup existing wrapper if it differs
                 if ! diff -q "$WRAPPER_SRC" "$WRAPPER_DST" >/dev/null 2>&1; then
                     cp "$WRAPPER_DST" "$WRAPPER_DST.bak"
                     echo "    📦 Backed up existing wrapper to ~/.local/bin/claude.bak"
@@ -235,9 +278,10 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
             fi
             cp "$WRAPPER_SRC" "$WRAPPER_DST"
             chmod +x "$WRAPPER_DST"
-            echo "    ✓ Claude wrapper (~/.local/bin/claude) — safe mode + cache-fix"
+            echo "    ✓ claude-code-cache-fix installed + wrapper (~/.local/bin/claude)"
         else
-            echo "    ⊘ Skipped wrapper: claude-code-cache-fix not installed (npm i -g claude-code-cache-fix)"
+            echo "    ⚠  claude-code-cache-fix install failed — wrapper skipped"
+            echo "       Run manually: npm install -g claude-code-cache-fix"
         fi
     fi
 
@@ -315,13 +359,21 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
 
     # Remove installed hooks (global only)
     if $IS_GLOBAL; then
-        for f in "$REPO_DIR/src/hooks/"*.js; do
+        for f in "$REPO_DIR/src/hooks/"*.js "$REPO_DIR/src/hooks/"*.cjs; do
             [ -f "$f" ] || continue
             local target_file="$TARGET/hooks/$(basename "$f")"
             if [ -f "$target_file" ]; then
                 rm -f "$target_file"
                 echo "    ✓ Removed hook: $(basename "$f")"
             fi
+        done
+        for f in "$REPO_DIR/src/hooks/lib/"*; do
+            [ -f "$f" ] || continue
+            rm -f "$TARGET/hooks/lib/$(basename "$f")"
+        done
+        for f in "$REPO_DIR/src/hooks/swarm/"*.js; do
+            [ -f "$f" ] || continue
+            rm -f "$TARGET/hooks/swarm/$(basename "$f")"
         done
         rm -f "$TARGET/hooks/package.json"
         rm -f "$TARGET/.claude-solo-source"

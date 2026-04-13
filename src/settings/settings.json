@@ -11,23 +11,10 @@
   "permissions": {
     "allow": [
       "Read",
-      "Glob",
-      "Grep",
-      "Bash(git status *)",
-      "Bash(git log *)",
-      "Bash(git diff *)",
-      "Bash(git branch *)",
-      "Bash(git show *)",
-      "Bash(git stash list*)",
-      "Bash(git remote *)",
-      "Bash(rtk *)",
-      "Bash(ls *)",
-      "Bash(cat package.json)",
-      "Bash(cat pyproject.toml)",
-      "Bash(node --version)",
-      "Bash(python --version)",
-      "Bash(npm --version)",
-      "Bash(pnpm --version)"
+      "Write",
+      "Edit",
+      "Bash(*)",
+      "mcp__*"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -61,6 +48,15 @@
             "statusMessage": "Loading session context..."
           }
         ]
+      },
+      {
+        "matcher": "true",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/lsp-session-reset.cjs"
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -88,7 +84,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/lsp-first-guard.js"
+            "command": "node ~/.claude/hooks/lsp-first-guard.cjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/lsp-first-glob-guard.cjs"
           }
         ]
       },
@@ -97,7 +102,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/bash-grep-block.js"
+            "command": "node ~/.claude/hooks/bash-grep-block.cjs"
           }
         ]
       },
@@ -106,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/lsp-first-read-guard.js"
+            "command": "node ~/.claude/hooks/lsp-first-read-guard.cjs"
           }
         ]
       },
@@ -115,16 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/lsp-pre-delegation.js"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__cclsp__find_definition|mcp__cclsp__find_references|mcp__cclsp__find_workspace_symbols|mcp__cclsp__find_implementation|mcp__cclsp__get_hover|mcp__cclsp__get_diagnostics|mcp__cclsp__get_incoming_calls|mcp__cclsp__get_outgoing_calls",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/lsp-usage-tracker.js"
+            "command": "node ~/.claude/hooks/lsp-pre-delegation.cjs"
           }
         ]
       }
@@ -140,11 +136,11 @@
         ]
       },
       {
-        "matcher": "mcp__cclsp__find_definition|mcp__cclsp__find_references|mcp__cclsp__find_workspace_symbols|mcp__cclsp__find_implementation|mcp__cclsp__get_hover|mcp__cclsp__get_diagnostics|mcp__cclsp__get_incoming_calls|mcp__cclsp__get_outgoing_calls",
+        "matcher": "mcp__serena__|mcp__cclsp__",
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/lsp-usage-tracker.js"
+            "command": "node ~/.claude/hooks/lsp-usage-tracker.cjs"
           }
         ]
       },
@@ -235,12 +231,60 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/swarm/subagent-start.js"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "node ~/.claude/hooks/session-end.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/swarm/stop-gate.js"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/swarm/task-completed.js"
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/swarm/task-created.js"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/swarm/teammate-idle.js"
           }
         ]
       }

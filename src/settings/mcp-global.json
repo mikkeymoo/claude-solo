@@ -1,0 +1,58 @@
+{
+  "$schema": "https://code.claude.com/schemas/mcp.json",
+  "_comment": "Global MCP servers for ~/.claude/.mcp.json — copied by setup.sh/setup.ps1. Fill in tokens where needed. Serena and Playwright are enabled by default.",
+
+  "mcpServers": {
+    "serena": {
+      "_comment": "Semantic code navigation (LSP): find symbols, references, definitions. Multi-language. Requires Python + uv (https://docs.astral.sh/uv/).",
+      "command": "uvx",
+      "args": ["--from", "serena[all]", "serena", "--context", "ide-assistant", "--transport", "stdio"],
+      "env": {},
+      "disabled": false
+    },
+
+    "playwright": {
+      "_comment": "Browser automation and E2E testing. No credentials needed.",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--headless"],
+      "env": {},
+      "disabled": false
+    },
+
+    "github": {
+      "_comment": "GitHub API: repos, PRs, issues, code search, Actions. Requires GITHUB_TOKEN env var.",
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "disabled": true
+    },
+
+    "fabric": {
+      "_comment": "Microsoft Fabric MCP. No credentials needed for read-only exploration.",
+      "command": "npx",
+      "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start", "--mode", "all"],
+      "env": {},
+      "disabled": true
+    },
+
+    "cclsp": {
+      "_comment": "Legacy TypeScript/JavaScript LSP (ktnyt/cclsp). Prefer Serena. Requires: npm install -g cclsp",
+      "command": "npx",
+      "args": ["-y", "cclsp"],
+      "env": {},
+      "disabled": true
+    },
+
+    "postgres": {
+      "_comment": "Read-only PostgreSQL access. Set DATABASE_URL env var.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+      },
+      "disabled": true
+    }
+  }
+}

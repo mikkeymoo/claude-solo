@@ -151,9 +151,30 @@ function Install-To($TARGET) {
     # Hooks (only global hooks make sense — skip for project-level)
     $isGlobal = ($TARGET -eq $GLOBAL_DIR)
     if ($isGlobal) {
+        # .js hooks
         Get-ChildItem "$REPO_DIR\src\hooks\*.js" | ForEach-Object {
             Copy-Item $_.FullName "$TARGET\hooks\$($_.Name)" -Force
             Write-Host "    ✓ Hook: $($_.Name)" -ForegroundColor Green
+        }
+        # .cjs hooks (LSP enforcement guards — CommonJS modules)
+        Get-ChildItem "$REPO_DIR\src\hooks\*.cjs" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName "$TARGET\hooks\$($_.Name)" -Force
+            Write-Host "    ✓ Hook: $($_.Name)" -ForegroundColor Green
+        }
+        # lib/ shared helpers
+        New-Item -ItemType Directory -Force -Path "$TARGET\hooks\lib" | Out-Null
+        Get-ChildItem "$REPO_DIR\src\hooks\lib\*" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName "$TARGET\hooks\lib\$($_.Name)" -Force
+            Write-Host "    ✓ Hook lib: $($_.Name)" -ForegroundColor Green
+        }
+        # swarm hooks
+        New-Item -ItemType Directory -Force -Path "$TARGET\hooks\swarm" | Out-Null
+        Get-ChildItem "$REPO_DIR\src\hooks\swarm\*.js" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName "$TARGET\hooks\swarm\$($_.Name)" -Force
+            Write-Host "    ✓ Hook swarm: $($_.Name)" -ForegroundColor Green
+        }
+        if (Test-Path "$REPO_DIR\src\hooks\swarm\package.json") {
+            Copy-Item "$REPO_DIR\src\hooks\swarm\package.json" "$TARGET\hooks\swarm\package.json" -Force
         }
         # Ensure hooks are treated as ES modules
         Copy-Item "$REPO_DIR\src\hooks\package.json" "$TARGET\hooks\package.json" -Force
@@ -163,7 +184,7 @@ function Install-To($TARGET) {
         Write-Host "    ✓ Source path saved (.claude-solo-source)" -ForegroundColor Green
     }
 
-    # MCP template (copy but don't overwrite)
+    # MCP template — project/discovery list (copy but don't overwrite)
     $MCP_SRC = "$REPO_DIR\src\mcp.json"
     $MCP_DST = "$TARGET\mcp.json"
     if ((Test-Path $MCP_SRC) -and -not (Test-Path $MCP_DST)) {
@@ -171,10 +192,64 @@ function Install-To($TARGET) {
         Write-Host "    ✓ MCP template (mcp.json) — enable servers you need" -ForegroundColor Green
     }
 
-    # Status line — Windows: bash not available by default, skip the sh script
-    # The statusLine is wired in settings.json to bash ~/.claude/statusline.sh
-    # Users on Windows can enable this via WSL or skip it entirely.
-    Write-Host "    ℹ  Status line requires bash+jq (WSL or Git Bash) — see statusline.sh" -ForegroundColor Gray
+    # Global active MCP config — ~/.claude/.mcp.json (Serena + Playwright enabled)
+    if ($isGlobal) {
+        $GlobalMcpSrc = "$REPO_DIR\src\settings\mcp-global.json"
+        $GlobalMcpDst = "$TARGET\.mcp.json"
+        if ((Test-Path $GlobalMcpSrc) -and -not (Test-Path $GlobalMcpDst)) {
+            Copy-Item $GlobalMcpSrc $GlobalMcpDst
+            Write-Host "    ✓ Global MCP config (~/.claude/.mcp.json) — Serena + Playwright enabled" -ForegroundColor Green
+        } else {
+            Write-Host "    ℹ  ~/.claude/.mcp.json exists — skipping (edit manually to add Serena/Playwright)" -ForegroundColor Gray
+        }
+    }
+
+    # Status line — install statusline.sh if Git Bash is available, otherwise note it
+    if ($isGlobal -and (Test-Path "$REPO_DIR\src\settings\statusline.sh")) {
+        $StatuslineDst = "$TARGET\statusline.sh"
+        Copy-Item "$REPO_DIR\src\settings\statusline.sh" $StatuslineDst -Force
+        # Find Git Bash and note path for settings
+        $GitBashPath = $null
+        $GitBashCandidates = @(
+            "C:\Program Files\Git\bin\bash.exe",
+            "C:\Program Files (x86)\Git\bin\bash.exe",
+            "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe",
+            "$env:USERPROFILE\scoop\apps\git\current\bin\bash.exe"
+        )
+        foreach ($c in $GitBashCandidates) {
+            if (Test-Path $c) { $GitBashPath = $c; break }
+        }
+        if ($GitBashPath) {
+            Write-Host "    ✓ statusline.sh installed (Git Bash found: $GitBashPath)" -ForegroundColor Green
+        } else {
+            Write-Host "    ✓ statusline.sh installed (requires Git Bash or WSL bash in PATH)" -ForegroundColor Green
+        }
+    }
+
+    # claude-code-cache-fix — install npm package then install wrapper
+    if ($isGlobal -and (Test-Path "$REPO_DIR\src\bin\claude")) {
+        $NpmPrefix = (npm config get prefix 2>$null).Trim()
+        if (-not $NpmPrefix) { $NpmPrefix = "$env:APPDATA\npm" }
+        $CacheFixPkg = "$NpmPrefix\node_modules\claude-code-cache-fix\preload.mjs"
+        if (-not (Test-Path $CacheFixPkg)) {
+            Write-Host "    Installing claude-code-cache-fix..." -ForegroundColor Gray
+            npm install -g claude-code-cache-fix 2>&1 | Select-String "added|error|warn" | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
+            # Recompute after install
+            $CacheFixPkg = "$(npm config get prefix)\node_modules\claude-code-cache-fix\preload.mjs"
+        }
+        if (Test-Path $CacheFixPkg) {
+            # On Windows, wrap to a .cmd shim since direct bash wrapper won't run
+            # The actual wrapper is a bash script — users with Git Bash get it via PATH
+            # Copy the bash wrapper and add a .cmd shim for Windows
+            $WrapperDir = "$env:USERPROFILE\.local\bin"
+            New-Item -ItemType Directory -Force -Path $WrapperDir | Out-Null
+            Copy-Item "$REPO_DIR\src\bin\claude" "$WrapperDir\claude" -Force
+            Write-Host "    ✓ claude-code-cache-fix installed + wrapper (~/.local/bin/claude)" -ForegroundColor Green
+        } else {
+            Write-Host "    ⚠  claude-code-cache-fix install failed — wrapper skipped" -ForegroundColor Yellow
+            Write-Host "       Run manually: npm install -g claude-code-cache-fix" -ForegroundColor Gray
+        }
+    }
 
     # settings.json (merge — add missing keys, never overwrite user values)
     $SETTINGS_PATH = "$TARGET\settings.json"
@@ -251,16 +326,30 @@ function Uninstall-From($TARGET) {
 
     # Remove installed hooks (global only)
     if ($isGlobal) {
+        # Remove .js hooks
         Get-ChildItem "$REPO_DIR\src\hooks\*.js" -ErrorAction SilentlyContinue | ForEach-Object {
             $target_file = "$TARGET\hooks\$($_.Name)"
-            if (Test-Path $target_file) {
-                Remove-Item $target_file -Force
-                Write-Host "    ✓ Removed hook: $($_.Name)" -ForegroundColor Green
-            }
+            if (Test-Path $target_file) { Remove-Item $target_file -Force; Write-Host "    ✓ Removed hook: $($_.Name)" -ForegroundColor Green }
+        }
+        # Remove .cjs hooks
+        Get-ChildItem "$REPO_DIR\src\hooks\*.cjs" -ErrorAction SilentlyContinue | ForEach-Object {
+            $target_file = "$TARGET\hooks\$($_.Name)"
+            if (Test-Path $target_file) { Remove-Item $target_file -Force; Write-Host "    ✓ Removed hook: $($_.Name)" -ForegroundColor Green }
+        }
+        # Remove lib/ helpers
+        Get-ChildItem "$REPO_DIR\src\hooks\lib\*" -ErrorAction SilentlyContinue | ForEach-Object {
+            $target_file = "$TARGET\hooks\lib\$($_.Name)"
+            if (Test-Path $target_file) { Remove-Item $target_file -Force }
+        }
+        # Remove swarm hooks
+        Get-ChildItem "$REPO_DIR\src\hooks\swarm\*.js" -ErrorAction SilentlyContinue | ForEach-Object {
+            $target_file = "$TARGET\hooks\swarm\$($_.Name)"
+            if (Test-Path $target_file) { Remove-Item $target_file -Force }
         }
         if (Test-Path "$TARGET\hooks\package.json") { Remove-Item "$TARGET\hooks\package.json" -Force }
         if (Test-Path "$TARGET\.claude-solo-source") { Remove-Item "$TARGET\.claude-solo-source" -Force }
-        Write-Host "    ✓ Removed hooks/package.json and .claude-solo-source" -ForegroundColor Green
+        if (Test-Path "$TARGET\settings-safe.json") { Remove-Item "$TARGET\settings-safe.json" -Force }
+        Write-Host "    ✓ Removed hooks, .claude-solo-source, settings-safe.json" -ForegroundColor Green
     }
 
     Write-Host "    ✓ Done. Your customized files (rules, mcp.json, custom agents) are untouched." -ForegroundColor Green
