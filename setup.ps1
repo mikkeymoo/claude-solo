@@ -226,6 +226,29 @@ function Install-To($TARGET) {
         }
     }
 
+    # uv (Python package manager — required for Serena MCP)
+    if ($isGlobal) {
+        if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+            Write-Host "    Installing uv (required for Serena MCP)..." -ForegroundColor Gray
+            try {
+                powershell -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
+                # Refresh PATH so uv is available in this session
+                $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" + $env:PATH
+                $uvVer = (uv --version 2>$null)
+                if ($uvVer) {
+                    Write-Host "    ✓ uv installed ($uvVer)" -ForegroundColor Green
+                } else {
+                    Write-Host "    ✓ uv installed (restart shell to use)" -ForegroundColor Green
+                }
+            } catch {
+                Write-Host "    ⚠  uv install failed — install manually: winget install astral-sh.uv" -ForegroundColor Yellow
+            }
+        } else {
+            $uvVer = (uv --version 2>$null)
+            Write-Host "    ✓ uv already installed ($uvVer)" -ForegroundColor Green
+        }
+    }
+
     # claude-code-cache-fix — install npm package then install wrapper
     if ($isGlobal -and (Test-Path "$REPO_DIR\src\bin\claude")) {
         $NpmPrefix = (npm config get prefix 2>$null).Trim()

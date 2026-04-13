@@ -254,6 +254,23 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         echo "    ✓ Safe-mode settings (settings-safe.json) — use: claude --safe"
     fi
 
+    # uv (Python package manager — required for Serena MCP)
+    if [ "$TARGET" = "$GLOBAL_DIR" ]; then
+        if ! command -v uv >/dev/null 2>&1; then
+            echo "    Installing uv (required for Serena MCP)..."
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            # Reload PATH so uv is available immediately
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            if command -v uv >/dev/null 2>&1; then
+                echo "    ✓ uv installed ($(uv --version))"
+            else
+                echo "    ⚠  uv install may need a shell restart — run: source ~/.bashrc"
+            fi
+        else
+            echo "    ✓ uv already installed ($(uv --version))"
+        fi
+    fi
+
     # claude-code-cache-fix — install if missing, then install wrapper
     if [ "$TARGET" = "$GLOBAL_DIR" ] && [ -f "$REPO_DIR/src/bin/claude" ]; then
         local WRAPPER_SRC="$REPO_DIR/src/bin/claude"
