@@ -4,6 +4,30 @@ Best-of Claude Code config — 7-stage pipeline, 28 smart agents, 25 hooks, 49 s
 
 Combines the best patterns from the Claude Code community. No domain lock-in.
 
+## Bootstrap a New Machine
+
+Paste this into a fresh Claude Code session on any new machine. It detects Windows vs Linux/macOS and runs the right setup:
+
+```
+I need to set up my Claude Code environment from scratch using my claude-solo config repo.
+
+Please do the following:
+
+1. Check if git is available. If not, tell me to install it first.
+2. Clone the repo:
+   - Windows (PowerShell): `git clone https://github.com/mikkeymoo/claude-solo.git "$env:USERPROFILE\claude-solo"`
+   - Linux/macOS/WSL: `git clone https://github.com/mikkeymoo/claude-solo.git ~/claude-solo`
+3. Run the setup script:
+   - Windows: `cd "$env:USERPROFILE\claude-solo"; .\setup.ps1`
+   - Linux/macOS/WSL (Git Bash on Windows): `cd ~/claude-solo && bash setup.sh`
+4. The setup will automatically install: uv (for Serena MCP), claude-code-cache-fix (prompt cache fix), the claude wrapper script, all hooks, agents, skills, rules, and the global MCP config (Serena + Playwright).
+5. After setup completes, tell me what was installed and what (if anything) needs manual steps like API keys or tokens.
+
+Detect my OS and run the correct commands. Ask me nothing — just do it.
+```
+
+---
+
 ## Install
 
 **Windows (PowerShell 5+):**
