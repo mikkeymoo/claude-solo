@@ -127,12 +127,24 @@ function Install-To($TARGET) {
         }
     }
 
-    # Commands
+    # Commands — purge stale files from previous installs first
     if (-not $skipAgentsCommands) {
+        $manifest = "$TARGET\.claude-solo-commands"
+        if (Test-Path $manifest) {
+            Get-Content $manifest | Where-Object { $_ -ne "" } | ForEach-Object {
+                $old = "$TARGET\commands\mm\$_"
+                if (Test-Path $old) { Remove-Item $old -Force }
+            }
+            Remove-Item $manifest -Force
+        }
+        # Install new commands and write fresh manifest
+        $manifestLines = @()
         Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName "$TARGET\commands\mm\$($_.Name)" -Force
             Write-Host "    ✓ Command: $($_.Name)" -ForegroundColor Green
+            $manifestLines += $_.Name
         }
+        $manifestLines | Set-Content $manifest -Encoding UTF8
     }
     # Remove old skills dir mm-* files if they exist from previous installs
     if (Test-Path "$TARGET\skills") {
@@ -354,12 +366,24 @@ function Uninstall-From($TARGET) {
         }
     }
 
-    # Remove installed commands
-    Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-        $target_file = "$TARGET\commands\mm\$($_.Name)"
-        if (Test-Path $target_file) {
-            Remove-Item $target_file -Force
-            Write-Host "    ✓ Removed command: $($_.Name)" -ForegroundColor Green
+    # Remove installed commands (prefer manifest; fall back to current repo files)
+    $manifest = "$TARGET\.claude-solo-commands"
+    if (Test-Path $manifest) {
+        Get-Content $manifest | Where-Object { $_ -ne "" } | ForEach-Object {
+            $old = "$TARGET\commands\mm\$_"
+            if (Test-Path $old) {
+                Remove-Item $old -Force
+                Write-Host "    ✓ Removed command: $_" -ForegroundColor Green
+            }
+        }
+        Remove-Item $manifest -Force
+    } else {
+        Get-ChildItem "$REPO_DIR\src\commands\mm\*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+            $target_file = "$TARGET\commands\mm\$($_.Name)"
+            if (Test-Path $target_file) {
+                Remove-Item $target_file -Force
+                Write-Host "    ✓ Removed command: $($_.Name)" -ForegroundColor Green
+            }
         }
     }
 
@@ -423,6 +447,7 @@ Write-Host ""
 Write-Host "Open Claude Code and use:" -ForegroundColor Cyan
 Write-Host "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 Write-Host ""
-Write-Host "Power:   /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor" -ForegroundColor Gray
-Write-Host "New:     /mm:map  /mm:deps  /mm:a11y  /mm:migrate  /mm:onboard  /mm:stale" -ForegroundColor Gray
+Write-Host "Power:   /mm:troubleshoot  /mm:workflow  /mm:session  /mm:doctor  /mm:search" -ForegroundColor Gray
+Write-Host "         /mm:security  /mm:quality  /mm:cleanup  /mm:release  /mm:docs" -ForegroundColor Gray
+Write-Host "         /mm:scaffold  /mm:config" -ForegroundColor Gray
 Write-Host ""

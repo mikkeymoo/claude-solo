@@ -160,12 +160,22 @@ open(sys.argv[1], 'w', encoding='utf-8').write(result)
         done
     fi
 
-    # Commands
+    # Commands — purge stale files from previous installs first
     if ! $SKIP_AGENTS_COMMANDS; then
+        # Purge any command files recorded in the previous install manifest
+        local MANIFEST="$TARGET/.claude-solo-commands"
+        if [ -f "$MANIFEST" ]; then
+            while IFS= read -r old_cmd; do
+                [ -n "$old_cmd" ] && rm -f "$TARGET/commands/mm/$old_cmd"
+            done < "$MANIFEST"
+            rm -f "$MANIFEST"
+        fi
+        # Install new commands and write fresh manifest
         for f in "$REPO_DIR/src/commands/mm/"*.md; do
             [ -f "$f" ] || continue
             cp "$f" "$TARGET/commands/mm/$(basename "$f")"
             echo "    ✓ Command: $(basename "$f")"
+            echo "$(basename "$f")" >> "$TARGET/.claude-solo-commands"
         done
     fi
     # Remove old skills dir if it exists from previous installs
@@ -364,15 +374,26 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
         fi
     done
 
-    # Remove installed commands
-    for f in "$REPO_DIR/src/commands/mm/"*.md; do
-        [ -f "$f" ] || continue
-        local target_file="$TARGET/commands/mm/$(basename "$f")"
-        if [ -f "$target_file" ]; then
-            rm -f "$target_file"
-            echo "    ✓ Removed command: $(basename "$f")"
-        fi
-    done
+    # Remove installed commands (prefer manifest; fall back to current repo files)
+    local MANIFEST="$TARGET/.claude-solo-commands"
+    if [ -f "$MANIFEST" ]; then
+        while IFS= read -r old_cmd; do
+            if [ -n "$old_cmd" ] && [ -f "$TARGET/commands/mm/$old_cmd" ]; then
+                rm -f "$TARGET/commands/mm/$old_cmd"
+                echo "    ✓ Removed command: $old_cmd"
+            fi
+        done < "$MANIFEST"
+        rm -f "$MANIFEST"
+    else
+        for f in "$REPO_DIR/src/commands/mm/"*.md; do
+            [ -f "$f" ] || continue
+            local target_file="$TARGET/commands/mm/$(basename "$f")"
+            if [ -f "$target_file" ]; then
+                rm -f "$target_file"
+                echo "    ✓ Removed command: $(basename "$f")"
+            fi
+        done
+    fi
 
     # Remove installed hooks (global only)
     if $IS_GLOBAL; then
@@ -436,8 +457,9 @@ echo ""
 echo "Open Claude Code and use:"
 echo "  /mm:brief  /mm:plan  /mm:build  /mm:review  /mm:test  /mm:verify  /mm:ship  /mm:retro"
 echo ""
-echo "Power:   /mm:handoff  /mm:release  /mm:incident  /mm:docsync  /mm:doctor"
-echo "New:     /mm:map  /mm:deps  /mm:a11y  /mm:migrate  /mm:onboard  /mm:stale"
+echo "Power:   /mm:troubleshoot  /mm:workflow  /mm:session  /mm:doctor  /mm:search"
+echo "         /mm:security  /mm:quality  /mm:cleanup  /mm:release  /mm:docs"
+echo "         /mm:scaffold  /mm:config"
 echo ""
 echo "Safe mode for untrusted repos:  claude --safe"
 echo ""
