@@ -1,79 +1,122 @@
 ---
 name: mm-doctor
-description: "Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you."
+description: "Claude-solo command skill"
 ---
 
 # mm-doctor
 
-Full project health check across git, dependencies, tests, secrets, environment, and Claude Code config. Diagnose before problems find you.
+Claude-solo command skill
 
 ## Instructions
-Diagnose your project and Claude Code environment. Find problems before they find you.
+---
+name: mm:doctor
+description: "Project health suite — full diagnostic check (default), codebase orientation map (--map), or pre-build readiness gate (--ready)."
+argument-hint: "[--check (default) | --map | --ready]"
+---
 
-Run a full health check across 6 areas:
+Project health and orientation suite.
 
-1. **Git health**
+- No argument / `--check` — full health check across 6 areas
+- `--map` — generate codebase orientation map
+- `--ready` — pre-build readiness gate
+
+---
+
+## --check — Full Health Check
+
+Diagnose your project and Claude Code environment.
+
+**1. Git health**
 ```bash
-rtk git status
-rtk git log --oneline -5
-rtk git stash list
+rtk git status && rtk git log --oneline -5 && rtk git stash list
 ```
-   - Untracked files that should be in `.gitignore`
-   - Staged but uncommitted changes (work at risk)
-   - Branch status: ahead/behind remote, merge conflicts
-   - Last commit: is it reasonable? (no huge commits, no secrets)
+Check: untracked files for .gitignore, staged uncommitted changes, branch ahead/behind remote, merge conflicts.
 
-2. **Dependencies**
+**2. Dependencies**
 ```bash
-rtk pnpm outdated          # Node
-pip list --outdated        # Python
-cargo outdated             # Rust
-rtk pnpm audit             # Node vulnerability check
+rtk pnpm outdated 2>/dev/null || pip list --outdated 2>/dev/null || cargo outdated 2>/dev/null || true
+rtk pnpm audit 2>/dev/null || true
 ```
-   - Outdated packages with known vulnerabilities
-   - Missing packages (imports that don't resolve)
-   - Lock file mismatches (package.json vs lock file drift)
+Flag: outdated packages with CVEs, missing packages, lockfile drift.
 
-3. **Tests**
+**3. Tests**
 ```bash
-rtk pnpm test              # Node
-rtk python -m pytest -q    # Python
-rtk cargo test             # Rust
+rtk pnpm test 2>/dev/null || rtk python -m pytest -q 2>/dev/null || rtk cargo test 2>/dev/null || true
 ```
-   - Report pass/fail count
-   - Identify files with no test coverage
-   - Flag tests that are skipped or marked xfail
+Report pass/fail count, files with no coverage, skipped tests.
 
-4. **Secrets & credentials**
+**4. Secrets & credentials**
 ```bash
-# Check for leaked secrets in source:
-grep -r "sk-\|api_key\s*=\|password\s*=\|secret\s*=" --include="*.ts" --include="*.py" --include="*.js" -l .
-# Check .env is gitignored:
-cat .gitignore | grep -E "^\.env"
-# Check recent git history:
-rtk git log --oneline -20
+grep -r "sk-\|api_key\s*=\|password\s*=\|secret\s*=" --include="*.ts" --include="*.py" --include="*.js" -l . 2>/dev/null
+cat .gitignore 2>/dev/null | grep -E "^\.env" || echo "WARNING: .env not in .gitignore"
 ```
 
-5. **Environment**
+**5. Environment**
 ```bash
-node --version && npm --version
-python --version
-# Check .env.example vs actual env:
+node --version 2>/dev/null; python --version 2>/dev/null
 cat .env.example 2>/dev/null || echo "no .env.example"
 ```
-   - Required env vars: which are missing from `.env.example` or not set?
-   - Tool versions: do they match what the project expects?
+Check required env vars, tool versions vs. project expectations.
 
-6. **Claude Code config**
+**6. Claude Code config**
 ```bash
-ls ~/.claude/hooks/
-ls ~/.claude/commands/mm/ | head -20
+ls ~/.claude/hooks/ 2>/dev/null | head -20
+ls ~/.claude/commands/mm/ 2>/dev/null | wc -l
 ls .planning/ 2>/dev/null || echo "no .planning dir"
 ```
-   - Hooks registered and executable?
-   - Commands installed and named correctly?
-   - `.planning/` directory: stale plans or incomplete retros?
+Check: hooks executable, commands installed, stale planning docs.
 
 For each area: ✅ healthy | ⚠️ warning | 🔴 needs fix
 
-End with a prioritized list: "Top 3 things to fix right now."
+End with: "Top 3 things to fix right now."
+
+---
+
+## --map — Codebase Orientation Map
+
+```bash
+rtk git log --oneline -5 && rtk ls src/ 2>/dev/null || rtk ls .
+cat package.json 2>/dev/null || cat pyproject.toml 2>/dev/null || cat Cargo.toml 2>/dev/null || true
+```
+
+Produce:
+1. **Project overview** — what it does (1-2 sentences), language/framework/key deps, entry points
+2. **Directory structure** — meaningful dirs only (skip node_modules/dist) with one-line purpose each
+3. **Key data flows** — request lifecycle, persistence layer, background jobs
+4. **Integration points** — external services, auth mechanism, notable env vars
+5. **Where to look for...** — table: adding endpoint, adding model, adding test, changing config
+6. **Gotchas** — things that would surprise a new contributor, known tech debt
+
+Save to `.planning/CODEBASE-MAP.md`. Keep scannable — short bullets and file paths, not prose.
+
+---
+
+## --ready — Pre-Build Readiness Gate
+
+Verify everything needed to build is in place before `/mm:build`.
+
+**1. Brief** — does `.planning/BRIEF.md` exist with: what we're building, out of scope, done criteria, hard constraints?
+
+**2. Plan** — does `.planning/PLAN.md` exist with: numbered tasks + estimates, explicit dependencies, done criteria per task, test matrix, schema/API changes listed?
+
+**3. Environment**
+```bash
+cat .env.example 2>/dev/null && ls node_modules 2>/dev/null || ls .venv 2>/dev/null || true
+rtk pnpm test 2>/dev/null || rtk python -m pytest -q 2>/dev/null || true
+```
+Required env vars set? Dependencies installed? Existing tests passing?
+
+**4. Clarity** — all tasks have specific done-criteria (not "implement X" — "function Y passes test Z"). No tasks labeled TBD.
+
+Report:
+```
+✅ Brief        — complete
+✅ Plan         — 8 tasks, clear dependencies, test matrix present
+⚠️  Environment — OPENAI_API_KEY not set in .env
+✅ Clarity      — all tasks have specific done criteria
+
+1 issue to fix before /build.
+```
+
+If all green: "All clear — ready to /build."
+If any red: list what's missing and stop.

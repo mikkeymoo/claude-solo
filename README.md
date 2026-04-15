@@ -1,6 +1,6 @@
 # claude-solo
 
-Best-of Claude Code config — 7-stage pipeline, 28 smart agents, 25 hooks, 49 skills, and 9 starter rules in one install.
+Best-of Claude Code config — 7-stage pipeline, 28 smart agents, 25 hooks, 20 skills, and 9 starter rules in one install.
 
 Combines the best patterns from the Claude Code community. No domain lock-in.
 
@@ -103,7 +103,7 @@ node scripts/render-providers.mjs
 
 ---
 
-### Skills (Slash Commands) — 49 total
+### Skills (Slash Commands) — 20 total
 
 **The Sprint Pipeline (run in order):**
 | Command | What it does | Time |
@@ -120,67 +120,34 @@ node scripts/render-providers.mjs
 **Power Skills:**
 | Command | What it does |
 |---------|-------------|
-| `/mm:autopilot` | Full hands-off pipeline: idea → spec → build → QA → validate |
-| `/mm:tdd` | Strict TDD mode: red → green → refactor, no code before failing test |
-| `/mm:parallel` | Execute independent tasks simultaneously in waves |
-| `/mm:doctor` | Diagnose project + Claude Code health (git, deps, tests, secrets, env) |
-| `/mm:deepsearch` | Deep multi-source research with synthesis and citations |
-| `/mm:quick` | Rapid flow for small tasks: clarify → implement → review in one shot |
-| `/mm:explain` | Deep code explanation — traces data flow, answers why not just what |
-| `/mm:estimate` | Structured effort estimate with confidence intervals and risk flags |
-| `/mm:distill` | Lossless compress large docs/plans to reduce context token cost |
-| `/mm:ready` | Pre-build readiness gate — verifies brief, plan, env, and clarity |
-| `/mm:map` | Generate a codebase orientation map — structure, data flow, entry points |
-| `/mm:stale` | Find dead code: old TODOs, commented-out blocks, unused exports |
-| `/mm:onboard` | Generate a contributor onboarding guide → `docs/ONBOARDING.md` |
-| `/mm:aislopcleaner` | Regression-tests-first cleanup — dead code, duplication, AI padding |
-| `/mm:handoff` | Save rich resume packet for next session |
-| `/mm:pause` | Save session context to resume in a fresh window |
-| `/mm:resume` | Restore context from handoff, pause, or checkpoint |
-| `/mm:release` | Version bump, changelog, release notes, rollout checklist |
-| `/mm:incident` | Production debug — repro, root cause, fix, retro |
-| `/mm:docsync` | Sync README, CLAUDE.md, API docs with current code |
-| `/mm:tokens` | Show estimated token usage breakdown for today's session |
-| `/mm:update` | Pull latest claude-solo from GitHub and reinstall |
+| `/mm:troubleshoot` | Universal debug — build errors, test failures, CI, runtime, type errors, production incidents |
+| `/mm:workflow` | Execution modes: `--auto` (hands-off), `--parallel` (waves), `--tdd` (red/green/refactor), `--quick` (rapid <2h) |
+| `/mm:search` | Research + analysis: deep multi-source research, `--explain` code, `--estimate` effort |
+| `/mm:doctor` | Project health: full check (default), `--map` codebase orientation, `--ready` pre-build gate |
+| `/mm:session` | Session lifecycle: `save` (rich handoff), `save --lite` (quick pause), `restore`, `tokens` |
+| `/mm:cleanup` | Code cleanup: regression-safe multi-pass (default) or `--audit` (find issues only, no changes) |
 
-**Security & Compliance:**
+**Security:**
 | Command | What it does |
 |---------|-------------|
-| `/mm:security` | Full OWASP audit — injection, auth, secrets, API exposure, deps |
-| `/mm:adversarial` | Attacker mindset review — exploit vectors, logic abuse, insider threat |
-| `/mm:compliance` | Enterprise checklist — audit logging, PII, multi-tenancy, SOC2 surface |
+| `/mm:security` | Full security suite: OWASP audit + adversarial attacker review + enterprise compliance checklist |
 
-**Dependencies & Quality:**
+**Quality & Audits:**
 | Command | What it does |
 |---------|-------------|
-| `/mm:deps` | Audit dependencies: CVEs, outdated packages, license issues, unused deps |
-| `/mm:a11y` | Audit frontend for WCAG 2.1 AA — ARIA, keyboard, contrast, screen reader |
-| `/mm:migrate` | Plan and execute a database migration safely (via migration-specialist agent) |
+| `/mm:quality` | Quality suite: `--deps` CVEs/licenses, `--a11y` WCAG audit, `--migrate` DB migration, `--route` API testing |
 
-**CI/CD:**
+**Release & Docs:**
 | Command | What it does |
 |---------|-------------|
-| `/mm:ci` | Review or generate GitHub Actions workflow for the current project |
-| `/mm:pr` | Create structured PR with description, test plan, breaking changes |
-| `/mm:changelog` | Generate CHANGELOG from git history, tag release |
-| `/mm:github-setup` | Install GitHub App for PR @mentions + autonomous issue handling |
+| `/mm:release` | Full release: changelog from git, version bump, release notes, PR, tag, rollout checklist |
+| `/mm:docs` | Docs suite: `sync` (default), `onboard`, `plan <feature>`, `update <feature>`, `distill [file]` |
 
-**Path Rules & Scheduling:**
+**Scaffolding & Config:**
 | Command | What it does |
 |---------|-------------|
-| `/mm:rules` | Create and manage path-specific Claude rules in `.claude/rules/` |
-| `/mm:schedule` | Create, list, manage scheduled recurring tasks |
-
-**Dev Workflow Accelerators:**
-| Command | What it does |
-|---------|-------------|
-| `/mm:build-and-fix` | Run build, auto-fix errors ≤ 5, re-verify |
-| `/mm:dev-docs` | Generate plan + context + task checklist docs before starting a feature |
-| `/mm:dev-docs-update` | Refresh dev docs as implementation evolves |
-| `/mm:powershell-dev` | PowerShell module/DSC/script development scaffold |
-| `/mm:python-dev` | Python project scaffold, virtual env, linting, testing helpers |
-| `/mm:sql-dev` | SQL schema design, migration, and query development helpers |
-| `/mm:test-route` | Trace and test a specific API route end-to-end |
+| `/mm:scaffold` | Project scaffold: `--python`, `--powershell`, `--sql` |
+| `/mm:config` | Config suite: `--rules` path rules, `--schedule` cron tasks, `--github` GitHub App, `--ci` workflow, `--update`, `--help` |
 
 ---
 

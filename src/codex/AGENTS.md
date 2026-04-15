@@ -3,57 +3,51 @@
 
 This project supports the same /mm workflow in Codex using generated skills.
 
-Command routing:
-- `/mm:a11y` -> use `$mm-a11y`
-- `/mm:adversarial` -> use `$mm-adversarial`
-- `/mm:aislopcleaner` -> use `$mm-aislopcleaner`
-- `/mm:autopilot` -> use `$mm-autopilot`
+Command routing (20 skills):
+
+Sprint pipeline:
 - `/mm:brief` -> use `$mm-brief`
-- `/mm:build-and-fix` -> use `$mm-build-and-fix`
-- `/mm:build` -> use `$mm-build`
-- `/mm:changelog` -> use `$mm-changelog`
-- `/mm:ci` -> use `$mm-ci`
-- `/mm:compliance` -> use `$mm-compliance`
-- `/mm:deepsearch` -> use `$mm-deepsearch`
-- `/mm:deps` -> use `$mm-deps`
-- `/mm:dev-docs-update` -> use `$mm-dev-docs-update`
-- `/mm:dev-docs` -> use `$mm-dev-docs`
-- `/mm:distill` -> use `$mm-distill`
-- `/mm:docsync` -> use `$mm-docsync`
-- `/mm:doctor` -> use `$mm-doctor`
-- `/mm:estimate` -> use `$mm-estimate`
-- `/mm:explain` -> use `$mm-explain`
-- `/mm:github-setup` -> use `$mm-github-setup`
-- `/mm:handoff` -> use `$mm-handoff`
-- `/mm:help` -> use `$mm-help`
-- `/mm:incident` -> use `$mm-incident`
-- `/mm:map` -> use `$mm-map`
-- `/mm:migrate` -> use `$mm-migrate`
-- `/mm:onboard` -> use `$mm-onboard`
-- `/mm:parallel` -> use `$mm-parallel`
-- `/mm:pause` -> use `$mm-pause`
 - `/mm:plan` -> use `$mm-plan`
-- `/mm:powershell-dev` -> use `$mm-powershell-dev`
-- `/mm:pr` -> use `$mm-pr`
-- `/mm:python-dev` -> use `$mm-python-dev`
-- `/mm:quick` -> use `$mm-quick`
-- `/mm:ready` -> use `$mm-ready`
-- `/mm:release` -> use `$mm-release`
-- `/mm:resume` -> use `$mm-resume`
-- `/mm:retro` -> use `$mm-retro`
+- `/mm:build` -> use `$mm-build`
 - `/mm:review` -> use `$mm-review`
-- `/mm:rules` -> use `$mm-rules`
-- `/mm:schedule` -> use `$mm-schedule`
-- `/mm:security` -> use `$mm-security`
-- `/mm:ship` -> use `$mm-ship`
-- `/mm:sql-dev` -> use `$mm-sql-dev`
-- `/mm:stale` -> use `$mm-stale`
-- `/mm:tdd` -> use `$mm-tdd`
-- `/mm:test-route` -> use `$mm-test-route`
 - `/mm:test` -> use `$mm-test`
-- `/mm:tokens` -> use `$mm-tokens`
-- `/mm:update` -> use `$mm-update`
 - `/mm:verify` -> use `$mm-verify`
+- `/mm:ship` -> use `$mm-ship`
+- `/mm:retro` -> use `$mm-retro`
+
+Power skills:
+- `/mm:troubleshoot` -> use `$mm-troubleshoot`
+- `/mm:workflow` -> use `$mm-workflow`
+- `/mm:session` -> use `$mm-session`
+- `/mm:doctor` -> use `$mm-doctor`
+- `/mm:search` -> use `$mm-search`
+- `/mm:cleanup` -> use `$mm-cleanup`
+
+Specialized:
+- `/mm:security` -> use `$mm-security`
+- `/mm:quality` -> use `$mm-quality`
+- `/mm:release` -> use `$mm-release`
+- `/mm:docs` -> use `$mm-docs`
+- `/mm:scaffold` -> use `$mm-scaffold`
+- `/mm:config` -> use `$mm-config`
+
+Legacy aliases (map old commands to new skills):
+- `/mm:handoff` -> use `$mm-session` (save mode)
+- `/mm:resume` -> use `$mm-session` (restore mode)
+- `/mm:pause` -> use `$mm-session` (save --lite mode)
+- `/mm:doctor` -> use `$mm-doctor`
+- `/mm:deepsearch` -> use `$mm-search`
+- `/mm:quick` -> use `$mm-workflow` (--quick mode)
+- `/mm:autopilot` -> use `$mm-workflow` (--auto mode)
+- `/mm:tdd` -> use `$mm-workflow` (--tdd mode)
+- `/mm:security` -> use `$mm-security`
+- `/mm:deps` -> use `$mm-quality` (--deps mode)
+- `/mm:a11y` -> use `$mm-quality` (--a11y mode)
+- `/mm:migrate` -> use `$mm-quality` (--migrate mode)
+- `/mm:changelog` -> use `$mm-release`
+- `/mm:pr` -> use `$mm-release`
+- `/mm:docsync` -> use `$mm-docs` (sync mode)
+- `/mm:incident` -> use `$mm-troubleshoot`
 
 Hook wrappers (Claude-like behavior):
 - Session start: `node .codex/hooks/mm-hook.js session-start`

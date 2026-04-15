@@ -1,13 +1,18 @@
 ---
 name: mm-build
-description: "Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline."
+description: "Claude-solo command skill"
 ---
 
 # mm-build
 
-Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline.
+Claude-solo command skill
 
 ## Instructions
+---
+name: mm:build
+description: "Implement tasks from PLAN.md in dependency order with atomic commits. Core implementation stage of the sprint pipeline."
+---
+
 Read `.planning/PLAN.md` and implement the tasks in dependency order.
 
 For each task:

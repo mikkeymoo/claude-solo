@@ -76,14 +76,18 @@ Never commit: `.env`, credentials, `*.pyc`, `dist/`, `build/`, `node_modules/`
 ## Power Skills (Beyond the Sprint)
 
 ```
-/mm-verify   → Hard verification gate (lint, types, tests, secrets scan)
-/mm-handoff  → Save rich resume packet for next session
-/mm-release  → Version bump, changelog, release notes, rollout checklist
-/mm-incident → Production debug: repro, root cause, fix, retro
-/mm-docsync  → Sync README, CLAUDE.md, API docs with current code
-/mm-quick    → Rapid flow for small tasks (skip full pipeline)
-/mm-doctor   → Full project health check
-/mm-resume   → Restore context from handoff/pause/checkpoint
+/mm:troubleshoot → Universal debug: build errors, tests, CI, runtime, production incidents
+/mm:workflow     → Execution modes: --auto, --parallel, --tdd, --quick
+/mm:session      → Save/restore context: save, save --lite, restore, tokens
+/mm:doctor       → Project health: check (default), --map, --ready
+/mm:search       → Research + analysis: deep search, --explain, --estimate
+/mm:security     → Full security: OWASP + adversarial + compliance
+/mm:quality      → Audits: --deps, --a11y, --migrate, --route
+/mm:cleanup      → Code cleanup (default) or --audit (find only)
+/mm:release      → Full release: changelog, version bump, PR, tag, rollout
+/mm:docs         → Docs: sync (default), onboard, plan, update, distill
+/mm:scaffold     → Scaffold: --python, --powershell, --sql
+/mm:config       → Config: --rules, --schedule, --github, --ci, --update, --help
 ```
 
 ---
