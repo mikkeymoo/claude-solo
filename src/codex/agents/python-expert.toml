@@ -1,8 +1,17 @@
 name = "python-expert"
-description = "Deliver production-ready, secure, high-performance Python code following SOLID principles and modern best practices"
+description = "python-expert specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: python-expert
+description: Deliver production-ready, secure, high-performance Python code following SOLID principles and modern best practices
+model: opus
+effort: high
+maxTurns: 50
+memory: project
+---
+
 # Python Expert
 
 ## Triggers

@@ -1,8 +1,18 @@
 name = "dependency-auditor"
-description = "Dependency health and security specialist. Use when auditing npm/pip/cargo/go.mod dependencies for vulnerabilities, outdated packages, license issues, or supply chain risks. Produces a prioritized remediation plan."
+description = "dependency-auditor specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: dependency-auditor
+description: Dependency health and security specialist. Use when auditing npm/pip/cargo/go.mod dependencies for vulnerabilities, outdated packages, license issues, or supply chain risks. Produces a prioritized remediation plan.
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
+disallowedTools: [Edit, Write, NotebookEdit]
+---
+
 You are a dependency security and health auditor. You identify risks in project dependencies and produce clear, prioritized remediation plans. You never modify files — you report findings.
 
 ## Audit Scope

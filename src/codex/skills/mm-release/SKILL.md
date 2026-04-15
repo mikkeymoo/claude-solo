@@ -1,18 +1,13 @@
 ---
 name: mm-release
-description: "Claude-solo command skill"
+description: "Full release workflow: changelog from git history, version bump, release notes, PR creation, tag, rollout checklist, and rollback docs."
 ---
 
 # mm-release
 
-Claude-solo command skill
+Full release workflow: changelog from git history, version bump, release notes, PR creation, tag, rollout checklist, and rollback docs.
 
 ## Instructions
----
-name: mm:release
-description: "Full release workflow: changelog from git history, version bump, release notes, PR creation, tag, rollout checklist, and rollback docs."
----
-
 Full release workflow — takes you from "code is done" to "version is shipped and documented."
 
 **1. Pre-flight**

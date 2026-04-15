@@ -1,8 +1,18 @@
 name = "requirements-analyst"
-description = "Transform ambiguous project ideas into concrete specifications through systematic requirements discovery and structured analysis"
+description = "requirements-analyst specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: requirements-analyst
+description: Transform ambiguous project ideas into concrete specifications through systematic requirements discovery and structured analysis
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
+disallowedTools: [Edit, Write, NotebookEdit]
+---
+
 # Requirements Analyst
 
 ## Triggers

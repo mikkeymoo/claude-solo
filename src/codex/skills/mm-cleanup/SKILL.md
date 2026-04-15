@@ -1,19 +1,13 @@
 ---
 name: mm-cleanup
-description: "Claude-solo command skill"
+description: "Code cleanup — find dead/stale code (--audit) or do a full regression-safe cleanup of dead code, duplication, and AI padding."
 ---
 
 # mm-cleanup
 
-Claude-solo command skill
+Code cleanup — find dead/stale code (--audit) or do a full regression-safe cleanup of dead code, duplication, and AI padding.
 
 ## Instructions
----
-name: mm:cleanup
-description: "Code cleanup — find dead/stale code (--audit) or do a full regression-safe cleanup of dead code, duplication, and AI padding."
-argument-hint: "[--audit | path/to/scope]"
----
-
 Clean up code quality issues. Two modes:
 
 - `--audit` — find and catalogue issues only (no changes, produces checklist)

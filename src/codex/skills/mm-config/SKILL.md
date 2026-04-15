@@ -1,19 +1,13 @@
 ---
 name: mm-config
-description: "Claude-solo command skill"
+description: "Project and Claude Code configuration — path rules, scheduled tasks, GitHub integration, CI/CD workflow, update claude-solo, or show help guide."
 ---
 
 # mm-config
 
-Claude-solo command skill
+Project and Claude Code configuration — path rules, scheduled tasks, GitHub integration, CI/CD workflow, update claude-solo, or show help guide.
 
 ## Instructions
----
-name: mm:config
-description: "Project and Claude Code configuration — path rules, scheduled tasks, GitHub integration, CI/CD workflow, update claude-solo, or show help guide."
-argument-hint: "[--rules | --schedule | --github | --ci | --update | --help (default)]"
----
-
 Configuration and setup commands. Default shows the help guide.
 
 - `--rules` — create and manage path-specific Claude rules

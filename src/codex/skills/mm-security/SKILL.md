@@ -1,19 +1,13 @@
 ---
 name: mm-security
-description: "Claude-solo command skill"
+description: "Full security review: OWASP audit + adversarial attacker-mindset review + enterprise compliance checklist. Run before /mm:ship on any user-facing or enterprise code."
 ---
 
 # mm-security
 
-Claude-solo command skill
+Full security review: OWASP audit + adversarial attacker-mindset review + enterprise compliance checklist. Run before /mm:ship on any user-facing or enterprise code.
 
 ## Instructions
----
-name: mm:security
-description: "Full security review: OWASP audit + adversarial attacker-mindset review + enterprise compliance checklist. Run before /mm:ship on any user-facing or enterprise code."
-argument-hint: "[--owasp | --adversarial | --compliance | --all (default)]"
----
-
 Comprehensive security review. Runs all three lenses by default — OWASP technical audit, adversarial attacker review, and enterprise compliance checklist.
 
 Use `--owasp`, `--adversarial`, or `--compliance` to run a single lens. Default (`--all`) runs all three.

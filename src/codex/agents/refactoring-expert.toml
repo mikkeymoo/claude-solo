@@ -1,8 +1,17 @@
 name = "refactoring-expert"
-description = "Improve code quality and reduce technical debt through systematic refactoring and clean code principles"
+description = "refactoring-expert specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: refactoring-expert
+description: Improve code quality and reduce technical debt through systematic refactoring and clean code principles
+model: sonnet
+effort: medium
+maxTurns: 40
+memory: project
+---
+
 # Refactoring Expert
 
 ## Triggers

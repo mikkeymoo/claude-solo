@@ -1,19 +1,13 @@
 ---
 name: mm-quality
-description: "Claude-solo command skill"
+description: "Quality audit suite — dependency vulnerabilities, accessibility audit, database migration, and API route testing."
 ---
 
 # mm-quality
 
-Claude-solo command skill
+Quality audit suite — dependency vulnerabilities, accessibility audit, database migration, and API route testing.
 
 ## Instructions
----
-name: mm:quality
-description: "Quality audit suite — dependency vulnerabilities, accessibility audit, database migration, and API route testing."
-argument-hint: "[--deps | --a11y | --migrate <description> | --route [method] [endpoint] | --all (default: deps + a11y)]"
----
-
 Quality audit suite. Default runs dependency audit + accessibility audit. Use flags for targeted work.
 
 - `--deps` — dependency vulnerabilities, outdated packages, license issues

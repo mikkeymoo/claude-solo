@@ -3,51 +3,27 @@
 
 This project supports the same /mm workflow in Codex using generated skills.
 
-Command routing (20 skills):
-
-Sprint pipeline:
+Command routing:
 - `/mm:brief` -> use `$mm-brief`
-- `/mm:plan` -> use `$mm-plan`
 - `/mm:build` -> use `$mm-build`
-- `/mm:review` -> use `$mm-review`
-- `/mm:test` -> use `$mm-test`
-- `/mm:verify` -> use `$mm-verify`
-- `/mm:ship` -> use `$mm-ship`
-- `/mm:retro` -> use `$mm-retro`
-
-Power skills:
-- `/mm:troubleshoot` -> use `$mm-troubleshoot`
-- `/mm:workflow` -> use `$mm-workflow`
-- `/mm:session` -> use `$mm-session`
-- `/mm:doctor` -> use `$mm-doctor`
-- `/mm:search` -> use `$mm-search`
 - `/mm:cleanup` -> use `$mm-cleanup`
-
-Specialized:
-- `/mm:security` -> use `$mm-security`
+- `/mm:config` -> use `$mm-config`
+- `/mm:docs` -> use `$mm-docs`
+- `/mm:doctor` -> use `$mm-doctor`
+- `/mm:plan` -> use `$mm-plan`
 - `/mm:quality` -> use `$mm-quality`
 - `/mm:release` -> use `$mm-release`
-- `/mm:docs` -> use `$mm-docs`
+- `/mm:retro` -> use `$mm-retro`
+- `/mm:review` -> use `$mm-review`
 - `/mm:scaffold` -> use `$mm-scaffold`
-- `/mm:config` -> use `$mm-config`
-
-Legacy aliases (map old commands to new skills):
-- `/mm:handoff` -> use `$mm-session` (save mode)
-- `/mm:resume` -> use `$mm-session` (restore mode)
-- `/mm:pause` -> use `$mm-session` (save --lite mode)
-- `/mm:doctor` -> use `$mm-doctor`
-- `/mm:deepsearch` -> use `$mm-search`
-- `/mm:quick` -> use `$mm-workflow` (--quick mode)
-- `/mm:autopilot` -> use `$mm-workflow` (--auto mode)
-- `/mm:tdd` -> use `$mm-workflow` (--tdd mode)
+- `/mm:search` -> use `$mm-search`
 - `/mm:security` -> use `$mm-security`
-- `/mm:deps` -> use `$mm-quality` (--deps mode)
-- `/mm:a11y` -> use `$mm-quality` (--a11y mode)
-- `/mm:migrate` -> use `$mm-quality` (--migrate mode)
-- `/mm:changelog` -> use `$mm-release`
-- `/mm:pr` -> use `$mm-release`
-- `/mm:docsync` -> use `$mm-docs` (sync mode)
-- `/mm:incident` -> use `$mm-troubleshoot`
+- `/mm:session` -> use `$mm-session`
+- `/mm:ship` -> use `$mm-ship`
+- `/mm:test` -> use `$mm-test`
+- `/mm:troubleshoot` -> use `$mm-troubleshoot`
+- `/mm:verify` -> use `$mm-verify`
+- `/mm:workflow` -> use `$mm-workflow`
 
 Hook wrappers (Claude-like behavior):
 - Session start: `node .codex/hooks/mm-hook.js session-start`

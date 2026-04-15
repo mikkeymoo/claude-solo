@@ -1,8 +1,17 @@
 name = "build-error-resolver"
-description = "Automatically diagnoses and fixes TypeScript, bundler, module resolution, and dependency-related build errors"
+description = "build-error-resolver specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: build-error-resolver
+description: Automatically diagnoses and fixes TypeScript, bundler, module resolution, and dependency-related build errors
+model: sonnet
+effort: medium
+maxTurns: 30
+memory: project
+---
+
 # Build Error Resolver Agent
 
 ## Purpose

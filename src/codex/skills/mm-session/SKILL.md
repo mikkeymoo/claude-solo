@@ -1,19 +1,13 @@
 ---
 name: mm-session
-description: "Claude-solo command skill"
+description: "Session management — save context, restore, or check token usage. Replaces handoff, pause, and resume in one command."
 ---
 
 # mm-session
 
-Claude-solo command skill
+Session management — save context, restore, or check token usage. Replaces handoff, pause, and resume in one command.
 
 ## Instructions
----
-name: mm:session
-description: "Session management — save context, restore, or check token usage. Replaces handoff, pause, and resume in one command."
-argument-hint: "[save|save --lite|restore|tokens]"
----
-
 Session lifecycle management. Save context before ending a session, restore in a fresh one, or check token burn.
 
 Detect intent from argument or context:

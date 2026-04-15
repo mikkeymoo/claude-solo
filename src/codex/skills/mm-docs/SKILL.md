@@ -1,19 +1,13 @@
 ---
 name: mm-docs
-description: "Claude-solo command skill"
+description: "Documentation suite — sync docs with code, generate onboarding guide, create/update feature dev docs, or compress a doc for LLM consumption."
 ---
 
 # mm-docs
 
-Claude-solo command skill
+Documentation suite — sync docs with code, generate onboarding guide, create/update feature dev docs, or compress a doc for LLM consumption.
 
 ## Instructions
----
-name: mm:docs
-description: "Documentation suite — sync docs with code, generate onboarding guide, create/update feature dev docs, or compress a doc for LLM consumption."
-argument-hint: "[sync | onboard | plan <feature> | update <feature> | distill [file]]"
----
-
 Documentation management. Detect intent from argument or context.
 
 - No argument or `sync` → sync docs with current code

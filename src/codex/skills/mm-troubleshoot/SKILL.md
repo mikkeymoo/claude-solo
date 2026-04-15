@@ -1,19 +1,13 @@
 ---
 name: mm-troubleshoot
-description: "Claude-solo command skill"
+description: "Universal debugging — triage any problem (build errors, test failures, CI failures, runtime errors, type errors, dependency conflicts, environment issues, production incidents) and fix it."
 ---
 
 # mm-troubleshoot
 
-Claude-solo command skill
+Universal debugging — triage any problem (build errors, test failures, CI failures, runtime errors, type errors, dependency conflicts, environment issues, production incidents) and fix it.
 
 ## Instructions
----
-name: mm:troubleshoot
-description: "Universal debugging — triage any problem (build errors, test failures, CI failures, runtime errors, type errors, dependency conflicts, environment issues, production incidents) and fix it."
-argument-hint: "[error message or symptom description]"
----
-
 Universal debugger. Triage any problem, route to the right strategy, fix it.
 
 If no argument given, ask: "What's broken? Paste the error message or describe the symptom."

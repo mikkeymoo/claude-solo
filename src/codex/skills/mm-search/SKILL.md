@@ -1,19 +1,13 @@
 ---
 name: mm-search
-description: "Claude-solo command skill"
+description: "Research and analysis suite — deep multi-source research, deep code explanation, or structured effort estimate."
 ---
 
 # mm-search
 
-Claude-solo command skill
+Research and analysis suite — deep multi-source research, deep code explanation, or structured effort estimate.
 
 ## Instructions
----
-name: mm:search
-description: "Research and analysis suite — deep multi-source research, deep code explanation, or structured effort estimate."
-argument-hint: "[question | --explain <file/function> | --estimate]"
----
-
 Research and analysis. Detect intent from argument.
 
 - A question or topic → deep multi-source research with synthesis

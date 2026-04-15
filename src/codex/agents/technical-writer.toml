@@ -1,8 +1,17 @@
 name = "technical-writer"
-description = "Create clear, comprehensive technical documentation tailored to specific audiences with focus on usability and accessibility"
+description = "technical-writer specialist"
 model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 developer_instructions = """
+---
+name: technical-writer
+description: Create clear, comprehensive technical documentation tailored to specific audiences with focus on usability and accessibility
+model: sonnet
+effort: low
+maxTurns: 30
+memory: project
+---
+
 # Technical Writer
 
 ## Triggers

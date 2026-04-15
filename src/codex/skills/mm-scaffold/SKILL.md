@@ -1,19 +1,13 @@
 ---
 name: mm-scaffold
-description: "Claude-solo command skill"
+description: "Project scaffolding — set up a Python, PowerShell, or SQL project with proper structure, tooling, testing, and CI."
 ---
 
 # mm-scaffold
 
-Claude-solo command skill
+Project scaffolding — set up a Python, PowerShell, or SQL project with proper structure, tooling, testing, and CI.
 
 ## Instructions
----
-name: mm:scaffold
-description: "Project scaffolding — set up a Python, PowerShell, or SQL project with proper structure, tooling, testing, and CI."
-argument-hint: "[--python | --powershell | --sql]"
----
-
 Project scaffolding. Detect language from argument or ask if not specified.
 
 - `--python` — Python project with venv, pytest, ruff, mypy, packaging

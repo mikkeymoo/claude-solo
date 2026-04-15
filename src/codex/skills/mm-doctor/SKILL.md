@@ -1,19 +1,13 @@
 ---
 name: mm-doctor
-description: "Claude-solo command skill"
+description: "Project health suite — full diagnostic check (default), codebase orientation map (--map), or pre-build readiness gate (--ready)."
 ---
 
 # mm-doctor
 
-Claude-solo command skill
+Project health suite — full diagnostic check (default), codebase orientation map (--map), or pre-build readiness gate (--ready).
 
 ## Instructions
----
-name: mm:doctor
-description: "Project health suite — full diagnostic check (default), codebase orientation map (--map), or pre-build readiness gate (--ready)."
-argument-hint: "[--check (default) | --map | --ready]"
----
-
 Project health and orientation suite.
 
 - No argument / `--check` — full health check across 6 areas

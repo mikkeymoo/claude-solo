@@ -1,19 +1,13 @@
 ---
 name: mm-workflow
-description: "Claude-solo command skill"
+description: "Execution mode selector — choose how to run the sprint: hands-off autopilot, parallel waves, strict TDD, or rapid quick mode."
 ---
 
 # mm-workflow
 
-Claude-solo command skill
+Execution mode selector — choose how to run the sprint: hands-off autopilot, parallel waves, strict TDD, or rapid quick mode.
 
 ## Instructions
----
-name: mm:workflow
-description: "Execution mode selector — choose how to run the sprint: hands-off autopilot, parallel waves, strict TDD, or rapid quick mode."
-argument-hint: "[--auto [description] | --parallel | --tdd | --quick [task]]"
----
-
 Choose how to execute the work. Pick the mode that fits the task.
 
 - `--auto [description]` — full hands-off pipeline: spec → build → QA → validate
