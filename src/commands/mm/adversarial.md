@@ -1,47 +1,69 @@
 ---
 name: mm:adversarial
-description: "Adversarial security review — think like an attacker trying to break the system. Finds exploit vectors, logic abuse, privilege escalation, and insider threats."
+description: "Adversarial logic review — poke holes in assumptions, find edge cases, broken invariants, state machine gaps, and logic paths the author didn't think about."
 ---
 
-Adversarial code review. Think like an attacker trying to break this system.
+Adversarial logic review. Your job is to break the code's reasoning, not its security perimeter.
 
-This is not a standard review. You are looking for ways to make the system do things it was not designed to do.
+Read the changed code. For each component, interrogate the logic ruthlessly:
 
-Read the changed code. For each component, ask:
+**Assumptions that aren't enforced**
+- What does this function assume about its inputs that isn't validated?
+- What does it assume about call order, initialization, or system state?
+- What happens when a caller violates those assumptions? Does it fail loudly or silently corrupt state?
+- Are there implicit preconditions that only hold in the happy path?
 
-**As a malicious user:**
-- What inputs can I craft to get unexpected behavior?
-- Can I access data that belongs to another user?
-- Can I bypass the intended flow (skip payment, skip auth, skip validation)?
-- Can I escalate my own privileges?
-- What happens if I replay a request? Send it 1000 times?
-- Can I trigger a state that breaks the system for other users?
+**Edge cases the author didn't think about**
+- Empty collections, zero values, negative numbers, very large inputs
+- First item / last item boundary conditions
+- Off-by-one errors in loops, slices, pagination
+- What happens when two things that "shouldn't" be equal are equal?
+- What happens when a required dependency returns nothing instead of an error?
 
-**As an insider threat:**
-- What can a legitimate low-privilege user do that they shouldn't?
-- What could an admin do that would be hard to detect?
-- Are there audit log gaps that would hide malicious activity?
+**State machine gaps**
+- Draw the state machine. Are there transitions that are missing? Unreachable states? States you can get stuck in?
+- Can state become inconsistent between two stores (DB + cache, memory + disk, parent + child)?
+- What happens if an operation is interrupted halfway? Is the result a valid state or partial garbage?
+- Is there any state that is written before it should be visible to other callers?
 
-**As an external attacker:**
-- What is exposed without authentication?
-- What information leaks from error messages, headers, timing differences?
-- Are there any endpoints that accept callbacks or redirects (SSRF, open redirect)?
-- What third-party integrations could be abused if compromised?
+**Logic that doesn't compose**
+- Functions that work correctly in isolation but produce wrong results when combined
+- Operations that are not commutative but are treated as if they are
+- Conditional branches that overlap or have gaps (missing `else`, unhandled enum variants)
+- Code that handles one failure mode but leaves others silently unhandled
 
-**As a logic abuser:**
-- What race conditions exist? (e.g., check-then-act patterns)
-- What happens if I send requests out of order?
-- Are numeric operations safe from overflow/underflow?
-- Can I abuse pagination, sorting, or filter parameters?
+**Concurrency and ordering**
+- Check-then-act patterns where the state can change between the check and the act
+- Shared mutable state with no synchronization
+- Operations that assume a specific execution order but nothing enforces it
+- Caches or memoized values that can go stale mid-operation
+
+**Data flow surprises**
+- Where does data get mutated in place when the caller expects it unchanged?
+- Where is a reference passed when a copy was intended (aliasing bugs)?
+- Where does a function return a value the caller ignores, masking a real error?
+- Where is an error swallowed (`catch {}`, `_ =`, `|| null`) hiding a failure?
+
+**Contracts that drift**
+- Does the function signature accurately reflect what it actually does?
+- Are return types honest — or does a `string` sometimes come back as `null`?
+- Does the documentation describe behavior that the code no longer implements?
+- Are there callers that depend on undocumented side effects?
+
+Orient yourself first:
+```bash
+rtk git diff HEAD~5 --stat
+rtk git log --oneline -10
+```
 
 For each finding:
 ```
-🔴 EXPLOIT: [what I can do]
-   Vector: [how — specific endpoint/input/sequence]
-   Impact: [what data or capability I gain]
+🔴 BREAKS: [what goes wrong]
+   When: [the specific input/state/sequence that triggers it]
+   Result: [what actually happens — wrong output, crash, silent data loss]
    Fix: [specific code change]
 ```
 
-Then list assumptions you made that couldn't be verified — things that could be vulnerabilities depending on code you didn't see.
+Then list your unverified assumptions — things you couldn't confirm without more context, that could be gaps if your assumption is wrong.
 
-End with a threat summary: "The highest-risk attack vector is [X] because [Y]."
+End with: "The weakest assumption in this code is [X] because [Y]. If that breaks, [Z] happens."
