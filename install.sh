@@ -224,7 +224,7 @@ install_scripts() {
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No .sh files found in $src_dir"
+  [[ $count -eq 0 ]] && warn "No .sh files found in $src_dir" || true
 }
 
 # ---------------------------------------------------------------------------
@@ -251,7 +251,7 @@ install_agents() {
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No agent .md files found in $src_dir"
+  [[ $count -eq 0 ]] && warn "No agent .md files found in $src_dir" || true
 }
 
 # ---------------------------------------------------------------------------
@@ -279,7 +279,7 @@ install_skills() {
     fi
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No skill directories found in $src_dir"
+  [[ $count -eq 0 ]] && warn "No skill directories found in $src_dir" || true
 }
 
 # ---------------------------------------------------------------------------
@@ -303,7 +303,7 @@ install_commands() {
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No command .md files found in $src_dir"
+  [[ $count -eq 0 ]] && warn "No command .md files found in $src_dir" || true
 }
 
 # ---------------------------------------------------------------------------
