@@ -1,0 +1,51 @@
+{
+  "_comment_top": "Project-scoped override — install to <repo>/.claude/settings.json. Merges on top of ~/.claude/settings.json per the precedence: Managed > Local > Project > User. This file only contains what differs per-project: stricter permissions, project-specific deny rules, and the deploy-guard Agent gate.",
+  "_precedence_note": "Deny rules in this file accumulate with user-scope deny rules — you cannot 'allow' something the user scope denied by listing it here. Conversely, denies here CAN narrow the user-scope allow list for this project only.",
+
+  "permissions": {
+    "_comment_permissions": "Project-strict defaults: no bypass, require approval for network writes, block the deploy-guard agent from being auto-spawned by the main loop (must be invoked by name).",
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": true,
+
+    "deny": [
+      "Agent(deploy-guard)",
+      "Bash(gh workflow run deploy*)",
+      "Bash(gh workflow run release*)",
+      "Bash(kubectl apply*)",
+      "Bash(kubectl delete*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(aws s3 rm*)",
+      "Bash(aws ec2 terminate-instances*)",
+      "Bash(docker push*)"
+    ],
+
+    "ask": [
+      "Bash(docker build*)",
+      "Bash(docker run*)",
+      "Bash(docker-compose up*)"
+    ]
+  },
+
+  "env": {
+    "_comment_env": "Project-only env vars. Do not put secrets here — .claude/settings.json is commonly checked into git. Use .claude/settings.local.json (gitignored) for anything sensitive.",
+    "PROJECT_SPRINT_DIR": ".planning",
+    "PROJECT_TEST_CMD": "pnpm test"
+  },
+
+  "hooks": {
+    "_comment_hooks": "Extra hooks layered on top of the user-scope ones. The user-scope validate-bash runs first; this one adds project-specific bash guards (forbid editing generated files, etc.).",
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/ultimate/scripts/validate-bash.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}

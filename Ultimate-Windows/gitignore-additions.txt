@@ -1,0 +1,34 @@
+# ========================================================================
+# Appendix for .gitignore — add these lines to your existing .gitignore.
+# Do not replace your whole .gitignore; this is additive only.
+# ========================================================================
+
+# Claude Code local-only settings (user-specific; may contain secrets)
+.claude/settings.local.json
+
+# Claude Code worktree artifacts (isolation: worktree in agent frontmatter)
+.claude/worktrees/
+
+# Claude Code hook output / runtime state
+.claude/state/
+.claude/cache-fix-tools.json
+
+# Sprint planning — commit the persistent docs, ignore ephemeral checkpoints
+.planning/CHECKPOINT.md
+.planning/SESSION-END.md
+.planning/last-test.log
+.planning/agent-outputs/
+
+# Keep these (do NOT add to .gitignore):
+#   .claude/settings.json         — project-scope, commit for reproducibility
+#   .claude/CLAUDE.md             — project instructions, commit
+#   .claude/agents/*.md           — subagents, commit
+#   .claude/skills/**/SKILL.md    — skills, commit
+#   .planning/BRIEF.md            — sprint brief, commit
+#   .planning/PLAN.md             — sprint plan, commit
+
+# Editor / OS junk (in case yours doesn't cover these)
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
