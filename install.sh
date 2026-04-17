@@ -233,7 +233,7 @@ install_scripts() {
 install_agents() {
   local src_dir="$1"
   local manifest="$2"
-  say "Installing agents (mode: $MODE)"
+  say "Installing agents"
   do_run mkdir -p "$CLAUDE_HOME/agents"
   # Reset manifest for this install run
   [[ $DRY_RUN -eq 0 ]] && : > "$manifest"
@@ -241,22 +241,13 @@ install_agents() {
   local count=0
   for f in "$src_dir/"*.md; do
     local name; name=$(basename "$f" .md)
-    local target
-    if [[ "$MODE" == "merge" ]]; then
-      target="$CLAUDE_HOME/agents/ult-$name.md"
-      [[ -f "$target" ]] && backup_path "$target"
-      do_run cp "$f" "$target"
-      # Rewrite the name: field so Claude Code displays the ult- prefix
-      do_run sed -i "s/^name: ${name}$/name: ult-${name}/" "$target"
-      ok "Installed ult-$name.md"
-      [[ $DRY_RUN -eq 0 ]] && echo "ult-$name.md" >> "$manifest"
-    else
-      target="$CLAUDE_HOME/agents/$name.md"
-      [[ -f "$target" ]] && backup_path "$target"
-      do_run cp "$f" "$target"
-      ok "Installed $name.md"
-      [[ $DRY_RUN -eq 0 ]] && echo "$name.md" >> "$manifest"
-    fi
+    # Always use ult- prefix to avoid collisions with user's own agents in both modes
+    local target="$CLAUDE_HOME/agents/ult-${name}.md"
+    [[ -f "$target" ]] && backup_path "$target"
+    do_run cp "$f" "$target"
+    do_run sed -i "s/^name: ${name}$/name: ult-${name}/" "$target"
+    ok "Installed ult-$name.md"
+    [[ $DRY_RUN -eq 0 ]] && echo "ult-$name.md" >> "$manifest"
     (( count++ )) || true
   done
   shopt -u nullglob
@@ -338,6 +329,48 @@ install_settings() {
   say "Diff (yours → variant) — merge manually if needed:"
   diff -u "$target" "$src" | head -80 || true
   warn "Variant settings.json is at: $src"
+}
+
+# ---------------------------------------------------------------------------
+# Ensure critical Ultimate-Windows hooks are wired in settings.json
+# Runs after install_settings in both merge and fresh modes. Uses jq to
+# surgically add missing hook entries without touching user-managed keys.
+# ---------------------------------------------------------------------------
+ensure_hooks_wired() {
+  local scripts_dir="$1"
+  local target="$CLAUDE_HOME/settings.json"
+  [[ ! -f "$target" ]] && return
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json to wire Ultimate-Windows hooks\n"
+    return
+  fi
+  say "Ensuring Ultimate-Windows hooks are wired in settings.json"
+
+  _wire_hook() {
+    local event="$1" check_str="$2" entry="$3"
+    if ! jq -e "(.hooks.${event} // [])[] | .hooks[]? | select(.command | contains(\"${check_str}\"))" "$target" >/dev/null 2>&1; then
+      jq ".hooks.${event} = ([${entry}] + (.hooks.${event} // []))" "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+      ok "Wired ${check_str} into ${event}"
+    else
+      ok "${check_str} already wired in ${event}"
+    fi
+  }
+
+  _wire_hook "PostToolUse" \
+    "post-format-and-heal" \
+    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/post-format-and-heal.sh","timeout":60000}]}'
+
+  _wire_hook "PostToolUse" \
+    "compress-lsp-output" \
+    '{"matcher":"mcp__cclsp__.*","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/compress-lsp-output.sh","timeout":5000}]}'
+
+  _wire_hook "SessionStart" \
+    "session-start-context" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/session-start-context.sh","statusMessage":"Loading git + sprint context...","timeout":10000}]}'
+
+  _wire_hook "PreCompact" \
+    "pre-compact-checkpoint" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/pre-compact-checkpoint.sh","statusMessage":"Saving checkpoint before compaction..."}]}'
 }
 
 # ---------------------------------------------------------------------------
@@ -561,13 +594,14 @@ run_linux() {
   install_skills   "$src/skills"
   install_commands "$src/commands"
   install_settings "$src/settings.json"
+  ensure_hooks_wired "$scripts_target"
   install_claude_md "$src/CLAUDE.md" "<!-- ultimate:start -->" "<!-- ultimate:end -->"
 
   echo ""
   smoke_test_ultimate "$scripts_target"
   echo ""
   say "Install complete."
-  [[ "$MODE" == "merge" ]] && say "Try it: start a fresh claude session and run /agents — expect ult-code-reviewer, etc."
+  say "Try it: start a fresh claude session and run /agents — expect ult-code-reviewer, etc."
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
 }
 
@@ -597,13 +631,14 @@ run_windows() {
   install_skills   "$src/skills"
   install_commands "$src/commands"
   install_settings "$src/settings.json"
+  ensure_hooks_wired "$scripts_target"
   install_claude_md "$src/CLAUDE.md" "<!-- ultimate-windows:start -->" "<!-- ultimate-windows:end -->"
 
   echo ""
   smoke_test_ultimate "$scripts_target"
   echo ""
   say "Install complete."
-  [[ "$MODE" == "merge" ]] && say "Try it: start a fresh claude session and run /agents — expect ult-code-reviewer, etc."
+  say "Try it: start a fresh claude session and run /agents — expect ult-code-reviewer, etc."
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
 
   echo ""
