@@ -91,18 +91,7 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/ultimate/scripts/validate-bash.sh",
-            "timeout": 3000
-          }
-        ]
-      }
-    ],
+    "PreToolUse": [],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
