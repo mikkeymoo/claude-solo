@@ -331,51 +331,32 @@ install_settings() {
 }
 
 # ---------------------------------------------------------------------------
-# Purge all prior Ultimate-Windows artifacts — called by fresh mode before
-# reinstalling so leftover files from prior merge/fresh runs don't persist.
-# Only touches ult-namespaced agents, skills/ult/, commands/mm/, and the
-# scripts dir. Never touches user-owned hooks/, other agents, or env.
+# Purge all prior Ultimate artifacts — called by fresh mode before reinstalling.
+# Backs up then wipes agents/, skills/ult/, commands/mm/. This ensures only
+# what the variant ships ends up installed — no orphaned files from prior runs.
+# Never touches hooks/, settings.json, CLAUDE.md, or env (handled separately).
 # ---------------------------------------------------------------------------
 purge_ult_artifacts() {
   local scripts_ns="$1"   # e.g. "ultimate-windows"
-  local manifest="$2"
   say "Purging prior ${scripts_ns} artifacts (fresh mode)"
 
-  # Agents — use manifest if present, fall back to glob
-  if [[ -f "$manifest" ]]; then
-    while IFS= read -r agent_file; do
-      local full="$CLAUDE_HOME/agents/$agent_file"
-      if [[ -f "$full" ]]; then
-        backup_path "$full"
-        do_run rm -f "$full"
-        ok "Removed $agent_file"
-      fi
-    done < "$manifest"
+  # Agents — backup entire dir, wipe it, recreate empty
+  if [[ -d "$CLAUDE_HOME/agents" ]]; then
+    backup_path "$CLAUDE_HOME/agents"
+    do_run rm -rf "$CLAUDE_HOME/agents"
+    ok "Removed agents/"
   fi
-  # Catch any ult-*.md not tracked by manifest (e.g. from a previous fresh install)
-  shopt -s nullglob
-  for f in "$CLAUDE_HOME/agents/ult-"*.md; do
-    backup_path "$f"
-    do_run rm -f "$f"
-    ok "Removed $(basename "$f")"
-  done
-  shopt -u nullglob
+  do_run mkdir -p "$CLAUDE_HOME/agents"
 
-  # Skills — both ult/ (merge installs) and loose root-level dirs (old fresh installs)
-  if [[ -d "$CLAUDE_HOME/skills/ult" ]]; then
-    backup_path "$CLAUDE_HOME/skills/ult"
-    do_run rm -rf "$CLAUDE_HOME/skills/ult"
-    ok "Removed skills/ult/"
+  # Skills — wipe ult/ and any loose root-level skill dirs
+  if [[ -d "$CLAUDE_HOME/skills" ]]; then
+    backup_path "$CLAUDE_HOME/skills"
+    do_run rm -rf "$CLAUDE_HOME/skills"
+    ok "Removed skills/"
   fi
-  for skill in daily-brief riper security-review tech-debt; do
-    if [[ -d "$CLAUDE_HOME/skills/$skill" ]]; then
-      backup_path "$CLAUDE_HOME/skills/$skill"
-      do_run rm -rf "$CLAUDE_HOME/skills/$skill"
-      ok "Removed skills/$skill/"
-    fi
-  done
+  do_run mkdir -p "$CLAUDE_HOME/skills"
 
-  # Commands
+  # Commands — wipe mm/ only (other command namespaces are not ours)
   if [[ -d "$CLAUDE_HOME/commands/mm" ]]; then
     backup_path "$CLAUDE_HOME/commands/mm"
     do_run rm -rf "$CLAUDE_HOME/commands/mm"
