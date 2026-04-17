@@ -9,6 +9,8 @@
 # Usage:
 #   bash install.sh                 # Option B: namespaced merge (safe, default)
 #   bash install.sh --fresh         # Option A: replace existing (aggressive)
+#   bash install.sh --reset         # DESTRUCTIVE: wipe ~/.claude/{agents,skills,ultimate}/ then fresh install
+#   bash install.sh --reset --yes   # skip the confirmation prompt
 #   bash install.sh --project       # add project-override to CWD's .claude/
 #   bash install.sh --dry-run       # show what would happen, change nothing
 #   bash install.sh --no-backup     # skip backups (not recommended)
@@ -26,6 +28,8 @@ DRY_RUN=0
 UNINSTALL=0
 VERIFY_ONLY=0
 PROJECT_MODE=0
+RESET=0
+ASSUME_YES=0
 
 ULTIMATE_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_HOME="${HOME}/.claude"
@@ -66,6 +70,8 @@ backup() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --fresh) MODE="fresh" ;;
+    --reset) MODE="fresh"; RESET=1 ;;
+    --yes|-y) ASSUME_YES=1 ;;
     --project) PROJECT_MODE=1 ;;
     --no-backup) BACKUP=0 ;;
     --dry-run|-n) DRY_RUN=1 ;;
@@ -181,6 +187,42 @@ install_project() {
   fi
   say "Project install complete."
   exit 0
+}
+
+# ---------------------------------------------------------------------------
+# Reset (nuke-and-pave) — used by --reset
+# ---------------------------------------------------------------------------
+do_reset() {
+  say "RESET MODE — will wipe and reinstall:"
+  echo "    $CLAUDE_HOME/agents/     (ALL agents, not just ultimate's)"
+  echo "    $CLAUDE_HOME/skills/     (ALL skills, not just ultimate's)"
+  echo "    $CLAUDE_HOME/ultimate/   (hook scripts)"
+  echo "  Also replaces (via --fresh): settings.json, CLAUDE.md"
+  echo ""
+  say "NOT touched: commands/, memory/, rules/, .planning/, anything else"
+  echo ""
+  if [[ $BACKUP -eq 1 ]]; then
+    say "Everything will be backed up to: $BACKUP_DIR"
+  else
+    warn "BACKUPS DISABLED (--no-backup) — this is irreversible"
+  fi
+  echo ""
+  if [[ $ASSUME_YES -ne 1 && $DRY_RUN -ne 1 ]]; then
+    printf "${YELLOW}  Type 'reset' to confirm: ${NC}"
+    read -r confirm
+    [[ "$confirm" != "reset" ]] && die "Aborted — did not confirm"
+  fi
+
+  for sub in agents skills ultimate; do
+    local path="$CLAUDE_HOME/$sub"
+    if [[ -d "$path" ]]; then
+      backup "$path"
+      do_run "rm -rf '$path'"
+      ok "Wiped $sub/"
+    else
+      ok "$sub/ does not exist — nothing to wipe"
+    fi
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -332,7 +374,7 @@ main() {
   say "Ultimate Claude Code config installer"
   say "Source:    $ULTIMATE_DIR"
   say "Target:    $CLAUDE_HOME"
-  say "Mode:      $MODE  $([[ $DRY_RUN -eq 1 ]] && echo '(dry-run)')"
+  say "Mode:      $MODE$([[ $RESET -eq 1 ]] && echo ' + RESET (wipe first)')  $([[ $DRY_RUN -eq 1 ]] && echo '(dry-run)')"
   say "Backup:    $([[ $BACKUP -eq 1 ]] && echo "$BACKUP_DIR" || echo 'DISABLED')"
   echo ""
 
@@ -340,6 +382,7 @@ main() {
   [[ $VERIFY_ONLY -eq 1 ]] && { say "Verify-only — exiting"; exit 0; }
   [[ $UNINSTALL -eq 1 ]] && uninstall
   [[ $PROJECT_MODE -eq 1 ]] && install_project
+  [[ $RESET -eq 1 ]] && do_reset
 
   install_scripts
   install_agents
