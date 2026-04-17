@@ -117,7 +117,8 @@ case "$ext" in
     ;;
   go)
     if command -v go >/dev/null 2>&1; then
-      out=$(go vet "./$(dirname "$FILE")/..." 2>&1 | head -10 || true)
+      # Run from project root so the package path is valid on Windows and Linux
+      out=$(go vet "./..." 2>&1 | head -10 || true)
       [[ -n "$out" ]] && collect_error "go vet" "$out"
     fi
     ;;

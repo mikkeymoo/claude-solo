@@ -25,11 +25,24 @@ SAFE_MSG="${SAFE_MSG//$'\r'/ }"               # strip carriage returns
 SAFE_MSG="${SAFE_MSG:0:200}"                  # cap length — balloon tips truncate anyway
 
 if command -v powershell.exe >/dev/null 2>&1; then
-  # Try BurntToast first (proper Windows 10/11 toast notification).
-  # Install with: Install-Module BurntToast -Scope CurrentUser
-  if powershell.exe -NoProfile -Command \
-      "Get-Module -ListAvailable BurntToast -ErrorAction SilentlyContinue | Select-Object -First 1" \
-      2>/dev/null | grep -q "BurntToast"; then
+  # Cache BurntToast availability so we don't cold-start PowerShell on every notification.
+  # The cache is invalidated by deleting ~/.cache/claude-burnttoast-check manually.
+  BT_CACHE="${HOME}/.cache/claude-burnttoast-check"
+  if [[ ! -f "$BT_CACHE" ]]; then
+    mkdir -p "$(dirname "$BT_CACHE")" 2>/dev/null || true
+    if powershell.exe -NoProfile -Command \
+        "Get-Module -ListAvailable BurntToast -ErrorAction SilentlyContinue | Select-Object -First 1" \
+        2>/dev/null | grep -q "BurntToast"; then
+      echo "1" > "$BT_CACHE"
+    else
+      echo "0" > "$BT_CACHE"
+    fi
+  fi
+  BURNTTOAST_AVAILABLE=$(cat "$BT_CACHE" 2>/dev/null || echo "0")
+
+  if [[ "$BURNTTOAST_AVAILABLE" == "1" ]]; then
+    # BurntToast: proper Windows 10/11 toast notification.
+    # Install with: Install-Module BurntToast -Scope CurrentUser
     powershell.exe -NoProfile -WindowStyle Hidden -Command \
       "Import-Module BurntToast; New-BurntToastNotification -Text 'Claude Code','${SAFE_MSG}'" \
       2>/dev/null &

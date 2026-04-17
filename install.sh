@@ -184,14 +184,17 @@ install_scripts() {
   local src_dir="$1"
   local dst_dir="$2"
   say "Installing hook scripts → $dst_dir"
+  # Backup and wipe destination so removed scripts don't persist across reinstalls
+  if [[ -d "$dst_dir" ]]; then
+    backup_path "$dst_dir"
+    do_run rm -rf "$dst_dir"
+  fi
   do_run mkdir -p "$dst_dir"
   shopt -s nullglob
   local count=0
   for f in "$src_dir/"*.sh; do
-    local target="$dst_dir/$(basename "$f")"
-    [[ -f "$target" ]] && backup_path "$target"
-    do_run cp "$f" "$target"
-    do_run chmod +x "$target"
+    do_run cp "$f" "$dst_dir/$(basename "$f")"
+    do_run chmod +x "$dst_dir/$(basename "$f")"
     ok "Installed $(basename "$f")"
     (( count++ )) || true
   done
@@ -270,7 +273,11 @@ install_commands() {
   local src_dir="$1"
   say "Installing commands → $CLAUDE_HOME/commands/mm"
   local target_dir="$CLAUDE_HOME/commands/mm"
-  [[ -d "$target_dir" ]] && backup_path "$target_dir"
+  # Backup and wipe so removed commands don't persist across reinstalls
+  if [[ -d "$target_dir" ]]; then
+    backup_path "$target_dir"
+    do_run rm -rf "$target_dir"
+  fi
   do_run mkdir -p "$target_dir"
   shopt -s nullglob
   local count=0
@@ -323,8 +330,10 @@ install_claude_md() {
   fi
 
   if [[ "$MODE" == "fresh" ]]; then
-    [[ -f "$target" ]] && backup_path "$target"
-    warn "--fresh: replacing CLAUDE.md (backup taken)"
+    if [[ -f "$target" ]]; then
+      backup_path "$target"
+      warn "--fresh: replacing CLAUDE.md$([[ $DRY_RUN -eq 1 ]] && echo ' (dry-run — no actual backup yet)' || echo ' (backup taken)')"
+    fi
     do_run cp "$src" "$target"
     ok "Wrote $target"
     return
@@ -353,7 +362,9 @@ install_project_override() {
   local src_dir="$1"
   local variant_label="$2"
   say "Installing $variant_label project-override into: $PWD"
-  [[ ! -d .git ]] && warn "Not a git repo — you probably want to run this inside a project"
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    warn "Not inside a git repo — you probably want to run this inside a project"
+  fi
   do_run mkdir -p .claude
   if [[ -f .claude/settings.json ]]; then
     backup_path "$PWD/.claude/settings.json"
