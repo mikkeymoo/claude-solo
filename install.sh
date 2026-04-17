@@ -166,9 +166,34 @@ check_prereqs_ultimate() {
   if [[ ${#missing[@]} -gt 0 ]]; then
     die "Missing required tools: ${missing[*]}"
   fi
-  for bin in gh prettier tsc ruff pyright; do
+  for bin in gh ruff; do
     command -v "$bin" >/dev/null 2>&1 || warn "$bin not on PATH (optional — some hook features will no-op)"
   done
+
+  # Auto-install npm-based optional tools if npm is available
+  local npm_missing=()
+  for bin in prettier tsc pyright; do
+    command -v "$bin" >/dev/null 2>&1 || npm_missing+=("$bin")
+  done
+  if [[ ${#npm_missing[@]} -gt 0 ]]; then
+    if command -v npm >/dev/null 2>&1; then
+      say "Auto-installing missing npm tools: ${npm_missing[*]}"
+      # tsc ships inside the 'typescript' package
+      local npm_pkgs=()
+      for bin in "${npm_missing[@]}"; do
+        [[ "$bin" == "tsc" ]] && npm_pkgs+=("typescript") || npm_pkgs+=("$bin")
+      done
+      if [[ $DRY_RUN -eq 1 ]]; then
+        printf "  ${YELLOW}[dry-run]${NC} would run: npm install -g %s\n" "${npm_pkgs[*]}"
+      else
+        npm install -g "${npm_pkgs[@]}" && ok "Installed: ${npm_pkgs[*]}" || warn "npm install failed — install manually: npm install -g ${npm_pkgs[*]}"
+      fi
+    else
+      for bin in "${npm_missing[@]}"; do
+        warn "$bin not on PATH (optional — some hook features will no-op)"
+      done
+    fi
+  fi
 }
 
 check_prereqs_original() {
