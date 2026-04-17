@@ -228,12 +228,22 @@ install_scripts() {
 }
 
 # ---------------------------------------------------------------------------
+# Manifest helper — record an installed path (relative to CLAUDE_HOME)
+# ---------------------------------------------------------------------------
+_manifest_add() {
+  local manifest="$1" rel_path="$2"
+  [[ $DRY_RUN -eq 1 ]] && return 0
+  echo "$rel_path" >> "$manifest"
+}
+
+# ---------------------------------------------------------------------------
 # Agents install — writes a manifest for clean per-variant uninstall
+# Manifest entries use paths relative to $CLAUDE_HOME (e.g. agents/ult-foo.md)
 # ---------------------------------------------------------------------------
 install_agents() {
   local src_dir="$1"
   local manifest="$2"
-  say "Installing agents"
+  say "Installing agents → $CLAUDE_HOME/agents/"
   do_run mkdir -p "$CLAUDE_HOME/agents"
   # Reset manifest for this install run
   [[ $DRY_RUN -eq 0 ]] && : > "$manifest"
@@ -247,7 +257,7 @@ install_agents() {
     do_run cp "$f" "$target"
     do_run sed -i "s/^name: ${name}$/name: ult-${name}/" "$target"
     ok "Installed ult-$name.md"
-    [[ $DRY_RUN -eq 0 ]] && echo "ult-$name.md" >> "$manifest"
+    _manifest_add "$manifest" "agents/ult-${name}.md"
     (( count++ )) || true
   done
   shopt -u nullglob
@@ -255,50 +265,55 @@ install_agents() {
 }
 
 # ---------------------------------------------------------------------------
-# Skills install
+# Skills install — top-level (~/.claude/skills/<name>/SKILL.md) so Claude Code
+# discovers them. Nested subdirs (e.g. skills/ult/foo) are NOT auto-discovered.
 # ---------------------------------------------------------------------------
 install_skills() {
   local src_dir="$1"
-  say "Installing skills → skills/ult/"
-  local base="$CLAUDE_HOME/skills/ult"
-  do_run mkdir -p "$base"
+  local manifest="$2"
+  say "Installing skills → $CLAUDE_HOME/skills/"
+  do_run mkdir -p "$CLAUDE_HOME/skills"
   shopt -s nullglob
   local count=0
   for dir in "$src_dir/"*/; do
     local name; name=$(basename "$dir")
-    local target="$base/$name"
+    local target="$CLAUDE_HOME/skills/$name"
+    if [[ ! -f "$dir/SKILL.md" ]]; then
+      warn "Skipping $name — no SKILL.md found"
+      continue
+    fi
     [[ -d "$target" ]] && backup_path "$target"
     do_run mkdir -p "$target"
-    if [[ -f "$dir/SKILL.md" ]]; then
-      do_run cp "$dir/SKILL.md" "$target/"
-      ok "Installed skill: $name"
-      (( count++ )) || true
-    else
-      warn "Skipping $name — no SKILL.md found"
-    fi
+    do_run cp "$dir/SKILL.md" "$target/SKILL.md"
+    ok "Installed skill: $name"
+    _manifest_add "$manifest" "skills/$name/SKILL.md"
+    (( count++ )) || true
   done
   shopt -u nullglob
   [[ $count -eq 0 ]] && warn "No skill directories found in $src_dir" || true
 }
 
 # ---------------------------------------------------------------------------
-# Commands install
+# Commands install — top-level (~/.claude/commands/<name>.md). Strips any
+# `mm:` namespace prefix from the frontmatter `name:` field so invocation
+# matches filename (e.g. /brief, not /mm:brief).
 # ---------------------------------------------------------------------------
 install_commands() {
   local src_dir="$1"
-  say "Installing commands → $CLAUDE_HOME/commands/mm"
-  local target_dir="$CLAUDE_HOME/commands/mm"
-  # Backup and wipe so removed commands don't persist across reinstalls
-  if [[ -d "$target_dir" ]]; then
-    backup_path "$target_dir"
-    do_run rm -rf "$target_dir"
-  fi
-  do_run mkdir -p "$target_dir"
+  local manifest="$2"
+  say "Installing commands → $CLAUDE_HOME/commands/"
+  do_run mkdir -p "$CLAUDE_HOME/commands"
   shopt -s nullglob
   local count=0
   for f in "$src_dir/"*.md; do
-    do_run cp "$f" "$target_dir/$(basename "$f")"
-    ok "Installed command: $(basename "$f")"
+    local base; base=$(basename "$f")
+    local target="$CLAUDE_HOME/commands/$base"
+    [[ -f "$target" ]] && backup_path "$target"
+    do_run cp "$f" "$target"
+    # Normalize frontmatter: drop mm: prefix from the name field if present
+    do_run sed -i 's/^name: mm:\(.*\)$/name: \1/' "$target"
+    ok "Installed command: $base"
+    _manifest_add "$manifest" "commands/$base"
     (( count++ )) || true
   done
   shopt -u nullglob
@@ -331,39 +346,62 @@ install_settings() {
 }
 
 # ---------------------------------------------------------------------------
-# Purge all prior Ultimate artifacts — called by fresh mode before reinstalling.
-# Backs up then wipes agents/, skills/ult/, commands/mm/. This ensures only
-# what the variant ships ends up installed — no orphaned files from prior runs.
+# Purge prior Ultimate artifacts — called by fresh mode before reinstalling.
+# Uses the per-variant manifest to remove ONLY what we previously installed,
+# so user-managed agents/skills/commands alongside ours are left untouched.
+# Legacy layouts (skills/ult/, commands/mm/) are also cleaned up opportunistically.
 # Never touches hooks/, settings.json, CLAUDE.md, or env (handled separately).
 # ---------------------------------------------------------------------------
 purge_ult_artifacts() {
   local scripts_ns="$1"   # e.g. "ultimate-windows"
+  local manifest="$2"     # full path to the manifest file
   say "Purging prior ${scripts_ns} artifacts (fresh mode)"
 
-  # Agents — backup entire dir, wipe it, recreate empty
-  if [[ -d "$CLAUDE_HOME/agents" ]]; then
-    backup_path "$CLAUDE_HOME/agents"
-    do_run rm -rf "$CLAUDE_HOME/agents"
-    ok "Removed agents/"
-  fi
-  do_run mkdir -p "$CLAUDE_HOME/agents"
+  _manifest_uninstall "$manifest"
 
-  # Skills — wipe ult/ and any loose root-level skill dirs
-  if [[ -d "$CLAUDE_HOME/skills" ]]; then
-    backup_path "$CLAUDE_HOME/skills"
-    do_run rm -rf "$CLAUDE_HOME/skills"
-    ok "Removed skills/"
+  # Legacy cleanup: prior installer used namespaced subdirs. Remove them so
+  # stale copies don't linger alongside the new top-level layout.
+  if [[ -d "$CLAUDE_HOME/skills/ult" ]]; then
+    backup_path "$CLAUDE_HOME/skills/ult"
+    do_run rm -rf "$CLAUDE_HOME/skills/ult"
+    ok "Removed legacy skills/ult/"
   fi
-  do_run mkdir -p "$CLAUDE_HOME/skills"
-
-  # Commands — wipe mm/ only (other command namespaces are not ours)
   if [[ -d "$CLAUDE_HOME/commands/mm" ]]; then
     backup_path "$CLAUDE_HOME/commands/mm"
     do_run rm -rf "$CLAUDE_HOME/commands/mm"
-    ok "Removed commands/mm/"
+    ok "Removed legacy commands/mm/"
   fi
 
   # Scripts dir is handled by install_scripts (wipe+replace) — skip here
+}
+
+# ---------------------------------------------------------------------------
+# Remove every path listed in a manifest (paths relative to $CLAUDE_HOME).
+# After deleting files, rmdirs the containing directories if they're empty
+# (handles skills/<name>/ which would otherwise be left as an empty dir).
+# Safe to call with a missing manifest (no-op).
+# ---------------------------------------------------------------------------
+_manifest_uninstall() {
+  local manifest="$1"
+  [[ ! -f "$manifest" ]] && return 0
+  local removed_dirs=()
+  while IFS= read -r rel; do
+    [[ -z "$rel" ]] && continue
+    local full="$CLAUDE_HOME/$rel"
+    if [[ -e "$full" ]]; then
+      do_run rm -f "$full"
+      ok "Removed $rel"
+      removed_dirs+=("$(dirname "$full")")
+    fi
+  done < "$manifest"
+  # Clean up now-empty parent dirs (e.g. skills/<name>/ after removing SKILL.md)
+  local d
+  for d in "${removed_dirs[@]}"; do
+    if [[ -d "$d" ]] && [[ -z "$(ls -A "$d" 2>/dev/null)" ]]; then
+      do_run rmdir "$d" 2>/dev/null || true
+    fi
+  done
+  do_run rm -f "$manifest"
 }
 
 # ---------------------------------------------------------------------------
@@ -543,24 +581,17 @@ _uninstall_ultimate() {
 
   say "Uninstalling $scripts_ns"
 
-  # Remove only agents that this variant installed, tracked via manifest
   if [[ -f "$manifest" ]]; then
-    while IFS= read -r agent_file; do
-      local full="$CLAUDE_HOME/agents/$agent_file"
-      if [[ -f "$full" ]]; then
-        do_run rm -f "$full"
-        ok "Removed $agent_file"
-      fi
-    done < "$manifest"
-    do_run rm -f "$manifest"
-    ok "Removed manifest"
+    _manifest_uninstall "$manifest"
+    ok "Manifest cleared"
   else
-    warn "No manifest at $manifest — cannot safely identify which agents belong to this variant"
-    warn "Manually remove $CLAUDE_HOME/agents/ult-*.md if needed"
+    warn "No manifest at $manifest — cannot safely identify files belonging to this variant"
+    warn "Manually remove $CLAUDE_HOME/agents/ult-*.md and related commands/skills if needed"
   fi
 
-  [[ -d "$CLAUDE_HOME/skills/ult" ]] && { do_run rm -rf "$CLAUDE_HOME/skills/ult"; ok "Removed skills/ult/"; }
-  [[ -d "$CLAUDE_HOME/commands/mm" ]] && { do_run rm -rf "$CLAUDE_HOME/commands/mm"; ok "Removed commands/mm/"; }
+  # Legacy cleanup (older installs used subdir namespaces)
+  [[ -d "$CLAUDE_HOME/skills/ult" ]] && { do_run rm -rf "$CLAUDE_HOME/skills/ult"; ok "Removed legacy skills/ult/"; }
+  [[ -d "$CLAUDE_HOME/commands/mm" ]] && { do_run rm -rf "$CLAUDE_HOME/commands/mm"; ok "Removed legacy commands/mm/"; }
   [[ -d "$CLAUDE_HOME/$scripts_ns" ]] && { do_run rm -rf "$CLAUDE_HOME/$scripts_ns"; ok "Removed ~/.claude/$scripts_ns/"; }
 
   local cm="$CLAUDE_HOME/CLAUDE.md"
@@ -623,9 +654,9 @@ run_linux() {
   [[ "$MODE" == "fresh" ]] && purge_ult_artifacts "ultimate" "$manifest"
 
   install_scripts  "$src/scripts" "$scripts_target"
-  install_agents   "$src/agents"  "$manifest"
-  install_skills   "$src/skills"
-  install_commands "$src/commands"
+  install_agents   "$src/agents"   "$manifest"
+  install_skills   "$src/skills"   "$manifest"
+  install_commands "$src/commands" "$manifest"
   install_settings "$src/settings.json"
   ensure_hooks_wired "$scripts_target"
   install_claude_md "$src/CLAUDE.md" "<!-- ultimate:start -->" "<!-- ultimate:end -->"
@@ -662,9 +693,9 @@ run_windows() {
   [[ "$MODE" == "fresh" ]] && purge_ult_artifacts "ultimate-windows" "$manifest"
 
   install_scripts  "$src/scripts" "$scripts_target"
-  install_agents   "$src/agents"  "$manifest"
-  install_skills   "$src/skills"
-  install_commands "$src/commands"
+  install_agents   "$src/agents"   "$manifest"
+  install_skills   "$src/skills"   "$manifest"
+  install_commands "$src/commands" "$manifest"
   install_settings "$src/settings.json"
   ensure_hooks_wired "$scripts_target"
   install_claude_md "$src/CLAUDE.md" "<!-- ultimate-windows:start -->" "<!-- ultimate-windows:end -->"
