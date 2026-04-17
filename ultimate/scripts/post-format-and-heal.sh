@@ -117,7 +117,8 @@ esac
 
 # ---------------------------------------------------------------------------
 # Emit blocking feedback if there are errors.
-# PostToolUse uses top-level {decision, reason} — NOT hookSpecificOutput.
+# Use hookSpecificOutput.additionalContext so errors are injected into the
+# model context (plain stdout from PostToolUse is not surfaced to Claude).
 # ---------------------------------------------------------------------------
 if [[ -n "$errors" ]]; then
   REASON=$(cat <<EOF
@@ -127,7 +128,7 @@ ${errors}
 Re-run the same tool once you've fixed the errors. If the diagnostic is wrong, say so explicitly in a reply rather than silently retrying.
 EOF
 )
-  jq -nc --arg r "$REASON" '{decision:"block",reason:$r}'
+  jq -nc --arg r "$REASON" '{decision:"block",reason:$r,hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:$r}}'
   exit 0
 fi
 
