@@ -438,44 +438,30 @@ offer_lean_ctx() {
   if [[ $ASSUME_YES -eq 1 ]]; then
     say "Installing lean-ctx (--yes flag set)..."
     curl -fsSL https://leanctx.com/install.sh | sh
-    if command -v lean-ctx >/dev/null 2>&1; then
-      lean-ctx setup
-      ok "lean-ctx installed and configured"
-      install_lean_ctx_vscode
-    else
-      warn "lean-ctx install may have failed — check above output"
-    fi
+    do_lean_ctx_agent_setup
     return
   fi
   printf "${YELLOW}  Install lean-ctx now? [y/N]: ${NC}"
   read -r answer
   if [[ "$answer" =~ ^[Yy]$ ]]; then
     curl -fsSL https://leanctx.com/install.sh | sh
-    if command -v lean-ctx >/dev/null 2>&1; then
-      lean-ctx setup
-      ok "lean-ctx installed and configured"
-      install_lean_ctx_vscode
-    else
-      warn "lean-ctx install may have failed — check above output"
-    fi
+    do_lean_ctx_agent_setup
   else
-    say "Skipped. Install later: curl -fsSL https://leanctx.com/install.sh | sh && lean-ctx setup"
+    say "Skipped. Install later:"
+    say "  curl -fsSL https://leanctx.com/install.sh | sh"
+    say "  lean-ctx init --agent claude"
   fi
 }
 
-install_lean_ctx_vscode() {
-  if ! command -v code >/dev/null 2>&1; then
-    warn "VS Code CLI (code) not on PATH — skipping extension install"
-    say "Install manually: code --install-extension yvgude.lean-ctx"
+do_lean_ctx_agent_setup() {
+  if ! command -v lean-ctx >/dev/null 2>&1; then
+    warn "lean-ctx binary not found after install — check output above"
     return
   fi
-  say "Installing lean-ctx VS Code extension..."
-  if code --install-extension yvgude.lean-ctx 2>/dev/null; then
-    ok "VS Code extension yvgude.lean-ctx installed"
-    say "Open Command Palette → 'lean-ctx: Setup' to configure"
-  else
-    warn "VS Code extension install failed — try: code --install-extension yvgude.lean-ctx"
-  fi
+  ok "lean-ctx installed: $(lean-ctx --version 2>/dev/null || echo 'version unknown')"
+  # lean-ctx setup only installs shell hooks in non-interactive mode;
+  # init --agent claude explicitly wires the MCP server into Claude Code
+  lean-ctx init --agent claude 2>/dev/null && ok "Claude Code MCP integration configured" || warn "lean-ctx init --agent claude failed — run it manually"
 }
 
 main "$@"
