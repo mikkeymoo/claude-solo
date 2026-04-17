@@ -441,6 +441,7 @@ offer_lean_ctx() {
     if command -v lean-ctx >/dev/null 2>&1; then
       lean-ctx setup
       ok "lean-ctx installed and configured"
+      install_lean_ctx_vscode
     else
       warn "lean-ctx install may have failed — check above output"
     fi
@@ -453,11 +454,27 @@ offer_lean_ctx() {
     if command -v lean-ctx >/dev/null 2>&1; then
       lean-ctx setup
       ok "lean-ctx installed and configured"
+      install_lean_ctx_vscode
     else
       warn "lean-ctx install may have failed — check above output"
     fi
   else
     say "Skipped. Install later: curl -fsSL https://leanctx.com/install.sh | sh && lean-ctx setup"
+  fi
+}
+
+install_lean_ctx_vscode() {
+  if ! command -v code >/dev/null 2>&1; then
+    warn "VS Code CLI (code) not on PATH — skipping extension install"
+    say "Install manually: code --install-extension yvgude.lean-ctx"
+    return
+  fi
+  say "Installing lean-ctx VS Code extension..."
+  if code --install-extension yvgude.lean-ctx 2>/dev/null; then
+    ok "VS Code extension yvgude.lean-ctx installed"
+    say "Open Command Palette → 'lean-ctx: Setup' to configure"
+  else
+    warn "VS Code extension install failed — try: code --install-extension yvgude.lean-ctx"
   fi
 }
 
