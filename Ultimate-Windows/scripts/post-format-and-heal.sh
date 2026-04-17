@@ -105,8 +105,13 @@ case "$ext" in
       [[ -n "$out" ]] && collect_error "Mypy ($FILE)" "$out"
     fi
     if command -v ruff >/dev/null 2>&1; then
-      out=$(ruff check --no-fix --output-format=concise "$FILE" 2>&1 | head -20 || true)
-      [[ -n "$out" ]] && collect_error "Ruff ($FILE)" "$out"
+      # Only collect output when ruff actually fails (exit != 0). On success,
+      # ruff prints "All checks passed!" which is non-empty and would otherwise
+      # be treated as an error.
+      if ! ruff_out=$(ruff check --no-fix --output-format=concise "$FILE" 2>&1); then
+        out=$(echo "$ruff_out" | head -20)
+        [[ -n "$out" ]] && collect_error "Ruff ($FILE)" "$out"
+      fi
     fi
     ;;
   rs)
