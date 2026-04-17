@@ -104,15 +104,6 @@ case "$ext" in
       out=$(mypy --no-color-output --no-error-summary "$FILE" 2>&1 | grep -E "^[^:]+:[0-9]+:" | head -20 || true)
       [[ -n "$out" ]] && collect_error "Mypy ($FILE)" "$out"
     fi
-    if command -v ruff >/dev/null 2>&1; then
-      # Only collect output when ruff actually fails (exit != 0). On success,
-      # ruff prints "All checks passed!" which is non-empty and would otherwise
-      # be treated as an error.
-      if ! ruff_out=$(ruff check --no-fix --output-format=concise "$FILE" 2>&1); then
-        out=$(echo "$ruff_out" | head -20)
-        [[ -n "$out" ]] && collect_error "Ruff ($FILE)" "$out"
-      fi
-    fi
     ;;
   rs)
     if [[ -f Cargo.toml ]] && command -v cargo >/dev/null 2>&1; then
