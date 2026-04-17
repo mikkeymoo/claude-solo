@@ -417,6 +417,48 @@ main() {
     say "Try it: start a fresh \`claude\` session and run /agents — you should see code-reviewer, researcher, etc."
   fi
   [[ $BACKUP -eq 1 ]] && say "Backups at: $BACKUP_DIR"
+
+  offer_lean_ctx
+}
+
+# ---------------------------------------------------------------------------
+# Optional: lean-ctx — shell + file-read context compressor
+# ---------------------------------------------------------------------------
+offer_lean_ctx() {
+  [[ $DRY_RUN -eq 1 ]] && return
+  echo ""
+  say "Optional: lean-ctx (shell output + file-read context compressor)"
+  say "Complements ultimate's LSP compressor — covers the shell/file-read side."
+  say "Install: curl -fsSL https://leanctx.com/install.sh | sh"
+  echo ""
+  if command -v lean-ctx >/dev/null 2>&1; then
+    ok "lean-ctx already installed: $(lean-ctx --version 2>/dev/null || echo 'version unknown')"
+    return
+  fi
+  if [[ $ASSUME_YES -eq 1 ]]; then
+    say "Installing lean-ctx (--yes flag set)..."
+    curl -fsSL https://leanctx.com/install.sh | sh
+    if command -v lean-ctx >/dev/null 2>&1; then
+      lean-ctx setup
+      ok "lean-ctx installed and configured"
+    else
+      warn "lean-ctx install may have failed — check above output"
+    fi
+    return
+  fi
+  printf "${YELLOW}  Install lean-ctx now? [y/N]: ${NC}"
+  read -r answer
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    curl -fsSL https://leanctx.com/install.sh | sh
+    if command -v lean-ctx >/dev/null 2>&1; then
+      lean-ctx setup
+      ok "lean-ctx installed and configured"
+    else
+      warn "lean-ctx install may have failed — check above output"
+    fi
+  else
+    say "Skipped. Install later: curl -fsSL https://leanctx.com/install.sh | sh && lean-ctx setup"
+  fi
 }
 
 main "$@"
