@@ -370,7 +370,7 @@ smoke_test() {
   fi
   local n=0
   for f in "$ULTIMATE_SCRIPTS/"*.sh; do
-    [[ -x "$f" ]] && ((n++))
+    [[ -x "$f" ]] && n=$((n + 1))
   done
   ok "Hook scripts executable: $n"
   if [[ "$MODE" == "merge" ]]; then
