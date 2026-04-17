@@ -125,6 +125,8 @@ uninstall() {
     [[ -f "$f" ]] && { do_run "rm -f '$f'"; ok "Removed $(basename "$f")"; }
   done
   [[ -d "$CLAUDE_HOME/skills/ult" ]] && { do_run "rm -rf '$CLAUDE_HOME/skills/ult'"; ok "Removed skills/ult"; }
+  # Commands (merge mode: commands/mm, fresh mode: commands/mm)
+  [[ -d "$CLAUDE_HOME/commands/mm" ]] && { do_run "rm -rf '$CLAUDE_HOME/commands/mm'"; ok "Removed commands/mm"; }
   # Fresh-mode artifacts
   for name in code-reviewer researcher refactor-agent db-reader deploy-guard; do
     f="$CLAUDE_HOME/agents/$name.md"
@@ -199,7 +201,7 @@ do_reset() {
   echo "    $CLAUDE_HOME/ultimate/   (hook scripts)"
   echo "  Also replaces (via --fresh): settings.json, CLAUDE.md"
   echo ""
-  say "NOT touched: commands/, memory/, rules/, .planning/, anything else"
+  say "NOT touched: commands/mm/ (wiped separately), memory/, rules/, .planning/, anything else"
   echo ""
   if [[ $BACKUP -eq 1 ]]; then
     say "Everything will be backed up to: $BACKUP_DIR"
@@ -213,7 +215,7 @@ do_reset() {
     [[ "$confirm" != "reset" ]] && die "Aborted — did not confirm"
   fi
 
-  for sub in agents skills ultimate; do
+  for sub in agents skills ultimate commands/mm; do
     local path="$CLAUDE_HOME/$sub"
     if [[ -d "$path" ]]; then
       backup "$path"
@@ -284,6 +286,21 @@ install_skills() {
     do_run "mkdir -p '$target'"
     do_run "cp '$dir/SKILL.md' '$target/'"
     ok "Installed skill: $name"
+  done
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+install_commands() {
+  say "Installing commands → $CLAUDE_HOME/commands/mm"
+  local target="$CLAUDE_HOME/commands/mm"
+  [[ -d "$target" ]] && backup "$target"
+  do_run "mkdir -p '$target'"
+  for f in "$ULTIMATE_DIR/commands/mm/"*.md; do
+    local name; name=$(basename "$f")
+    do_run "cp '$f' '$target/$name'"
+    ok "Installed command: $name"
   done
 }
 
@@ -387,6 +404,7 @@ main() {
   install_scripts
   install_agents
   install_skills
+  install_commands
   install_settings
   install_claude_md
   echo ""

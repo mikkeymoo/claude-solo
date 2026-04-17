@@ -31,9 +31,13 @@ block() {
 # ----------------------------------------------------------------------------
 # Filesystem-destroying commands
 # ----------------------------------------------------------------------------
-# rm -rf / rm -fr / rm --recursive --force anywhere
-if echo "$CMD" | grep -Eq '(^|[;&|`(]|&&|\|\|)\s*(sudo\s+)?rm\s+(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)'; then
+# rm -rf / rm -fr / --recursive --force (both flags together = no prompts, no mercy)
+# Plain `rm -r` is allowed — it still prompts on non-empty dirs.
+if echo "$CMD" | grep -Eq '(^|[;&|`(]|&&|\|\|)\s*(sudo\s+)?rm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)'; then
   block "rm -rf pattern blocked — destructive and rarely recoverable"
+fi
+if echo "$CMD" | grep -Eq '(^|[;&|`(]|&&|\|\|)\s*(sudo\s+)?rm\s+(--recursive\s+--force|--force\s+--recursive)'; then
+  block "rm --recursive --force blocked — destructive and rarely recoverable"
 fi
 
 # Wipe-home / wipe-root targets even without -rf

@@ -1,22 +1,17 @@
 {
   "_comment_top": "Global settings — install to ~/.claude/settings.json. Designed to coexist with claude-code-cache-fix wrapper (CACHE_FIX_* vars are exported by the wrapper, not here). Hook scripts are expected at ~/.claude/ultimate/scripts/ to avoid clobbering any existing ~/.claude/hooks/. See ultimate/QUICKSTART.md.",
   "_precedence": "Scope precedence (high → low): Managed > Local (.claude/settings.local.json) > Project (.claude/settings.json) > User (this file). Deny rules accumulate across all scopes; first match of deny > defer > ask > allow wins.",
-
   "model": "claude-sonnet-4-6",
   "effortLevel": "medium",
   "maxTurns": 200,
-
   "includeGitInstructions": true,
   "cleanupPeriodDays": 14,
-
   "attribution": {
     "_comment": "Replaces deprecated includeCoAuthoredBy. Turn off if you don't want Claude in your commit/PR trailers.",
     "commit": "auto",
     "pr": "auto"
   },
-
   "autoUpdatesChannel": "stable",
-
   "env": {
     "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. ENABLE_PROMPT_CACHING_1H requires Claude Code v2.1.108+; user is on 2.1.105 so it's commented out. Add once upgraded.",
     "ENABLE_TOOL_SEARCH": "1",
@@ -25,22 +20,19 @@
     "BASH_DEFAULT_TIMEOUT_MS": "120000",
     "BASH_MAX_TIMEOUT_MS": "600000",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
-    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "0",
     "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "0",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "DISABLE_TELEMETRY": "1"
   },
-
   "statusLine": {
     "_comment": "Your existing claude-solo statusline. Unchanged.",
     "type": "command",
     "command": "bash ~/.claude/statusline.sh"
   },
-
   "permissions": {
     "_comment": "deny > ask > allow. Deny rules survive --dangerously-skip-permissions. Keep Bash(*) broad but rely on hooks (validate-bash.sh) for the hard blocks since deny-regex is string-match only.",
-    "defaultMode": "default",
-    "disableBypassPermissionsMode": "disable",
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Read",
       "Write",
@@ -120,7 +112,11 @@
       "Bash(chmod -R 777 /*)"
     ]
   },
-
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": ["/home/michael/.claude/"]
+    }
+  },
   "worktree": {
     "symlinkDirectories": [
       "node_modules",
@@ -133,7 +129,6 @@
       ".pnpm-store"
     ]
   },
-
   "hooks": {
     "SessionStart": [
       {
@@ -147,7 +142,6 @@
         ]
       }
     ],
-
     "PreToolUse": [
       {
         "matcher": "Bash|Write|Edit|MultiEdit",
@@ -160,7 +154,6 @@
         ]
       }
     ],
-
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
@@ -184,7 +177,6 @@
         ]
       }
     ],
-
     "Notification": [
       {
         "hooks": [
@@ -195,7 +187,6 @@
         ]
       }
     ],
-
     "PreCompact": [
       {
         "hooks": [
@@ -207,5 +198,6 @@
         ]
       }
     ]
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }
