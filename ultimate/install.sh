@@ -290,21 +290,6 @@ install_skills() {
 }
 
 # ---------------------------------------------------------------------------
-# Commands
-# ---------------------------------------------------------------------------
-install_commands() {
-  say "Installing commands → $CLAUDE_HOME/commands/mm"
-  local target="$CLAUDE_HOME/commands/mm"
-  [[ -d "$target" ]] && backup "$target"
-  do_run "mkdir -p '$target'"
-  for f in "$ULTIMATE_DIR/commands/mm/"*.md; do
-    local name; name=$(basename "$f")
-    do_run "cp '$f' '$target/$name'"
-    ok "Installed command: $name"
-  done
-}
-
-# ---------------------------------------------------------------------------
 # settings.json + CLAUDE.md — merge-safe
 # ---------------------------------------------------------------------------
 install_settings() {
