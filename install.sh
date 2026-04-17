@@ -406,6 +406,10 @@ ensure_hooks_wired() {
   _wire_hook "PreCompact" \
     "pre-compact-checkpoint" \
     '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/pre-compact-checkpoint.sh","statusMessage":"Saving checkpoint before compaction..."}]}'
+
+  _wire_hook "PreToolUse" \
+    "validate-readonly-query" \
+    '{"matcher":"Bash","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/validate-readonly-query.sh"}]}'
 }
 
 # ---------------------------------------------------------------------------
