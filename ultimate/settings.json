@@ -1,0 +1,202 @@
+{
+  "_comment_top": "Global settings — install to ~/.claude/settings.json. Designed to coexist with claude-code-cache-fix wrapper (CACHE_FIX_* vars are exported by the wrapper, not here). Hook scripts are expected at ~/.claude/ultimate/scripts/ to avoid clobbering any existing ~/.claude/hooks/. See ultimate/QUICKSTART.md.",
+  "_precedence": "Scope precedence (high → low): Managed > Local (.claude/settings.local.json) > Project (.claude/settings.json) > User (this file). Deny rules accumulate across all scopes; first match of deny > defer > ask > allow wins.",
+
+  "model": "claude-sonnet-4-6",
+  "effortLevel": "medium",
+  "maxTurns": 200,
+
+  "includeGitInstructions": true,
+  "cleanupPeriodDays": 14,
+
+  "attribution": {
+    "_comment": "Replaces deprecated includeCoAuthoredBy. Turn off if you don't want Claude in your commit/PR trailers.",
+    "commit": true,
+    "pr": true
+  },
+
+  "autoUpdatesChannel": "stable",
+
+  "env": {
+    "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. ENABLE_PROMPT_CACHING_1H requires Claude Code v2.1.108+; user is on 2.1.105 so it's commented out. Add once upgraded.",
+    "ENABLE_TOOL_SEARCH": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
+    "BASH_DEFAULT_TIMEOUT_MS": "120000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "0",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+
+  "statusLine": {
+    "_comment": "Your existing claude-solo statusline. Unchanged.",
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
+
+  "permissions": {
+    "_comment": "deny > ask > allow. Deny rules survive --dangerously-skip-permissions. Keep Bash(*) broad but rely on hooks (validate-bash.sh) for the hard blocks since deny-regex is string-match only.",
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": false,
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Glob",
+      "Grep",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(rtk *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(bun *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pytest *)",
+      "Bash(cargo *)",
+      "Bash(go *)",
+      "Bash(make *)",
+      "Bash(gh pr view*)",
+      "Bash(gh run list*)",
+      "Bash(jq *)",
+      "mcp__*"
+    ],
+    "ask": [
+      "Bash(gh pr create*)",
+      "Bash(gh pr merge*)",
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git tag*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./credentials/**)",
+      "Read(./*.pem)",
+      "Read(./**/id_rsa)",
+      "Read(./**/id_ed25519)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./secrets/**)",
+      "Write(./.env)",
+      "Write(./.env.*)",
+      "Write(./secrets/**)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf $HOME*)",
+      "Bash(rm -fr /*)",
+      "Bash(rm -fr ~*)",
+      "Bash(git push --force origin main*)",
+      "Bash(git push --force origin master*)",
+      "Bash(git push -f origin main*)",
+      "Bash(git push -f origin master*)",
+      "Bash(git reset --hard origin/main*)",
+      "Bash(git reset --hard origin/master*)",
+      "Bash(git clean -fdx*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(yarn publish*)",
+      "Bash(bun publish*)",
+      "Bash(cargo publish*)",
+      "Bash(gem push*)",
+      "Bash(twine upload*)",
+      "Bash(curl * | bash*)",
+      "Bash(curl * | sh*)",
+      "Bash(wget * | bash*)",
+      "Bash(wget * | sh*)",
+      "Bash(dd if=*)",
+      "Bash(mkfs.*)",
+      "Bash(chmod -R 777 /*)"
+    ]
+  },
+
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".next", "dist", "build", "__pycache__", ".venv", "target", ".pnpm-store"]
+  },
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/session-start-context.sh",
+            "statusMessage": "Loading git + sprint context...",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/validate-bash.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/post-format-and-heal.sh",
+            "timeout": 60000
+          }
+        ]
+      },
+      {
+        "_comment_lsp": "Compress verbose cclsp MCP output before it hits agent context (like lean-ctx but for LSP). Uses PostToolUse.updatedMCPToolOutput. Pairs well with lean-ctx if you also install that — they don't overlap.",
+        "matcher": "mcp__cclsp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/compress-lsp-output.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/notify-desktop.sh"
+          }
+        ]
+      }
+    ],
+
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate/scripts/pre-compact-checkpoint.sh",
+            "statusMessage": "Saving checkpoint before compaction..."
+          }
+        ]
+      }
+    ]
+  }
+}
