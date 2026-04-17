@@ -471,16 +471,8 @@ smoke_test_ultimate() {
   done
   shopt -u nullglob
   ok "Hook scripts executable: $n"
-  if [[ "$MODE" == "merge" ]]; then
-    local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
-    ok "Namespaced agents (ult-*): $agents/5"
-  else
-    local agents=0
-    for name in code-reviewer researcher refactor-agent db-reader deploy-guard; do
-      [[ -f "$CLAUDE_HOME/agents/$name.md" ]] && (( agents++ )) || true
-    done
-    ok "Agents installed: $agents/5"
-  fi
+  local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
+  ok "Agents installed (ult-*): $agents/5"
 }
 
 # ---------------------------------------------------------------------------
