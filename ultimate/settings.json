@@ -11,8 +11,8 @@
 
   "attribution": {
     "_comment": "Replaces deprecated includeCoAuthoredBy. Turn off if you don't want Claude in your commit/PR trailers.",
-    "commit": true,
-    "pr": true
+    "commit": "auto",
+    "pr": "auto"
   },
 
   "autoUpdatesChannel": "stable",
@@ -40,7 +40,7 @@
   "permissions": {
     "_comment": "deny > ask > allow. Deny rules survive --dangerously-skip-permissions. Keep Bash(*) broad but rely on hooks (validate-bash.sh) for the hard blocks since deny-regex is string-match only.",
     "defaultMode": "default",
-    "disableBypassPermissionsMode": false,
+    "disableBypassPermissionsMode": "disable",
     "allow": [
       "Read",
       "Write",
@@ -122,7 +122,16 @@
   },
 
   "worktree": {
-    "symlinkDirectories": ["node_modules", ".next", "dist", "build", "__pycache__", ".venv", "target", ".pnpm-store"]
+    "symlinkDirectories": [
+      "node_modules",
+      ".next",
+      "dist",
+      "build",
+      "__pycache__",
+      ".venv",
+      "target",
+      ".pnpm-store"
+    ]
   },
 
   "hooks": {
