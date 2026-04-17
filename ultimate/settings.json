@@ -63,13 +63,6 @@
       "Bash(jq *)",
       "mcp__*"
     ],
-    "ask": [
-      "Bash(gh pr create*)",
-      "Bash(gh pr merge*)",
-      "Bash(git push*)",
-      "Bash(git commit*)",
-      "Bash(git tag*)"
-    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
@@ -111,11 +104,6 @@
       "Bash(mkfs.*)",
       "Bash(chmod -R 777 /*)"
     ]
-  },
-  "sandbox": {
-    "filesystem": {
-      "allowWrite": ["/home/michael/.claude/"]
-    }
   },
   "worktree": {
     "symlinkDirectories": [
