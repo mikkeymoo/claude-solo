@@ -114,8 +114,8 @@
         ]
       },
       {
-        "_comment_lsp": "Compress verbose cclsp MCP output before it hits agent context (like lean-ctx but for LSP). Uses PostToolUse.updatedMCPToolOutput. Pairs well with lean-ctx if you also install that — they don't overlap.",
-        "matcher": "mcp__cclsp__.*",
+        "_comment_lsp": "Compress verbose Serena MCP output before it hits agent context (like lean-ctx but for LSP). Uses PostToolUse.updatedMCPToolOutput. Pairs well with lean-ctx if you also install that — they don't overlap.",
+        "matcher": "mcp__serena__.*",
         "hooks": [
           {
             "type": "command",

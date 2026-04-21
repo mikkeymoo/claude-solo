@@ -13,7 +13,7 @@ Target audience: **solo developer**, Claude Code v2.1.105+, existing `claude` wr
 - `CLAUDE.md` — master instruction file
 - 5 subagents: `code-reviewer`, `researcher`, `refactor-agent`, `db-reader`, `deploy-guard`
 - 4 skills: `riper`, `daily-brief`, `tech-debt`, `security-review`
-- 7 hook scripts: bash validator, readonly SQL validator, session-start context, post-edit LSP heal, desktop notify, pre-compact checkpoint, **LSP output compressor** (trims verbose `mcp__cclsp__*` responses — find_references, diagnostics, hover — before they hit the agent context)
+- 7 hook scripts: bash validator, readonly SQL validator, session-start context, post-edit LSP heal, desktop notify, pre-compact checkpoint, **LSP output compressor** (trims verbose `mcp__serena__*` responses — find_referencing_symbols, find_symbol, get_symbols_overview — before they hit the agent context)
 - `gitignore-additions.txt` — append to your project `.gitignore`
 
 ---
@@ -41,6 +41,7 @@ sudo dnf install gh        # Fedora
 ```
 
 Optional but recommended:
+
 ```bash
 npm install -g prettier typescript        # for the post-format-and-heal hook
 pip install --user ruff pyright           # Python formatting + LSP diagnostics
@@ -153,29 +154,37 @@ After install, in a fresh `claude` session:
 ```
 /agents
 ```
+
 → Expect: `code-reviewer`, `researcher`, `refactor-agent`, `db-reader`, `deploy-guard` (or `ult-*` prefixed in Option B).
 
 ```
 /skills
 ```
+
 → Expect: `riper`, `daily-brief`, `tech-debt`, `security-review`.
 
 **Smoke-test the bash guard:**
+
 ```
 Ask Claude to run: rm -rf /tmp/bogus-test
 ```
+
 → Should be blocked with "rm -rf pattern blocked" as the reason. If it runs, the hook is not wired.
 
 **Smoke-test post-format:**
+
 ```
 Ask Claude to edit a .ts or .py file in a broken way (missing import, type error)
 ```
+
 → Should auto-format, then block the next tool call with the LSP/tsc/pyright error. If it silently continues, the hook is not wired or the language server isn't installed.
 
 **Smoke-test session-start:**
+
 ```
 Exit Claude and re-enter in a git repo
 ```
+
 → First message from Claude should include the branch name, recent commits, and any open PRs.
 
 ---
@@ -186,15 +195,16 @@ The ultimate build includes `compress-lsp-output.sh` which trims verbose LSP out
 
 The two are complementary:
 
-| Layer | Ultimate | lean-ctx |
-|---|---|---|
-| LSP / MCP tool output | ✅ `compress-lsp-output.sh` | ❌ |
-| Shell output (git, rg, cargo) | ❌ | ✅ shell hook |
-| File reads (cached) | ❌ | ✅ MCP server |
-| PreToolUse safety (rm -rf, DROP TABLE) | ✅ `validate-bash.sh` | ❌ |
-| Post-edit LSP diagnostics gate | ✅ `post-format-and-heal.sh` | ❌ |
+| Layer                                  | Ultimate                     | lean-ctx      |
+| -------------------------------------- | ---------------------------- | ------------- |
+| LSP / MCP tool output                  | ✅ `compress-lsp-output.sh`  | ❌            |
+| Shell output (git, rg, cargo)          | ❌                           | ✅ shell hook |
+| File reads (cached)                    | ❌                           | ✅ MCP server |
+| PreToolUse safety (rm -rf, DROP TABLE) | ✅ `validate-bash.sh`        | ❌            |
+| Post-edit LSP diagnostics gate         | ✅ `post-format-and-heal.sh` | ❌            |
 
 Install lean-ctx alongside:
+
 ```bash
 curl -fsSL https://leanctx.com/install.sh | sh
 lean-ctx setup              # auto-configures Claude Code
@@ -202,23 +212,25 @@ lean-ctx doctor             # verify
 ```
 
 Check for conflicts after install:
+
 ```bash
 jq . ~/.claude/settings.json    # should still parse
 ```
+
 Lean-ctx's `setup` merges non-destructively; ultimate's hooks live under `~/.claude/ultimate/scripts/` so they won't collide with lean-ctx's additions.
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Hooks don't fire at all | `settings.json` not valid JSON | `jq . ~/.claude/settings.json` to check |
-| "jq: command not found" in transcript | `jq` missing on PATH | Install `jq` |
-| validate-bash blocks legit commands | Pattern too aggressive | Edit the specific `grep -E` line in `~/.claude/ultimate/scripts/validate-bash.sh` |
-| Notification silent | `notify-send` missing | Install `libnotify` (`sudo dnf install libnotify`) |
-| post-format blocks every edit | `tsc` / `pyright` strict diagnostics | Loosen `tsconfig.json` OR comment out the diagnostics block in `post-format-and-heal.sh` |
-| `deploy-guard` runs when you didn't ask | Project override's `Agent(deploy-guard)` deny not in effect | Ensure `.claude/settings.json` was copied into the target repo |
+| Symptom                                 | Likely cause                                                | Fix                                                                                      |
+| --------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Hooks don't fire at all                 | `settings.json` not valid JSON                              | `jq . ~/.claude/settings.json` to check                                                  |
+| "jq: command not found" in transcript   | `jq` missing on PATH                                        | Install `jq`                                                                             |
+| validate-bash blocks legit commands     | Pattern too aggressive                                      | Edit the specific `grep -E` line in `~/.claude/ultimate/scripts/validate-bash.sh`        |
+| Notification silent                     | `notify-send` missing                                       | Install `libnotify` (`sudo dnf install libnotify`)                                       |
+| post-format blocks every edit           | `tsc` / `pyright` strict diagnostics                        | Loosen `tsconfig.json` OR comment out the diagnostics block in `post-format-and-heal.sh` |
+| `deploy-guard` runs when you didn't ask | Project override's `Agent(deploy-guard)` deny not in effect | Ensure `.claude/settings.json` was copied into the target repo                           |
 
 ---
 
@@ -235,6 +247,7 @@ rm -rf ~/.claude/skills/riper ~/.claude/skills/daily-brief \
 ```
 
 If you used the Option B prefix:
+
 ```bash
 rm ~/.claude/agents/ult-*.md
 rm -rf ~/.claude/skills/ult/

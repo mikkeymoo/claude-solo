@@ -17,7 +17,7 @@ Target audience: **solo developer**, Claude Code v2.1.105+, Git Bash installed.
 - 6 hook scripts at `~/.claude/ultimate-windows/scripts/`:
   - `session-start-context.sh` — injects git + sprint state at session start
   - `post-format-and-heal.sh` — auto-formats edits and runs LSP diagnostics
-  - `compress-lsp-output.sh` — trims verbose `mcp__cclsp__*` output
+  - `compress-lsp-output.sh` — trims verbose `mcp__serena__*` output
   - `notify-desktop.sh` — Windows toast notification (BurntToast or balloon tip)
   - `pre-compact-checkpoint.sh` — saves checkpoint before context compaction
   - `validate-readonly-query.sh` — enforces SELECT-only for the `db-reader` agent
@@ -27,6 +27,7 @@ Target audience: **solo developer**, Claude Code v2.1.105+, Git Bash installed.
 ## Prerequisites
 
 ### Required
+
 ```bash
 # Verify these are on your PATH in Git Bash:
 bash --version        # Git Bash (comes with Git for Windows)
@@ -36,6 +37,7 @@ claude --version      # >= 2.1.105
 ```
 
 **Installing jq on Windows:**
+
 ```bash
 # Option A — winget (built into Windows 11)
 winget install jqlang.jq
@@ -51,6 +53,7 @@ scoop install jq
 ```
 
 ### Optional (enables formatters and LSP diagnostics in post-format-and-heal hook)
+
 ```bash
 # TypeScript / JavaScript
 npm install -g prettier typescript
@@ -68,10 +71,12 @@ winget install GitHub.cli
 ```
 
 ### Optional — BurntToast (proper Windows 10/11 toast notifications)
+
 ```powershell
 # Run in PowerShell (not Git Bash):
 Install-Module BurntToast -Scope CurrentUser
 ```
+
 Without BurntToast, the hook falls back to a Windows Forms balloon tip — still works, just older-looking.
 
 ---
@@ -85,11 +90,13 @@ bash install.sh
 ```
 
 The installer prompts you to choose:
+
 - `[1] Original` — classic claude-solo
 - `[2] Ultimate-Linux` — Linux/macOS enhanced build
 - `[3] Ultimate-Windows` — this build (Windows/Git Bash)
 
 Select **[3]**, then choose your install mode:
+
 - **Merge (default)** — coexists with any existing Claude config, prefixes agents with `ult-`
 - **Fresh** — replaces existing config (backup taken automatically)
 
@@ -159,12 +166,14 @@ Start a fresh `claude` session and run:
 ```
 /agents
 ```
+
 Expect: `ult-code-reviewer`, `ult-researcher`, `ult-refactor-agent`, `ult-db-reader`, `ult-deploy-guard`
 (no `ult-` prefix if you used --fresh mode)
 
 ```
 /skills
 ```
+
 Expect: `riper`, `daily-brief`, `tech-debt`, `security-review` (under `ult/` namespace in merge mode)
 
 **Smoke-test the session hook:** Exit Claude and re-open in a git repo. The first message should show branch name, recent commits, and open PRs.
@@ -177,29 +186,29 @@ Expect: `riper`, `daily-brief`, `tech-debt`, `security-review` (under `ult/` nam
 
 ## Windows-specific notes
 
-| Topic | Detail |
-|-------|--------|
-| Shell | All hooks run under `bash` (Git Bash). `bash.exe` must be in your `PATH`. |
-| Paths | `~` expands to `C:\Users\<you>` in Git Bash. |
-| `chmod +x` | Git Bash accepts it; cosmetic on Windows but harmless. |
-| `jq` | Must be `jq.exe` on PATH — every hook depends on it. |
-| `sed -i` | Git Bash ships GNU sed — same behaviour as Linux, no `-i ''` suffix needed. |
-| Notifications | BurntToast → Windows Forms balloon → terminal bell (preference order). |
-| `realpath` | Available in Git Bash via coreutils. |
-| Formatters | `prettier`, `ruff`, `tsc` etc. must be on the Windows `PATH` (not just WSL). |
+| Topic         | Detail                                                                       |
+| ------------- | ---------------------------------------------------------------------------- |
+| Shell         | All hooks run under `bash` (Git Bash). `bash.exe` must be in your `PATH`.    |
+| Paths         | `~` expands to `C:\Users\<you>` in Git Bash.                                 |
+| `chmod +x`    | Git Bash accepts it; cosmetic on Windows but harmless.                       |
+| `jq`          | Must be `jq.exe` on PATH — every hook depends on it.                         |
+| `sed -i`      | Git Bash ships GNU sed — same behaviour as Linux, no `-i ''` suffix needed.  |
+| Notifications | BurntToast → Windows Forms balloon → terminal bell (preference order).       |
+| `realpath`    | Available in Git Bash via coreutils.                                         |
+| Formatters    | `prettier`, `ruff`, `tsc` etc. must be on the Windows `PATH` (not just WSL). |
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---------|-------------|-----|
-| Hooks don't fire | `settings.json` invalid JSON | `jq . ~/.claude/settings.json` |
-| `jq: command not found` | jq not on PATH | Install jq (see Prerequisites) |
-| No desktop notification | BurntToast not installed | `Install-Module BurntToast` (optional) |
-| post-format blocks every edit | tsc/pyright strict errors | Loosen tsconfig OR comment out diagnostics block |
-| `bash: ...scripts/...: No such file` | Scripts not copied | Re-run `bash install.sh` |
-| `realpath: command not found` | Git Bash coreutils missing | Reinstall Git for Windows (full installer) |
+| Symptom                              | Likely cause                 | Fix                                              |
+| ------------------------------------ | ---------------------------- | ------------------------------------------------ |
+| Hooks don't fire                     | `settings.json` invalid JSON | `jq . ~/.claude/settings.json`                   |
+| `jq: command not found`              | jq not on PATH               | Install jq (see Prerequisites)                   |
+| No desktop notification              | BurntToast not installed     | `Install-Module BurntToast` (optional)           |
+| post-format blocks every edit        | tsc/pyright strict errors    | Loosen tsconfig OR comment out diagnostics block |
+| `bash: ...scripts/...: No such file` | Scripts not copied           | Re-run `bash install.sh`                         |
+| `realpath: command not found`        | Git Bash coreutils missing   | Reinstall Git for Windows (full installer)       |
 
 ---
 

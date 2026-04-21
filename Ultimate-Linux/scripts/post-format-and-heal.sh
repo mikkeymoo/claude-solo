@@ -3,7 +3,7 @@
 #
 # 1. Auto-format the edited file (prettier/black/ruff format/rustfmt/gofmt).
 # 2. Run LSP-backed diagnostics (tsc/pyright/mypy/cargo check). These are the
-#    same language servers cclsp exposes as MCP tools, invoked via CLI.
+#    same language servers Serena exposes as MCP tools, invoked via CLI.
 # 3. If diagnostics fail, emit a blocking response that feeds the errors back
 #    to Claude as a new user turn — self-healing loop.
 #
@@ -65,7 +65,7 @@ esac
 
 # ---------------------------------------------------------------------------
 # LSP-BACKED DIAGNOSTICS — blocking when fails
-# These invoke the same language servers cclsp uses, via CLI.
+# These invoke the same language servers Serena uses, via CLI.
 # ---------------------------------------------------------------------------
 collect_error() {
   local label="$1" out="$2"

@@ -8,7 +8,7 @@ Refactor the specified code. Safety-first.
 
 1. **Confirm tests exist** — if there are no tests covering this code, write them first before touching anything
 2. **Plan** — describe the exact change: rename X to Y, extract function Z, move module A to B
-3. **Execute** — make the change; use LSP (`mcp__cclsp__rename_symbol`) for renames touching multiple files
+3. **Execute** — make the change; use Serena LSP (`mcp__serena__rename_symbol`) for renames touching multiple files
 4. **Verify** — all tests still pass; no behavior change
 5. **Commit** — `refactor: <what changed>`
 

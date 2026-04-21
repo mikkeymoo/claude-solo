@@ -12,6 +12,6 @@ Map the specified area of the codebase and return a useful mental model.
 4. **Gotchas** — anything non-obvious, surprising, or that would trip up someone new
 5. **Gaps** — missing tests, undocumented behavior, or places the code doesn't match expectations
 
-Use LSP (`mcp__cclsp__find_definition`, `find_references`, `get_outgoing_calls`) over grep where possible for accuracy.
+Use Serena LSP (`mcp__serena__find_symbol`, `find_referencing_symbols`, `get_symbols_overview`) over grep where possible for accuracy.
 
 Return a summary I can act on — not a raw file listing.
