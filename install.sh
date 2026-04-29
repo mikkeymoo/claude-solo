@@ -403,6 +403,29 @@ _manifest_add() {
 }
 
 # ---------------------------------------------------------------------------
+# Hooks install (JS files → ~/.claude/hooks/)
+# ---------------------------------------------------------------------------
+install_hooks() {
+  local src_dir="$1"
+  local dst_dir="$2"
+  say "Installing JS hooks → $dst_dir"
+  if [[ -d "$dst_dir" ]]; then
+    backup_path "$dst_dir"
+    do_run rm -rf "$dst_dir"
+  fi
+  do_run mkdir -p "$dst_dir"
+  shopt -s nullglob
+  local count=0
+  for f in "$src_dir/"*.js; do
+    do_run cp "$f" "$dst_dir/$(basename "$f")"
+    ok "Installed $(basename "$f")"
+    (( count++ )) || true
+  done
+  shopt -u nullglob
+  [[ $count -eq 0 ]] && warn "No .js hook files found in $src_dir" || true
+}
+
+# ---------------------------------------------------------------------------
 # Agents install
 # ---------------------------------------------------------------------------
 install_agents() {
@@ -536,7 +559,7 @@ purge_artifacts() {
   say "Purging prior claude-solo artifacts (fresh mode)"
 
   # Wipe all managed dirs entirely — clears third-party and legacy content too
-  for dir_name in agents skills commands rules; do
+  for dir_name in agents skills commands rules hooks; do
     if [[ -d "$CLAUDE_HOME/$dir_name" ]]; then
       backup_path "$CLAUDE_HOME/$dir_name"
       do_run rm -rf "$CLAUDE_HOME/$dir_name"
@@ -854,6 +877,29 @@ smoke_test() {
     ok "Hook syntax check: $syntax_pass scripts OK"
   fi
 
+  # 5b. JS hook syntax check (node --check)
+  local js_pass=0 js_fail=0
+  local hooks_dir="$CLAUDE_HOME/hooks"
+  if command -v node >/dev/null 2>&1 && [[ -d "$hooks_dir" ]]; then
+    shopt -s nullglob
+    for f in "$hooks_dir/"*.js; do
+      local base; base=$(basename "$f")
+      if node --check "$f" 2>/dev/null; then
+        (( js_pass++ )) || true
+      else
+        warn "$base: JS syntax error (node --check failed)"
+        (( js_fail++ )) || true
+      fi
+    done
+    shopt -u nullglob
+    if [[ $js_fail -gt 0 ]]; then
+      warn "JS hook syntax errors: $js_fail file(s) failed node --check"
+      smoke_ok=0
+    else
+      ok "JS hook syntax check: $js_pass hooks OK"
+    fi
+  fi
+
   # 6. Cache-fix proxy package present
   local npm_root; npm_root=$(npm root -g 2>/dev/null || true)
   if [[ -n "$npm_root" && -f "${npm_root}/claude-code-cache-fix/proxy/server.mjs" ]]; then
@@ -934,6 +980,7 @@ uninstall() {
 # ---------------------------------------------------------------------------
 run_install() {
   local src_scripts="$REPO_DIR/scripts"
+  local src_hooks="$REPO_DIR/hooks"
   local src_agents="$REPO_DIR/agents"
   local src_skills="$REPO_DIR/skills"
   local src_commands="$REPO_DIR/commands"
@@ -942,8 +989,9 @@ run_install() {
   local src_claude_md="$REPO_DIR/CLAUDE.md"
   local src_project_override="$REPO_DIR/project-override"
   local dst_scripts="$CLAUDE_HOME/scripts"
+  local dst_hooks="$CLAUDE_HOME/hooks"
 
-  for d in "$src_scripts" "$src_agents" "$src_skills" "$src_commands" "$src_rules"; do
+  for d in "$src_scripts" "$src_hooks" "$src_agents" "$src_skills" "$src_commands" "$src_rules"; do
     [[ ! -d "$d" ]] && die "Required directory not found: $d"
   done
   [[ ! -f "$src_settings" ]] && die "settings.json not found at $src_settings"
@@ -964,6 +1012,7 @@ run_install() {
   [[ "$MODE" == "fresh" ]] && purge_artifacts "$MANIFEST"
 
   install_scripts  "$src_scripts"  "$dst_scripts"
+  install_hooks    "$src_hooks"    "$dst_hooks"
   install_agents   "$src_agents"   "$MANIFEST"
   install_skills   "$src_skills"   "$MANIFEST"
   install_commands "$src_commands" "$MANIFEST"
