@@ -211,6 +211,10 @@ fix_ruff() {
     else
       ok "$ruff_dir already in ~/.bashrc"
     fi
+    # Subshells can't push env changes to the parent — print the command so
+    # the user can run it directly, or source ~/.bashrc to reload the profile
+    printf "  ${YELLOW}→ Update current terminal (run this):${NC} export PATH=\"%s:\$PATH\"\n" "$ruff_dir"
+    printf "  ${YELLOW}  or:${NC} source ~/.bashrc\n"
   else
     warn "ruff not found after install — hooks requiring ruff will no-op"
   fi
