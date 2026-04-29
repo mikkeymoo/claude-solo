@@ -331,94 +331,10 @@ install_cache_fix() {
 
 # ---------------------------------------------------------------------------
 # Optional tools installer
-# lean-ctx: file-read caching (~13 tokens/re-read)
 # BurntToast: Windows toast notifications (Windows only)
 # ---------------------------------------------------------------------------
 install_optional_tools() {
   say "Installing optional tools"
-
-  # lean-ctx — pre-built binary from GitHub releases (fast), cargo fallback
-  if command -v lean-ctx >/dev/null 2>&1; then
-    ok "lean-ctx already installed: $(command -v lean-ctx)"
-  elif [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx (pre-built binary or cargo)\n"
-  else
-    # Install dir: prefer ~/.cargo/bin (already in PATH for Rust users)
-    local lc_dir
-    if [[ -d "$HOME/.cargo/bin" ]]; then
-      lc_dir="$HOME/.cargo/bin"
-    else
-      lc_dir="$HOME/.local/bin"
-      mkdir -p "$lc_dir"
-    fi
-
-    # Pick the right asset for this OS/arch
-    local lc_asset lc_ext
-    if is_windows; then
-      lc_asset="lean-ctx-x86_64-pc-windows-msvc.zip"; lc_ext="zip"
-    elif [[ "$(uname -s)" == "Darwin" ]]; then
-      [[ "$(uname -m)" == "arm64" ]] \
-        && lc_asset="lean-ctx-aarch64-apple-darwin.tar.gz" \
-        || lc_asset="lean-ctx-x86_64-apple-darwin.tar.gz"
-      lc_ext="tgz"
-    else
-      [[ "$(uname -m)" == "aarch64" ]] \
-        && lc_asset="lean-ctx-aarch64-unknown-linux-gnu.tar.gz" \
-        || lc_asset="lean-ctx-x86_64-unknown-linux-gnu.tar.gz"
-      lc_ext="tgz"
-    fi
-
-    # Attempt pre-built download
-    local lc_installed=0
-    if command -v curl >/dev/null 2>&1; then
-      say "  Downloading lean-ctx pre-built binary..."
-      local lc_url="https://github.com/yvgude/lean-ctx/releases/latest/download/$lc_asset"
-      local lc_tmp; lc_tmp=$(mktemp "/tmp/lean-ctx-XXXXXX.$lc_ext")
-      if curl -fsSL "$lc_url" -o "$lc_tmp" 2>/dev/null; then
-        local lc_tmpdir; lc_tmpdir=$(mktemp -d /tmp/lean-ctx-extract-XXXXXX)
-        if [[ "$lc_ext" == "zip" ]]; then
-          if command -v unzip >/dev/null 2>&1; then
-            unzip -q "$lc_tmp" -d "$lc_tmpdir" 2>/dev/null \
-              && find "$lc_tmpdir" -name "lean-ctx.exe" -exec cp {} "$lc_dir/lean-ctx.exe" \; \
-              && lc_installed=1
-          else
-            local pwsh; pwsh=$(find_pwsh)
-            [[ -n "$pwsh" ]] \
-              && "$pwsh" -Command "Expand-Archive -Path '$lc_tmp' -DestinationPath '$lc_tmpdir' -Force" 2>/dev/null \
-              && find "$lc_tmpdir" -name "lean-ctx.exe" -exec cp {} "$lc_dir/lean-ctx.exe" \; \
-              && lc_installed=1
-          fi
-        else
-          tar -xzf "$lc_tmp" -C "$lc_tmpdir" 2>/dev/null \
-            && find "$lc_tmpdir" -name "lean-ctx" -not -name "*.sh" -exec cp {} "$lc_dir/lean-ctx" \; \
-            && chmod +x "$lc_dir/lean-ctx" \
-            && lc_installed=1
-        fi
-        rm -rf "$lc_tmpdir"
-      else
-        warn "  Pre-built download failed — falling back to cargo..."
-      fi
-      rm -f "$lc_tmp"
-    fi
-
-    if [[ $lc_installed -eq 1 ]]; then
-      ok "Installed lean-ctx (pre-built)"
-    elif command -v cargo >/dev/null 2>&1; then
-      say "  Installing lean-ctx via cargo (~15 min)..."
-      cargo install lean-ctx 2>&1 | tail -3 \
-        && ok "Installed lean-ctx (cargo)" \
-        || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
-    else
-      warn "lean-ctx not installed — download failed and cargo unavailable"
-      warn "  Manual: cargo install lean-ctx  (requires https://rustup.rs)"
-    fi
-  fi
-
-  # lean-ctx hooks are opt-in — they intercept every Read/Grep/Bash call which is
-  # too noisy to auto-enable. Users who want it: lean-ctx init --agent claude-code
-  if command -v lean-ctx >/dev/null 2>&1; then
-    ok "lean-ctx installed — to enable hooks run: lean-ctx init --agent claude-code"
-  fi
 
   # BurntToast — Windows toast notifications (Windows only, requires PowerShell)
   if is_windows; then
@@ -640,18 +556,25 @@ install_settings() {
 
 # ---------------------------------------------------------------------------
 # Purge prior artifacts (fresh mode)
+# Wipes ALL agents/skills/commands/rules so no legacy garbage survives.
 # ---------------------------------------------------------------------------
 purge_artifacts() {
   local manifest="$1"
   say "Purging prior claude-solo artifacts (fresh mode)"
-  _manifest_uninstall "$manifest"
-  for dir_name in "skills/ult" "commands/mm"; do
+
+  # Wipe all managed dirs entirely — clears third-party and legacy content too
+  for dir_name in agents skills commands rules; do
     if [[ -d "$CLAUDE_HOME/$dir_name" ]]; then
       backup_path "$CLAUDE_HOME/$dir_name"
       do_run rm -rf "$CLAUDE_HOME/$dir_name"
-      ok "Removed legacy $dir_name/"
+      ok "Wiped ~/.claude/$dir_name/ (backup taken)"
     fi
   done
+
+  # Remove stale manifest (files already gone)
+  [[ -f "$manifest" ]] && do_run rm -f "$manifest" && ok "Cleared manifest"
+
+  # Legacy namespace cleanup
   for ns in ultimate ultimate-windows; do
     if [[ -d "$CLAUDE_HOME/$ns" ]]; then
       backup_path "$CLAUDE_HOME/$ns"
@@ -979,14 +902,7 @@ smoke_test() {
     warn "  Retry: bash install.sh  (requires npm)"
   fi
 
-  # 7. lean-ctx
-  if command -v lean-ctx >/dev/null 2>&1; then
-    ok "lean-ctx installed: $(command -v lean-ctx)"
-  else
-    warn "lean-ctx not installed — file re-reads cost full tokens instead of ~13"
-  fi
-
-  # 8. BurntToast (Windows only)
+  # 7. BurntToast (Windows only)
   if is_windows; then
     local pwsh; pwsh=$(find_pwsh)
     if [[ -n "$pwsh" ]]; then
@@ -1002,7 +918,7 @@ smoke_test() {
     fi
   fi
 
-  # 9. Agent, skill, command counts
+  # 8. Agent, skill, command counts
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
   local skills; skills=$(ls -d "$CLAUDE_HOME/skills/"*/ 2>/dev/null | wc -l)
   local cmds; cmds=$(ls "$CLAUDE_HOME/commands/"*.md 2>/dev/null | wc -l)

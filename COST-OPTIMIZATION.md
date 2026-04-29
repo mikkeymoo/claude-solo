@@ -60,23 +60,6 @@ The SessionStart `cost-summary.sh` hook emits:
 
 ---
 
-## lean-ctx integration (optional)
-
-[lean-ctx](https://github.com/leanctx/lean-ctx) adds a file-read and MCP caching layer that
-reduces repeated file-read token costs to ~13 tokens per re-read. It complements Ultimate-Windows
-hooks — they don't overlap.
-
-```bash
-# Handled automatically by install.sh — or manually:
-cargo install lean-ctx
-lean-ctx init --agent claude-code
-```
-
-lean-ctx auto-allowlists `~/.claude` on Claude Code sessions. RTK handles CLI output compression;
-lean-ctx handles file-read layer caching.
-
----
-
 ## Session hygiene tips
 
 1. **Keep sessions long** — longer sessions amortize the cache write cost across more reads
