@@ -528,6 +528,23 @@ When author disagrees with your feedback:
 ✅ Approve after addressing required changes
 ```
 
+## CONFIDENCE SCORING
+
+Rate each finding with a confidence score (0–100):
+
+| Score  | Label    | Meaning                                                        |
+| ------ | -------- | -------------------------------------------------------------- |
+| 95–100 | Definite | Issue is certain — reproducible, not context-dependent         |
+| 75–94  | High     | Very likely an issue, minor context uncertainty                |
+| 50–74  | Medium   | Context-dependent — may be intentional or environment-specific |
+| <50    | Low      | Flag explicitly — possible false positive, needs human review  |
+
+Format: append `[confidence: N]` to each finding.
+
+Example: `🔴 [blocking] Race condition in connection pool — concurrent access without mutex [confidence: 92]`
+
+For LOW confidence findings (<50): prefix with `⚠️ UNCERTAIN:` and explain what additional context would clarify it.
+
 ## SELF-CHECK
 
 Before returning, grade your response:

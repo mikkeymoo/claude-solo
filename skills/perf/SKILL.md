@@ -99,6 +99,23 @@ Groups findings by file, sorts by severity (HIGH → MEDIUM → LOW).
 
 Use in `--quick` mode: run the script first, present its output, then discuss remediation.
 
+## CONFIDENCE SCORING
+
+Rate each finding with a confidence score (0–100):
+
+| Score  | Label    | Meaning                                                        |
+| ------ | -------- | -------------------------------------------------------------- |
+| 95–100 | Definite | Issue is certain — reproducible, not context-dependent         |
+| 75–94  | High     | Very likely an issue, minor context uncertainty                |
+| 50–74  | Medium   | Context-dependent — may be intentional or environment-specific |
+| <50    | Low      | Flag explicitly — possible false positive, needs human review  |
+
+Format: append `[confidence: N]` to each finding.
+
+Example: `🔴 HIGH — N+1 query pattern in user_posts_loader() — loop with query per item [confidence: 98]`
+
+For LOW confidence findings (<50): prefix with `⚠️ UNCERTAIN:` and explain what additional context would clarify it.
+
 ## SELF-CHECK
 
 Before returning, verify:

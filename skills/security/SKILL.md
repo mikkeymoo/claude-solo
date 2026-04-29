@@ -38,6 +38,23 @@ Exits with code 1 if CRITICAL findings exist.
 
 Use this script for step 3 (Secrets) of the audit. Review its output before auto-fixing.
 
+## CONFIDENCE SCORING
+
+Rate each finding with a confidence score (0–100):
+
+| Score  | Label    | Meaning                                                        |
+| ------ | -------- | -------------------------------------------------------------- |
+| 95–100 | Definite | Issue is certain — reproducible, not context-dependent         |
+| 75–94  | High     | Very likely an issue, minor context uncertainty                |
+| 50–74  | Medium   | Context-dependent — may be intentional or environment-specific |
+| <50    | Low      | Flag explicitly — possible false positive, needs human review  |
+
+Format: append `[confidence: N]` to each finding.
+
+Example: `🔴 SQL injection in user_search() — string interpolation in query [confidence: 97]`
+
+For LOW confidence findings (<50): prefix with `⚠️ UNCERTAIN:` and explain what additional context would clarify it.
+
 ## CVE Scanning Commands
 
 For step 5 (Dependencies + CVE Scan), use one of these commands based on your project type:
