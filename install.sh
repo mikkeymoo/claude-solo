@@ -423,6 +423,10 @@ install_hooks() {
   done
   shopt -u nullglob
   [[ $count -eq 0 ]] && warn "No .js hook files found in $src_dir" || true
+  # Copy package.json so node treats hooks as ESM (required for import syntax)
+  if [[ -f "$src_dir/package.json" ]]; then
+    do_run cp "$src_dir/package.json" "$dst_dir/package.json"
+  fi
 }
 
 # ---------------------------------------------------------------------------
