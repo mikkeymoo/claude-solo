@@ -11,7 +11,7 @@ Scope: files changed since last tag, or specified path.
 2. **Auth & Authorization** — all endpoints protected? JWT verified? `alg:none` rejected?
 3. **Secrets** — hardcoded keys/tokens/passwords? Secrets in logs or errors?
 4. **Input validation** — validated at boundaries? HTML sanitized?
-5. **Dependencies** — `npm audit` / `cargo audit` / `pip-audit`; flag CRITICAL/HIGH CVEs
+5. **Dependencies + CVE Scan** — `npm audit` / `cargo audit` / `pip-audit`; flag CRITICAL/HIGH CVEs
 6. **Security headers** — CSP, X-Content-Type-Options, X-Frame-Options
 
 Labels:
@@ -37,6 +37,46 @@ database URLs with passwords, generic API keys/secrets, unignored `.env` files.
 Exits with code 1 if CRITICAL findings exist.
 
 Use this script for step 3 (Secrets) of the audit. Review its output before auto-fixing.
+
+## CVE Scanning Commands
+
+For step 5 (Dependencies + CVE Scan), use one of these commands based on your project type:
+
+**npm/pnpm projects:**
+
+```bash
+npm audit --json 2>/dev/null | python -c "import json,sys; data=json.load(sys.stdin); [print(f'  {k}: {v[\"severity\"]} - {v[\"title\"]}') for k,v in data.get('vulnerabilities',{}).items() if v['severity'] in ['critical','high']]"
+```
+
+**Python projects:**
+
+```bash
+pip-audit --format=json 2>/dev/null | python -c "import json,sys; [print(f'  {v[\"name\"]} {v[\"version\"]}: {v[\"id\"]} ({v[\"fix_versions\"]})') for v in json.load(sys.stdin).get('dependencies',[]) if v.get('vulns')]"
+```
+
+**Rust projects:**
+
+```bash
+cargo audit --json 2>/dev/null | python -c "import json,sys; data=json.load(sys.stdin); [print(f'  {v[\"package\"][\"name\"]}: {v[\"advisory\"][\"id\"]} - {v[\"advisory\"][\"title\"]}') for v in data.get('vulnerabilities',{}).get('list',[])]"
+```
+
+**If tools not installed:**
+
+- npm audit (built-in with npm/pnpm)
+- pip install pip-audit (then: `pip-audit`)
+- cargo install cargo-audit (then: `cargo audit`)
+
+## SELF-CHECK
+
+Before returning, grade your response:
+
+- [ ] Every finding has an OWASP category and severity label (🔴 CRITICAL / 🟡 HIGH / 🔵 MEDIUM / 🔵 LOW) — PASS/FAIL
+- [ ] Each finding has a file:line location and is verified in actual code, not hypothetical — PASS/FAIL
+- [ ] CRITICAL findings are listed first and include specific remediation with code examples — PASS/FAIL
+- [ ] Summary includes finding count by severity: "X findings (Y critical, Z high, N medium, M low)" — PASS/FAIL
+- [ ] Auto-fixed CRITICAL findings are committed with `fix(security): <category>` message — PASS/FAIL
+
+If any item is FAIL: revise before returning.
 
 ## SUCCESS CRITERIA
 

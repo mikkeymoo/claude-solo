@@ -123,6 +123,18 @@ and how many lines need coverage to reach the threshold.
 
 Run this after generating a coverage report to decide which tests to write next.
 
+## SELF-CHECK
+
+Before returning, grade your response:
+
+- [ ] Every test exercises behavior through the public interface only — no private method calls — PASS/FAIL
+- [ ] Each RED→GREEN cycle is one test at a time, not a batch — PASS/FAIL
+- [ ] Tests are named descriptively: `should <behavior> when <condition>` — PASS/FAIL
+- [ ] All tests pass before moving to the Refactor phase — PASS/FAIL
+- [ ] No test was written to always pass (e.g., `assert True`) — PASS/FAIL
+
+If any item is FAIL: revise before returning.
+
 ## SUCCESS CRITERIA
 
 - [ ] Every test exercises behavior through the public interface only — no private method calls

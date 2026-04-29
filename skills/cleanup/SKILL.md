@@ -65,6 +65,18 @@ commented-out code blocks (3+ lines), and stale TODOs with git-blame age.
 
 Use in `--audit` mode: run the script first, then present its output as the checklist.
 
+## SELF-CHECK
+
+Before returning, grade your response:
+
+- [ ] In `--audit` mode: output is a checklist with categories (TODOs, dead code, dead exports, patterns) and no code is modified — PASS/FAIL
+- [ ] In default mode: all tests pass before cleanup starts (baseline established) — PASS/FAIL
+- [ ] Each pass (dead code → duplication → abstraction → padding) passes tests independently — PASS/FAIL
+- [ ] Every deleted item was verified as unused: checked for imports, references, git history (30+ days for TODOs) — PASS/FAIL
+- [ ] Summary shows counts: "Removed X unused imports, Y dead functions, Z commented blocks" — PASS/FAIL
+
+If any item is FAIL: revise before returning.
+
 ## SUCCESS CRITERIA
 
 - [ ] In `--audit` mode: Output is a checklist with categories (stale TODOs, dead code, dead exports, deprecated patterns) and no code is modified

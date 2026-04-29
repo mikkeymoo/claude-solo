@@ -76,6 +76,18 @@ Uses Python AST for `.py` and regex heuristics for JS/TS.
 
 Use this as part of `--gate` or `--all` to surface complexity risks before shipping.
 
+## SELF-CHECK
+
+Before returning, grade your response:
+
+- [ ] For `--gate`: all checks show explicit pass/fail status (lint, typecheck, tests, secrets, smoke) — PASS/FAIL
+- [ ] Each failing check lists violation count and specific errors, not just "failed" — PASS/FAIL
+- [ ] Report includes `.planning/VERIFY.md` with results table summarizing all checks — PASS/FAIL
+- [ ] Files with changes but no test coverage are flagged by name with coverage percentage — PASS/FAIL
+- [ ] Summary clearly states "✅ Verification passed" OR "🔴 Verification failed" with action items — PASS/FAIL
+
+If any item is FAIL: revise before returning.
+
 ## SUCCESS CRITERIA
 
 - [ ] For `--gate`: All checks (lint, typecheck, tests, secrets, smoke) show explicit pass/fail status

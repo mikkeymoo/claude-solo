@@ -528,6 +528,18 @@ When author disagrees with your feedback:
 ✅ Approve after addressing required changes
 ```
 
+## SELF-CHECK
+
+Before returning, grade your response:
+
+- [ ] Every finding has a severity label (🔴 blocking / 🟡 important / 🟢 nit / 💡 suggestion) and file:line location — PASS/FAIL
+- [ ] Each finding has a "why" that explains the impact or rationale — PASS/FAIL
+- [ ] Findings are sorted: blocking first, then important, then nits, then suggestions — PASS/FAIL
+- [ ] At least one positive comment highlights what was done well — PASS/FAIL
+- [ ] Summary states decision (✅ Approve / 💬 Comment / 🔄 Request Changes) and count of findings by severity — PASS/FAIL
+
+If any item is FAIL: revise before returning.
+
 ## SUCCESS CRITERIA
 
 - [ ] Every finding has: severity label (🔴 blocking / 🟡 important / 🟢 nit / 💡 suggestion), file:line location, specific explanation, and concrete fix or alternative
