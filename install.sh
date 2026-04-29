@@ -331,37 +331,10 @@ install_cache_fix() {
 
 # ---------------------------------------------------------------------------
 # Optional tools installer
-# BurntToast: Windows toast notifications (Windows only)
+# (reserved for future optional tools)
 # ---------------------------------------------------------------------------
 install_optional_tools() {
-  say "Installing optional tools"
-
-  # BurntToast — Windows toast notifications (Windows only, requires PowerShell)
-  if is_windows; then
-    local pwsh; pwsh=$(find_pwsh)
-    if [[ -z "$pwsh" ]]; then
-      warn "PowerShell not found — skipping BurntToast"
-    elif [[ $DRY_RUN -eq 1 ]]; then
-      printf "  ${YELLOW}[dry-run]${NC} would install BurntToast via PowerShell\n"
-    else
-      # Check if already installed
-      local already
-      already=$("$pwsh" -NoProfile -Command \
-        "if (Get-Module -ListAvailable -Name BurntToast) { 'yes' } else { 'no' }" \
-        2>/dev/null || echo "no")
-      if [[ "$already" == "yes" ]]; then
-        ok "BurntToast already installed"
-      else
-        say "  Installing BurntToast for Windows toast notifications..."
-        "$pwsh" -NoProfile -Command \
-          "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue; \
-           Install-Module BurntToast -Scope CurrentUser -Force -Confirm:\$false -ErrorAction Stop" \
-          2>&1 | tail -3 \
-          && ok "Installed BurntToast" \
-          || warn "BurntToast install failed (optional) — install manually: Install-Module BurntToast -Scope CurrentUser"
-      fi
-    fi
-  fi
+  say "Installing optional tools — nothing to install"
 }
 
 # ---------------------------------------------------------------------------
@@ -704,10 +677,6 @@ ensure_hooks_wired() {
     "enforce-lsp-navigation" \
     '{"matcher":"Grep|Glob","hooks":[{"type":"command","command":"bash ~/.claude/scripts/enforce-lsp-navigation.sh"}]}'
 
-  # Notification
-  _wire_hook "Notification" \
-    "notify-desktop" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/notify-desktop.sh"}]}'
 }
 
 # ---------------------------------------------------------------------------
@@ -902,23 +871,7 @@ smoke_test() {
     warn "  Retry: bash install.sh  (requires npm)"
   fi
 
-  # 7. BurntToast (Windows only)
-  if is_windows; then
-    local pwsh; pwsh=$(find_pwsh)
-    if [[ -n "$pwsh" ]]; then
-      local bt
-      bt=$("$pwsh" -NoProfile -Command \
-        "if (Get-Module -ListAvailable -Name BurntToast) { 'yes' } else { 'no' }" \
-        2>/dev/null || echo "unknown")
-      if [[ "$bt" == "yes" ]]; then
-        ok "BurntToast installed (Windows notifications active)"
-      else
-        warn "BurntToast not installed — notifications will fall back to terminal bell"
-      fi
-    fi
-  fi
-
-  # 8. Agent, skill, command counts
+  # 7. Agent, skill, command counts
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
   local skills; skills=$(ls -d "$CLAUDE_HOME/skills/"*/ 2>/dev/null | wc -l)
   local cmds; cmds=$(ls "$CLAUDE_HOME/commands/"*.md 2>/dev/null | wc -l)
