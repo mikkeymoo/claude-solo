@@ -1,15 +1,16 @@
 ---
 name: cleanup
 description: "Code cleanup — find dead/stale code (--audit) or do a full regression-safe cleanup of dead code, duplication, and AI padding. Use when code quality needs attention."
-argument-hint: "[--audit | path/to/scope]"
+argument-hint: "[--audit | --aggressive | path/to/scope]"
 ---
 
 # /cleanup — Code Quality
 
-Two modes:
+Three modes:
 
 - `--audit` — find and catalogue issues only (no changes, produces checklist)
 - Default — full cleanup: regression-tests-first, multi-pass, quality-gated
+- `--aggressive` — maximum dead code removal with safety review (more thorough, use on branch if unsure)
 
 ## --audit mode (find only)
 
@@ -31,6 +32,47 @@ For each export, verify it's imported somewhere.
 - Hardcoded localhost URLs
 
 Output as a Markdown checklist. Do not delete anything. End with: "Run `/cleanup` to fix these."
+
+## --aggressive mode (maximum removal)
+
+Maximum dead code removal with safety review. More thorough than default cleanup.
+
+**Step 1 — Static analysis pass**
+Run bundled `dead_code_scanner.py --all` to find ALL candidates:
+
+- Unused imports (even if used in comments)
+- Unreachable code branches (after `return`, after `raise`, in `else` after `return`)
+- Empty error handlers: `except: pass`, `catch (e) {}`, `catch { }`
+- Unused function parameters
+- Dead feature flags (constants that are always true/false)
+
+**Step 2 — Before/after baseline**
+Run linter and capture current warning count. This establishes a baseline for comparison after aggressive cleanup.
+
+**Step 3 — Diff review**
+Generate a markdown table showing all planned removals before applying:
+
+```
+| File | Line | Item | Type | Confidence |
+|------|------|------|------|------------|
+| src/utils.ts | 45 | formatDate (unused) | function | High |
+| src/index.ts | 12 | unused param | parameter | High |
+| src/config.ts | 8 | dead flag | constant | Medium |
+```
+
+**Step 4 — Interactive confirmation**
+Print the diff table and ask: "Apply all? (y/n/select)". Allow user to confirm all changes, skip, or cherry-pick specific removals.
+
+**Step 5 — Apply and verify**
+Remove all confirmed items, run linter again to verify no new warnings are introduced.
+
+**Step 6 — Run tests**
+Execute full test suite to ensure no behavioral regressions.
+
+**Step 7 — Commit**
+`chore(cleanup): remove dead code — N items removed across M files`
+
+⚠️ **Warning**: `--aggressive` makes more removals than default cleanup. Run tests after. Use on a branch if unsure.
 
 ## Default mode (full cleanup)
 
