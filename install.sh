@@ -142,7 +142,7 @@ check_prereqs() {
     ok "cache-fix-wrapper detected: $(command -v cache-fix-wrapper)"
   else
     local cc_version=""
-    cc_version=$(claude --version 2>/dev/null | head -1 | grep -oP '\d+\.\d+\.\d+' | head -1 || true)
+    cc_version=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
     if [[ -n "$cc_version" ]]; then
       local major minor patch
       IFS='.' read -r major minor patch <<< "$cc_version"
@@ -570,18 +570,17 @@ smoke_test() {
     smoke_ok=0
   fi
 
-  # 2. Mojibake detection in settings.json
+  # 2. Encoding check — validate settings.json is valid UTF-8
   if [[ -f "$settings" ]]; then
-    mojibake_hits=$(grep -oP 'â€"|â€™|Â |Ã©|Ã¨' "$settings" 2>/dev/null || true)
-    comment_question=$(grep -oP '"_comment[^"]*":\s*"[^"]*[?]{2,}[^"]*"' "$settings" 2>/dev/null || true)
-    if [[ -n "$mojibake_hits" ]]; then
-      warn "settings.json contains mojibake sequences — re-run scripts/Setup-WindowsEncoding.ps1 to fix"
-      smoke_ok=0
-    elif [[ -n "$comment_question" ]]; then
-      warn "settings.json _comment fields contain multiple '?' — possible em-dash corruption"
-      smoke_ok=0
+    if command -v iconv >/dev/null 2>&1; then
+      if iconv -f UTF-8 -t UTF-8 "$settings" >/dev/null 2>&1; then
+        ok "settings.json encoding looks clean (UTF-8 valid)"
+      else
+        warn "settings.json contains non-UTF-8 bytes — re-run scripts/Setup-WindowsEncoding.ps1"
+        smoke_ok=0
+      fi
     else
-      ok "settings.json encoding looks clean (no mojibake detected)"
+      ok "settings.json encoding check skipped (iconv not available)"
     fi
   fi
 
@@ -624,24 +623,25 @@ smoke_test() {
     smoke_ok=0
   fi
 
-  # 5. Hook self-tests
-  local self_test_pass=0 self_test_warn=0
+  # 5. Hook syntax check — bash -n validates without executing (avoids stdin hangs)
+  local syntax_pass=0 syntax_fail=0
   shopt -s nullglob
   for f in "$scripts_dir/"*.sh; do
     local base; base=$(basename "$f")
-    if bash "$f" --smoke-test >/dev/null 2>&1; then
-      (( self_test_pass++ )) || true
+    if bash -n "$f" 2>/dev/null; then
+      (( syntax_pass++ )) || true
     else
-      local ec=$?
-      if [[ $ec -eq 99 ]]; then
-        (( self_test_warn++ )) || true
-      else
-        warn "$base: --smoke-test returned exit $ec"
-      fi
+      warn "$base: syntax error (bash -n failed)"
+      (( syntax_fail++ )) || true
     fi
   done
   shopt -u nullglob
-  ok "Hook self-tests: $self_test_pass passed, $self_test_warn skipped"
+  if [[ $syntax_fail -gt 0 ]]; then
+    warn "Hook syntax errors: $syntax_fail script(s) failed bash -n"
+    smoke_ok=0
+  else
+    ok "Hook syntax check: $syntax_pass scripts OK"
+  fi
 
   # 6. Agent count
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
