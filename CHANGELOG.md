@@ -7,6 +7,30 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.4.0] - 2026-04-29
+
+### Changed
+
+- **Unified flat repo** — removed `Original/`, `Ultimate-Linux/`, `Ultimate-Windows/` variant directories. All content now lives at repo root: `agents/`, `commands/`, `skills/`, `scripts/`, `rules/`
+- **Single installer** — `install.sh` no longer presents a variant selection menu. One command (`bash install.sh`) installs everything. Removed `--original`, `--linux`, `--windows` flags
+- **`/mm:` prefix on all commands and skills** — every slash command and skill is now invoked as `/mm:name` (e.g. `/mm:brief`, `/mm:cost`, `/mm:hud`). Frontmatter `name:` fields preserved as-is during install
+- **Scripts at `~/.claude/scripts/`** — hook scripts moved from `~/.claude/ultimate-windows/scripts/` to `~/.claude/scripts/`. `ensure_hooks_wired()` updated accordingly
+- **Manifest at `~/.claude/.claude-solo-manifest`** — unified manifest replaces per-variant manifests
+- **Version file at `~/.claude/.claude-solo-version`** — used by `update-check.sh`
+- **`install_rules()`** — new function installs `rules/*.md` to `~/.claude/rules/` for auto-loading
+- **30 commands, 25 skills** — merged best of Original (11 unique commands), Ultimate-Windows (19 commands, 8 skills), and community skills (17)
+
+### Removed
+
+- `Original/` directory (content merged into root `commands/`)
+- `Ultimate-Linux/` directory
+- `Ultimate-Windows/` directory
+- Interactive variant selection menu from `install.sh`
+- `run_original()`, `run_linux()`, `run_windows()` functions
+- `--original`, `--linux`, `--windows` CLI flags
+
+---
+
 ## [0.3.0] - 2026-04-29
 
 ### Added

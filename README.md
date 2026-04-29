@@ -1,75 +1,47 @@
 # claude-solo
 
-Claude Code configuration for solo developers. Three variants, one installer.
-
-## Variants
-
-| Variant              | Target             | What it adds                                                                                               |
-| -------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| **Original**         | Any platform       | Classic claude-solo setup — prompts, basic hooks                                                           |
-| **Ultimate-Linux**   | Linux / macOS      | 5 specialist subagents, 18 commands, 4 skills, 13 lifecycle hooks                                          |
-| **Ultimate-Windows** | Windows / Git Bash | Everything in Ultimate-Linux plus Windows encoding hardening, cost observability, eDiscovery domain skills |
+Claude Code configuration for solo developers. One flat repo, one installer, no variant selection.
 
 ## Quickstart
 
 ```bash
-# Interactive install (recommended)
+# Install (merge — coexists with existing config)
 bash install.sh
 
-# Direct install — Ultimate-Windows
-bash install.sh --windows
-
 # Fresh install (replaces existing config, backup taken automatically)
-bash install.sh --windows --fresh
+bash install.sh --fresh
 
 # Dry run (preview without changing anything)
-bash install.sh --windows --dry-run
+bash install.sh --dry-run
 
 # Add project override to current directory
-bash install.sh --windows --project
+bash install.sh --project
 
 # Uninstall
-bash install.sh --uninstall --windows
+bash install.sh --uninstall
+
+# Check prerequisites only
+bash install.sh --verify
 ```
 
-Requirements: `bash` (Git Bash on Windows), `jq`, `node`
+**Requirements:** `bash` (Git Bash on Windows), `jq`
 
-## Ultimate-Windows highlights
-
-### Windows encoding hardening (v0.3.0)
-
-Fixes `charmap` codec errors and `settings.json` mojibake corruption — two reproducible bugs
-on Windows that silently drop hook configs or corrupt Python output.
-
-```bash
-# One-shot fix (run once from PowerShell, no installer needed):
-powershell -ExecutionPolicy Bypass -File Ultimate-Windows/scripts/Setup-WindowsEncoding.ps1
-```
-
-What the installer adds to `settings.json`:
-
-- `PYTHONIOENCODING=utf-8` — prevents `charmap` errors in Python tool output
-- `PYTHONUTF8=1` — enables Python's UTF-8 mode globally
-- `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` — enables native PowerShell tool support
-
-### Cost & cache observability (v0.3.0)
-
-SessionStart banner shows token usage summary on every session start:
+## What gets installed
 
 ```
-[bootstrap] Windows UTF-8 encoding active
-[cost] today: 142k reads, 38k 5m-writes, 12k 1h-writes (78% hit) ~$1.84
-[quota] 5h window started 14:32 (2h 12m ago), 87k tokens used
---- session context ---
-  git: main  |  dirty: 2  |  vs origin: +0 -0
+~/.claude/
+  scripts/           17 lifecycle hook scripts
+  agents/            5 specialist subagents (ult-* prefix)
+  commands/          30 slash commands (/mm:name)
+  skills/            25 skills (/mm:name)
+  rules/             10 engineering rules (auto-loaded)
+  settings.json      Wired hooks, permissions, env vars
+  CLAUDE.md          Working style + agent/skill routing
+  statusline.sh      One Dark Pro compact statusline
+  COST-OPTIMIZATION.md  Cache TTL fix + lean-ctx notes
 ```
 
-Run `/mm:cost` for a full breakdown with per-project stats and optimization suggestions.
-
-See `Ultimate-Windows/COST-OPTIMIZATION.md` for the cache TTL regression fix (CC v2.1.81+)
-and `lean-ctx` integration notes.
-
-### Lifecycle hooks (13 events)
+## Hooks (15 events)
 
 | Event        | Hook                            | Purpose                                                    |
 | ------------ | ------------------------------- | ---------------------------------------------------------- |
@@ -85,51 +57,82 @@ and `lean-ctx` integration notes.
 | PreToolUse   | `enforce-lsp-navigation.sh`     | Nudge: prefer LSP over Grep for code symbols               |
 | PostToolUse  | `post-format-and-heal.sh`       | Auto-format + LSP diagnostics after edits                  |
 | PostToolUse  | `compress-lsp-output.sh`        | Trim verbose Serena MCP output                             |
-| PostToolUse  | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in)                    |
+| PostToolUse  | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in via env var)        |
 | Notification | `notify-desktop.sh`             | BurntToast → MessageBox → terminal bell                    |
 | PreCompact   | `pre-compact-checkpoint.sh`     | Save checkpoint before context compaction                  |
 
-### Specialist subagents
+## Specialist subagents
 
-All installed with `ult-` prefix in merge mode:
+Installed with `ult-` prefix (invoke via `Agent` tool or `/agents`):
 
-- `ult-code-reviewer` — staff-engineer review (Opus, 3-pass)
-- `ult-researcher` — codebase questions >3 files (Haiku, fast, read-only)
-- `ult-refactor-agent` — isolated worktree for large-scale changes
-- `ult-db-reader` — SELECT-only DB inspector (hook-enforced)
-- `ult-deploy-guard` — pre-deploy checklist (human-trigger only)
+| Agent                | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `ult-code-reviewer`  | Staff-engineer review, Opus, 3-pass           |
+| `ult-researcher`     | Codebase questions >3 files, Haiku, read-only |
+| `ult-refactor-agent` | Isolated worktree for large-scale changes     |
+| `ult-db-reader`      | SELECT-only DB inspector (hook-enforced)      |
+| `ult-deploy-guard`   | Pre-deploy checklist (human-trigger only)     |
 
-### Commands & skills
+## Commands & skills (`/mm:name`)
 
 ```
-/mm:brief         Capture idea → .planning/BRIEF.md
-/mm:plan          Expand brief → PLAN.md with atomic tasks
-/mm:build         Execute tasks from PLAN.md
-/mm:review        Run code-reviewer before commit
-/mm:cost          Token/cost analysis from JSONL logs
-/mm:skill-from-template  Scaffold a new skill
-/lsp-status       Diagnose LSP server registration
-/hud              Full session HUD with token chart
-/riper            Enforce Research→Plan→Execute phase separation
-/daily-brief      One-shot context aggregator
-/tech-debt        Prioritized debt scan
-/security-review  OWASP audit (manual trigger only)
+Planning & execution
+  /mm:brief           Capture idea → .planning/BRIEF.md
+  /mm:plan            Expand brief → PLAN.md with atomic tasks
+  /mm:build           Execute tasks from PLAN.md
+  /mm:review          Run code-reviewer before commit
+  /mm:retro           Sprint retrospective
+  /mm:verify          Hard pass/fail gate (lint, types, tests)
+  /mm:ship            Merge + deploy + monitor
+
+Observability
+  /mm:cost            Token/cost analysis from JSONL logs
+  /mm:hud             Full session HUD with token chart
+  /mm:daily-brief     One-shot context aggregator
+  /mm:session         Save/restore context
+
+Quality & security
+  /mm:riper           Enforce Research→Plan→Execute phases
+  /mm:security-review OWASP audit (manual trigger only)
+  /mm:tech-debt       Prioritized debt scan with file:line refs
+  /mm:quality         Code quality audit
+  /mm:cleanup         Code cleanup
+
+DX & tooling
+  /mm:doctor          Project health check
+  /mm:scaffold        Scaffold Python/PS/SQL starter
+  /mm:config          Manage rules, schedule, CI
+  /mm:workflow        Execution modes (--auto, --parallel, --tdd)
+  /mm:search          Deep research + explain + estimate
+  /mm:docs            Docs sync, onboarding, distill
+  /mm:release         Changelog + version bump + tag
+
+LSP & skills
+  /mm:lsp-status      Diagnose LSP server registration
+  /mm:skill-from-template  Scaffold a new skill
+
+eDiscovery / Morae
+  /mm:nuix-binary-store    Prudential binary store audit
+  /mm:relativity-sql       Relativity SQL bundle + PS wrappers
 ```
 
-### Domain skills (Morae / eDiscovery)
+## Windows encoding
 
-- `/nuix-binary-store` — three-phase Prudential binary store audit (Phase 1 scan, Phase 2 MD5 extraction, Phase 3 orphan detection)
-- `/relativity-sql` — verified SQL bundle with PowerShell wrappers and Power BI output formatters
+Fixes `charmap` codec errors and `settings.json` mojibake — two common Windows bugs.
+
+One-shot fix (run once from PowerShell, no installer needed):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/Setup-WindowsEncoding.ps1
+```
 
 ## Cost optimization
-
-Claude Code costs vary 4-20x depending on session patterns. Key levers:
 
 1. **cache-fix-wrapper** — fixes 5m TTL regression in CC v2.1.81+: https://github.com/cnighswonger/claude-code-cache-fix
 2. **lean-ctx** — file-read caching at ~13 tokens/re-read: `cargo install lean-ctx`
 3. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep
 
-See `Ultimate-Windows/COST-OPTIMIZATION.md` for full guide.
+See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 ## Install modes
 
@@ -140,10 +143,10 @@ See `Ultimate-Windows/COST-OPTIMIZATION.md` for full guide.
 | `--project`   | Project override — adds `.claude/settings.json` to current directory |
 | `--dry-run`   | Preview only — no files changed                                      |
 | `--verify`    | Check prerequisites only                                             |
-| `--uninstall` | Remove installed variant using manifest                              |
+| `--uninstall` | Remove installed files using manifest                                |
 
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.3.0** (2026-04-29) — Windows encoding hardening, cost observability, LSP enforcement, HUD, domain skills
+Current: **v0.4.0** (2026-04-29) — unified flat repo, single installer, all commands prefixed `/mm:`
