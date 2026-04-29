@@ -67,13 +67,9 @@ reduces repeated file-read token costs to ~13 tokens per re-read. It complements
 hooks — they don't overlap.
 
 ```bash
-# Install
+# Handled automatically by install.sh — or manually:
 cargo install lean-ctx
-# or
-npm install -g lean-ctx-bin
-
-# Then reinstall with lean-ctx flag:
-bash install.sh --windows --with-lean-ctx
+lean-ctx init --agent claude-code
 ```
 
 lean-ctx auto-allowlists `~/.claude` on Claude Code sessions. RTK handles CLI output compression;

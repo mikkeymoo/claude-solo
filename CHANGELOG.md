@@ -13,7 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - **`install_cache_fix()`** — auto-installs `claude-code-cache-fix` npm package; patches `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` and `ENABLE_PROMPT_CACHING_1H=1` into `settings.json`; skips gracefully if npm/node unavailable
 - **`scripts/start-cache-proxy.sh`** — SessionStart hook (runs first, before all others) that starts the cache proxy if not already listening on `:9801`; idempotent curl check prevents double-start
-- **`install_optional_tools()`** — auto-installs `lean-ctx` (npm `lean-ctx-bin`, with `cargo install lean-ctx` fallback) and `BurntToast` PowerShell module (Windows only, PSGallery trust, idempotent check)
+- **`install_optional_tools()`** — auto-installs `lean-ctx` (cargo only; wires via `lean-ctx init --agent claude-code`) and `BurntToast` PowerShell module (Windows only, PSGallery trust, idempotent check)
 - **`setup_windows_encoding()`** — auto-runs `Setup-WindowsEncoding.ps1` via `pwsh`/`powershell.exe` on Windows during install
 - **`_patch_settings_env(key, value)`** — surgical jq-based env var injection into `settings.json` with idempotency check, conflict warning, and `--dry-run` support
 - **`is_windows()` / `find_pwsh()`** — cross-platform helpers for PowerShell detection (covers Git Bash, MSYS2, Cygwin)

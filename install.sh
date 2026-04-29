@@ -240,34 +240,25 @@ install_cache_fix() {
 install_optional_tools() {
   say "Installing optional tools"
 
-  # lean-ctx — prefer npm (pre-built binary, fast) over cargo (compiles from source)
+  # lean-ctx — cargo only (no npm binary package exists)
   if command -v lean-ctx >/dev/null 2>&1; then
     ok "lean-ctx already installed: $(command -v lean-ctx)"
   elif [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx via npm or cargo\n"
+    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx via cargo\n"
+  elif command -v cargo >/dev/null 2>&1; then
+    say "  Installing lean-ctx via cargo (this may take a minute)..."
+    cargo install lean-ctx 2>&1 | tail -3 \
+      && ok "Installed lean-ctx (cargo)" \
+      || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
   else
-    if command -v npm >/dev/null 2>&1; then
-      say "  Installing lean-ctx via npm..."
-      npm install -g lean-ctx-bin 2>&1 | tail -2 \
-        && ok "Installed lean-ctx (npm)" \
-        || {
-          warn "npm install lean-ctx-bin failed — trying cargo..."
-          if command -v cargo >/dev/null 2>&1; then
-            cargo install lean-ctx 2>&1 | tail -3 \
-              && ok "Installed lean-ctx (cargo)" \
-              || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
-          else
-            warn "lean-ctx not installed (npm failed, cargo not available)"
-          fi
-        }
-    elif command -v cargo >/dev/null 2>&1; then
-      say "  Installing lean-ctx via cargo (this may take a minute)..."
-      cargo install lean-ctx 2>&1 | tail -3 \
-        && ok "Installed lean-ctx (cargo)" \
-        || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
-    else
-      warn "lean-ctx not installed (requires npm or cargo)"
-    fi
+    warn "lean-ctx not installed (requires cargo: https://rustup.rs)"
+  fi
+
+  # Wire lean-ctx into Claude Code (idempotent — safe to re-run)
+  if command -v lean-ctx >/dev/null 2>&1 && [[ $DRY_RUN -eq 0 ]]; then
+    lean-ctx init --agent claude-code >/dev/null 2>&1 \
+      && ok "lean-ctx wired into Claude Code" \
+      || warn "lean-ctx init failed — run manually: lean-ctx init --agent claude-code"
   fi
 
   # BurntToast — Windows toast notifications (Windows only, requires PowerShell)

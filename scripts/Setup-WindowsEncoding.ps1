@@ -43,7 +43,7 @@ foreach ($kv in $envVars.GetEnumerator()) {
     } else {
         if (-not $DryRun) {
             [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, 'User')
-            $env:($kv.Key) = $kv.Value
+            [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, 'Process')
         }
         Write-Ok "Set $($kv.Key) = '$($kv.Value)'"
         Write-Dry "Would set $($kv.Key) = '$($kv.Value)'"
