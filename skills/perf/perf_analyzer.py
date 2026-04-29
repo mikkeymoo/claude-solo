@@ -336,8 +336,8 @@ def _check_js_allocations_in_loops(source, filepath, lines):
     """Detect allocations inside loops in JS/TS."""
     findings = []
 
-    for i, line_num in enumerate(lines, 1):
-        if re.search(r"^\s*(for|while)\s*[\(\{]", line):
+    for i, line_content in enumerate(lines, 1):
+        if re.search(r"^\s*(for|while)\s*[\(\{]", line_content):
             # Check next 10 lines for allocations
             for j in range(i, min(i + 10, len(lines))):
                 if re.search(
@@ -362,8 +362,8 @@ def _check_js_sync_io_in_loops(source, filepath, lines):
     """Detect sync I/O inside loops."""
     findings = []
 
-    for i, line_num in enumerate(lines, 1):
-        if re.search(r"^\s*(for|while)\s*[\(\{]", line):
+    for i, line_content in enumerate(lines, 1):
+        if re.search(r"^\s*(for|while)\s*[\(\{]", line_content):
             # Check next 15 lines for sync I/O
             for j in range(i, min(i + 15, len(lines))):
                 if JS_SYNC_IO_PATTERN.search(lines[j - 1]):
@@ -385,8 +385,8 @@ def _check_js_string_concat(source, filepath, lines):
     """Detect string concatenation in loops."""
     findings = []
 
-    for i, line_num in enumerate(lines, 1):
-        if re.search(r"^\s*(for|while)\s*[\(\{]", line):
+    for i, line_content in enumerate(lines, 1):
+        if re.search(r"^\s*(for|while)\s*[\(\{]", line_content):
             # Check next 15 lines for += on strings
             for j in range(i, min(i + 15, len(lines))):
                 if re.search(r"\w+\s*\+=\s*['\"]", lines[j - 1]):
