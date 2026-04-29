@@ -13,7 +13,7 @@
   },
   "autoUpdatesChannel": "stable",
   "env": {
-    "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. ENABLE_PROMPT_CACHING_1H requires Claude Code v2.1.108+; user is on 2.1.105 so it's commented out. Add once upgraded. PYTHONIOENCODING + PYTHONUTF8 added v0.3.0: prevents charmap codec errors when Python stdout encounters Unicode (em-dashes, smart quotes, non-ASCII names in email/document parsing). CLAUDE_CODE_USE_POWERSHELL_TOOL added v0.3.0: enables native PowerShell tool support on Windows.",
+    "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. PYTHONIOENCODING + PYTHONUTF8: prevents charmap codec errors when Python stdout encounters Unicode (em-dashes, smart quotes, non-ASCII names in email/document parsing). CLAUDE_CODE_USE_POWERSHELL_TOOL: enables native PowerShell tool support on Windows.",
     "ENABLE_TOOL_SEARCH": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
