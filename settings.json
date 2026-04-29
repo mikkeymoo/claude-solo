@@ -236,6 +236,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "_comment": "Test gate — prevent stopping if uncommitted changes, TODO markers, or test failures exist",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/stop-gate.js",
+            "timeout": 35000
+          }
+        ]
+      }
     ]
   },
   "skipDangerousModePermissionPrompt": true
