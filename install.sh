@@ -194,6 +194,34 @@ check_prereqs_ultimate() {
       done
     fi
   fi
+
+  # cache-fix-wrapper detection (advisory — CC v2.1.81+ cache TTL regression)
+  if command -v cache-fix-wrapper >/dev/null 2>&1; then
+    ok "cache-fix-wrapper detected: $(command -v cache-fix-wrapper)"
+  else
+    # Parse claude version to warn only on affected range
+    local cc_version=""
+    cc_version=$(claude --version 2>/dev/null | head -1 | grep -oP '\d+\.\d+\.\d+' | head -1 || true)
+    if [[ -n "$cc_version" ]]; then
+      local major minor patch
+      IFS='.' read -r major minor patch <<< "$cc_version"
+      # Affected: >= 2.1.81 (until ENABLE_PROMPT_CACHING_1H fix in v2.1.108)
+      if (( major > 2 )) || (( major == 2 && minor > 1 )) || (( major == 2 && minor == 1 && patch >= 81 )); then
+        warn "Claude Code v${cc_version} may suffer 4-20x cost increase on resumed sessions"
+        warn "  due to 5m TTL cache regression. Consider installing:"
+        warn "  https://github.com/cnighswonger/claude-code-cache-fix"
+        warn "  See Ultimate-Windows/COST-OPTIMIZATION.md for details"
+      fi
+    fi
+  fi
+
+  # lean-ctx detection (optional token-saving layer)
+  if command -v lean-ctx >/dev/null 2>&1; then
+    ok "lean-ctx detected: $(command -v lean-ctx)"
+  else
+    warn "lean-ctx not found (optional) — install for ~13-token file re-reads: cargo install lean-ctx"
+    warn "  See Ultimate-Windows/COST-OPTIMIZATION.md for lean-ctx + RTK integration notes"
+  fi
 }
 
 check_prereqs_original() {
@@ -435,11 +463,39 @@ ensure_hooks_wired() {
 
   _wire_hook "PostToolUse" \
     "compress-lsp-output" \
-    '{"matcher":"mcp__cclsp__.*","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/compress-lsp-output.sh","timeout":5000}]}'
+    '{"matcher":"mcp__serena__.*","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/compress-lsp-output.sh","timeout":5000}]}'
+
+  _wire_hook "PostToolUse" \
+    "morae-powerbi-validate" \
+    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/morae-powerbi-validate.sh","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "bootstrap-windows-encoding" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/bootstrap-windows-encoding.sh","statusMessage":"Bootstrapping Windows UTF-8 encoding...","timeout":5000}]}'
+
+  _wire_hook "SessionStart" \
+    "cost-summary" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/cost-summary.sh","statusMessage":"Summarizing today'"'"'s token usage...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "quota-warmup-warn" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/quota-warmup-warn.sh","statusMessage":"Checking quota window...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "session-hud" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/session-hud.sh","statusMessage":"Loading session HUD...","timeout":10000}]}'
 
   _wire_hook "SessionStart" \
     "session-start-context" \
     '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/session-start-context.sh","statusMessage":"Loading git + sprint context...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "morae-context" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/morae-context.sh","statusMessage":"Checking project context...","timeout":5000}]}'
+
+  _wire_hook "SessionStart" \
+    "update-check" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/update-check.sh","statusMessage":"Checking for updates...","timeout":15000}]}'
 
   _wire_hook "PreCompact" \
     "pre-compact-checkpoint" \
@@ -448,6 +504,14 @@ ensure_hooks_wired() {
   _wire_hook "PreToolUse" \
     "validate-readonly-query" \
     '{"matcher":"Bash","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/validate-readonly-query.sh"}]}'
+
+  _wire_hook "PreToolUse" \
+    "validate-utf8-source" \
+    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/validate-utf8-source.sh"}]}'
+
+  _wire_hook "PreToolUse" \
+    "enforce-lsp-navigation" \
+    '{"matcher":"Grep|Glob","hooks":[{"type":"command","command":"bash ~/.claude/ultimate-windows/scripts/enforce-lsp-navigation.sh"}]}'
 }
 
 # ---------------------------------------------------------------------------
@@ -536,11 +600,33 @@ smoke_test_ultimate() {
     return
   fi
   say "Running smoke checks"
-  if jq empty "$CLAUDE_HOME/settings.json" 2>/dev/null; then
+  local settings="$CLAUDE_HOME/settings.json"
+  local smoke_ok=1
+
+  # 1. settings.json JSON validity
+  if jq empty "$settings" 2>/dev/null; then
     ok "settings.json parses as valid JSON"
   else
     warn "settings.json does NOT parse as valid JSON — fix before use"
+    smoke_ok=0
   fi
+
+  # 2. Mojibake detection in settings.json (_comment fields with ? where em-dashes should be)
+  if [[ -f "$settings" ]]; then
+    mojibake_hits=$(grep -oP 'â€"|â€™|Â |Ã©|Ã¨' "$settings" 2>/dev/null || true)
+    comment_question=$(grep -oP '"_comment[^"]*":\s*"[^"]*[?]{2,}[^"]*"' "$settings" 2>/dev/null || true)
+    if [[ -n "$mojibake_hits" ]]; then
+      warn "settings.json contains mojibake sequences — re-run Setup-WindowsEncoding.ps1 to fix encoding"
+      smoke_ok=0
+    elif [[ -n "$comment_question" ]]; then
+      warn "settings.json _comment fields contain multiple '?' — possible em-dash corruption"
+      smoke_ok=0
+    else
+      ok "settings.json encoding looks clean (no mojibake detected)"
+    fi
+  fi
+
+  # 3. Hook scripts executable count
   local n=0
   shopt -s nullglob
   for f in "$scripts_dir/"*.sh; do
@@ -548,8 +634,66 @@ smoke_test_ultimate() {
   done
   shopt -u nullglob
   ok "Hook scripts executable: $n"
+
+  # 4. Verify critical hooks are wired in settings.json
+  local expected_hooks=(
+    "bootstrap-windows-encoding"
+    "cost-summary"
+    "quota-warmup-warn"
+    "session-hud"
+    "session-start-context"
+    "morae-context"
+    "update-check"
+    "post-format-and-heal"
+    "compress-lsp-output"
+    "validate-readonly-query"
+    "validate-utf8-source"
+    "enforce-lsp-navigation"
+    "pre-compact-checkpoint"
+  )
+  local wired=0 missing_hooks=()
+  for hook in "${expected_hooks[@]}"; do
+    if jq -e ".. | strings | select(contains(\"${hook}\"))" "$settings" >/dev/null 2>&1; then
+      (( wired++ )) || true
+    else
+      missing_hooks+=("$hook")
+    fi
+  done
+  ok "Hooks wired in settings.json: $wired/${#expected_hooks[@]}"
+  if [[ ${#missing_hooks[@]} -gt 0 ]]; then
+    warn "Missing hooks (run installer to fix): ${missing_hooks[*]}"
+    smoke_ok=0
+  fi
+
+  # 5. Self-validation: run each hook with --smoke-test flag
+  local self_test_pass=0 self_test_warn=0
+  shopt -s nullglob
+  for f in "$scripts_dir/"*.sh; do
+    local base; base=$(basename "$f")
+    if bash "$f" --smoke-test >/dev/null 2>&1; then
+      (( self_test_pass++ )) || true
+    else
+      # Exit code 99 = "I don't support --smoke-test" — treat as warning not error
+      local ec=$?
+      if [[ $ec -eq 99 ]]; then
+        (( self_test_warn++ )) || true
+      else
+        warn "$base: --smoke-test flag returned exit $ec"
+      fi
+    fi
+  done
+  shopt -u nullglob
+  ok "Hook self-tests: $self_test_pass passed, $self_test_warn skipped (no --smoke-test support)"
+
+  # 6. Agent count
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
   ok "Agents installed (ult-*): $agents/5"
+
+  if [[ $smoke_ok -eq 1 ]]; then
+    ok "All smoke checks passed"
+  else
+    warn "Some smoke checks failed — review warnings above before using"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -707,9 +851,26 @@ run_windows() {
   say "Try it: start a fresh claude session and run /agents — expect ult-code-reviewer, etc."
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
 
+  # Install COST-OPTIMIZATION.md to ~/.claude/ for reference by hooks
+  if [[ -f "$src/COST-OPTIMIZATION.md" ]]; then
+    do_run cp "$src/COST-OPTIMIZATION.md" "$CLAUDE_HOME/COST-OPTIMIZATION.md"
+    ok "Installed COST-OPTIMIZATION.md → $CLAUDE_HOME/"
+  fi
+
+  # Write installed version SHA (used by update-check.sh)
+  if command -v git >/dev/null 2>&1 && [[ -d "$REPO_DIR/.git" ]]; then
+    local installed_sha; installed_sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
+    if [[ -n "$installed_sha" ]]; then
+      echo "$installed_sha" > "$CLAUDE_HOME/.ultimate-windows-version"
+      ok "Wrote installed version: ${installed_sha:0:8}"
+    fi
+  fi
+
   echo ""
   say "Optional: BurntToast for Windows 10/11 toast notifications:"
   say "  Run in PowerShell: Install-Module BurntToast -Scope CurrentUser"
+  say "Optional: lean-ctx for file-read caching (~13 tokens/re-read):"
+  say "  cargo install lean-ctx  (or: npm install -g lean-ctx-bin)"
 }
 
 # ---------------------------------------------------------------------------

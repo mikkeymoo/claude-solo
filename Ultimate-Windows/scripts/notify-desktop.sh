@@ -24,13 +24,19 @@ SAFE_MSG="${SAFE_MSG//$'\n'/ }"               # strip newlines
 SAFE_MSG="${SAFE_MSG//$'\r'/ }"               # strip carriage returns
 SAFE_MSG="${SAFE_MSG:0:200}"                  # cap length — balloon tips truncate anyway
 
-if command -v powershell.exe >/dev/null 2>&1; then
+# Prefer pwsh (PowerShell 7+) over legacy powershell.exe; both are checked.
+PS_EXE=""
+command -v pwsh         >/dev/null 2>&1 && PS_EXE="pwsh"
+command -v pwsh.exe     >/dev/null 2>&1 && PS_EXE="pwsh.exe"
+[[ -z "$PS_EXE" ]] && command -v powershell.exe >/dev/null 2>&1 && PS_EXE="powershell.exe"
+
+if [[ -n "$PS_EXE" ]]; then
   # Cache BurntToast availability so we don't cold-start PowerShell on every notification.
   # The cache is invalidated by deleting ~/.cache/claude-burnttoast-check manually.
   BT_CACHE="${HOME}/.cache/claude-burnttoast-check"
   if [[ ! -f "$BT_CACHE" ]]; then
     mkdir -p "$(dirname "$BT_CACHE")" 2>/dev/null || true
-    if powershell.exe -NoProfile -Command \
+    if "$PS_EXE" -NoProfile -Command \
         "Get-Module -ListAvailable BurntToast -ErrorAction SilentlyContinue | Select-Object -First 1" \
         2>/dev/null | grep -q "BurntToast"; then
       echo "1" > "$BT_CACHE"
@@ -41,24 +47,18 @@ if command -v powershell.exe >/dev/null 2>&1; then
   BURNTTOAST_AVAILABLE=$(cat "$BT_CACHE" 2>/dev/null || echo "0")
 
   if [[ "$BURNTTOAST_AVAILABLE" == "1" ]]; then
-    # BurntToast: proper Windows 10/11 toast notification.
+    # BurntToast: native Windows 10/11 toast notification with action support.
     # Install with: Install-Module BurntToast -Scope CurrentUser
-    powershell.exe -NoProfile -WindowStyle Hidden -Command \
+    "$PS_EXE" -NoProfile -WindowStyle Hidden -Command \
       "Import-Module BurntToast; New-BurntToastNotification -Text 'Claude Code','${SAFE_MSG}'" \
       2>/dev/null &
   else
-    # Fallback: Windows Forms balloon tip (no extra modules needed).
-    powershell.exe -NoProfile -WindowStyle Hidden -Command "
+    # Fallback 1: MessageBox.Show (modal, no extra modules, Windows Forms).
+    # Uses non-blocking background job via Start-Process to avoid locking the shell.
+    "$PS_EXE" -NoProfile -WindowStyle Hidden -Command "
       Add-Type -AssemblyName System.Windows.Forms;
-      Add-Type -AssemblyName System.Drawing;
-      \$n = New-Object System.Windows.Forms.NotifyIcon;
-      \$n.Icon = [System.Drawing.SystemIcons]::Information;
-      \$n.BalloonTipTitle = 'Claude Code';
-      \$n.BalloonTipText = '${SAFE_MSG}';
-      \$n.Visible = \$true;
-      \$n.ShowBalloonTip(8000);
-      Start-Sleep -Milliseconds 9000;
-      \$n.Dispose()" 2>/dev/null &
+      [System.Windows.Forms.MessageBox]::Show('${SAFE_MSG}','Claude Code',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null" \
+      2>/dev/null &
   fi
 fi
 

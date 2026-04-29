@@ -60,12 +60,31 @@ When you make a mistake the user corrects, add a one-line rule here so you don't
 - `/tech-debt` — prioritized debt scan with file:line refs.
 - `/security-review` — manual trigger only (OWASP + secrets + auth audit).
 
+## Plan before code
+
+For any task touching more than 2 files or spanning multiple subsystems:
+
+1. Create or update `.planning/CURRENT_TASK.md` with:
+   - **Goal:** one-sentence description
+   - **Files in scope:** explicit list
+   - **Acceptance criteria:** what done looks like
+2. Wait for user confirmation OR explicit `/build` invocation before writing code
+3. Reference the plan file in commit messages: `feat(hooks): add cost-summary (see .planning/CURRENT_TASK.md)`
+
+This is guidance, not a hard block. Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can proceed without a plan file.
+
 ## Execution defaults
 
 - Atomic commits: one logical unit, staged explicitly (`git add <file>` not `git add .`).
 - Run tests after meaningful edits — PostToolUse hook will nudge; don't ignore it.
 - Prefer `rtk <cmd>` wrappers (installed) for 60–90% token savings on CLI output.
 - Use Serena LSP (`mcp__serena__*`) over Grep for code navigation when available.
+
+## Engineering rules
+
+See `.claude/rules/karpathy-pitfalls.md` (auto-loaded) for common AI coding pitfalls:
+don't hallucinate libraries, prefer existing codebase patterns, don't invent test cases,
+make small targeted edits, verify before claiming success.
 
 ## When stuck
 

@@ -13,7 +13,7 @@
   },
   "autoUpdatesChannel": "stable",
   "env": {
-    "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. ENABLE_PROMPT_CACHING_1H requires Claude Code v2.1.108+; user is on 2.1.105 so it's commented out. Add once upgraded.",
+    "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. ENABLE_PROMPT_CACHING_1H requires Claude Code v2.1.108+; user is on 2.1.105 so it's commented out. Add once upgraded. PYTHONIOENCODING + PYTHONUTF8 added v0.3.0: prevents charmap codec errors when Python stdout encounters Unicode (em-dashes, smart quotes, non-ASCII names in email/document parsing). CLAUDE_CODE_USE_POWERSHELL_TOOL added v0.3.0: enables native PowerShell tool support on Windows.",
     "ENABLE_TOOL_SEARCH": "1",
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
@@ -23,7 +23,10 @@
     "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "0",
     "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "0",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "DISABLE_TELEMETRY": "1"
+    "DISABLE_TELEMETRY": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUTF8": "1",
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
   },
   "statusLine": {
     "_comment": "Optional statusline script. Remove this block if you don't have statusline.sh installed.",
@@ -81,12 +84,79 @@
   "hooks": {
     "SessionStart": [
       {
+        "_comment": "1st: UTF-8 encoding bootstrap — must run first to set PYTHONIOENCODING before anything else",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/bootstrap-windows-encoding.sh",
+            "statusMessage": "Bootstrapping Windows UTF-8 encoding...",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "_comment": "2nd: cost/cache summary from today's JSONL (throttled 5min)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/cost-summary.sh",
+            "statusMessage": "Summarizing today's token usage...",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "_comment": "3rd: 5h quota window visibility (does not manipulate quota)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/quota-warmup-warn.sh",
+            "statusMessage": "Checking quota window...",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "_comment": "4th: compact session HUD (throttled 10min)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/session-hud.sh",
+            "statusMessage": "Loading session HUD...",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "_comment": "5th: git + sprint context injected into model context",
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/ultimate-windows/scripts/session-start-context.sh",
             "statusMessage": "Loading git + sprint context...",
             "timeout": 10000
+          }
+        ]
+      },
+      {
+        "_comment": "6th: Morae/eDiscovery context when CWD matches known project patterns",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/morae-context.sh",
+            "statusMessage": "Checking project context...",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "_comment": "7th: daily update check (throttled 24h, network-failure-tolerant)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/update-check.sh",
+            "statusMessage": "Checking for updates...",
+            "timeout": 15000
           }
         ]
       }
@@ -98,6 +168,26 @@
           {
             "type": "command",
             "command": "bash ~/.claude/ultimate-windows/scripts/validate-readonly-query.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Block mojibake content before it corrupts files (exits 2 to block)",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/validate-utf8-source.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Nudge: prefer LSP symbol tools over Grep/Glob for code navigation (advisory, exit 0)",
+        "matcher": "Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/enforce-lsp-navigation.sh"
           }
         ]
       }
@@ -121,6 +211,17 @@
             "type": "command",
             "command": "bash ~/.claude/ultimate-windows/scripts/compress-lsp-output.sh",
             "timeout": 5000
+          }
+        ]
+      },
+      {
+        "_comment": "Morae Power BI brand/JSON validation. Only active when MORAE_POWERBI_VALIDATION=1.",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/ultimate-windows/scripts/morae-powerbi-validate.sh",
+            "timeout": 10000
           }
         ]
       }
