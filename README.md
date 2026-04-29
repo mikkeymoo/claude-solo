@@ -26,11 +26,13 @@ bash install.sh --verify
 
 **Requirements:** `bash` (Git Bash on Windows), `jq`
 
+**Auto-installed by the installer (if not present):** `claude-code-cache-fix` (npm), `lean-ctx` (npm or cargo), `BurntToast` (Windows PowerShell notification module)
+
 ## What gets installed
 
 ```
 ~/.claude/
-  scripts/           17 lifecycle hook scripts
+  scripts/           18 lifecycle hook scripts
   agents/            5 specialist subagents (ult-* prefix)
   commands/          30 slash commands (/mm:name)
   skills/            25 skills (/mm:name)
@@ -41,10 +43,11 @@ bash install.sh --verify
   COST-OPTIMIZATION.md  Cache TTL fix + lean-ctx notes
 ```
 
-## Hooks (15 events)
+## Hooks (16 entries across 5 events)
 
 | Event        | Hook                            | Purpose                                                    |
 | ------------ | ------------------------------- | ---------------------------------------------------------- |
+| SessionStart | `start-cache-proxy.sh`          | Start claude-code-cache-fix proxy on :9801 (runs first)    |
 | SessionStart | `bootstrap-windows-encoding.sh` | Set UTF-8 env vars before anything runs                    |
 | SessionStart | `cost-summary.sh`               | Today's token/cost summary (throttled 5min)                |
 | SessionStart | `quota-warmup-warn.sh`          | 5h quota window visibility                                 |
@@ -128,9 +131,11 @@ powershell -ExecutionPolicy Bypass -File scripts/Setup-WindowsEncoding.ps1
 
 ## Cost optimization
 
-1. **cache-fix-wrapper** — fixes 5m TTL regression in CC v2.1.81+: https://github.com/cnighswonger/claude-code-cache-fix
-2. **lean-ctx** — file-read caching at ~13 tokens/re-read: `cargo install lean-ctx`
-3. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep
+The installer handles all three automatically:
+
+1. **cache-fix proxy** — fixes the 5m→1h cache TTL regression in CC v2.1.81+. Auto-installed via `npm install -g claude-code-cache-fix`; proxy starts each session via `start-cache-proxy.sh` hook; `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` patched into `settings.json`.
+2. **lean-ctx** — file-read caching (~13 tokens/re-read vs full re-read). Auto-installed via npm (`lean-ctx-bin`) with `cargo install lean-ctx` as fallback.
+3. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep.
 
 See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
@@ -149,4 +154,4 @@ See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.4.0** (2026-04-29) — unified flat repo, single installer, all commands prefixed `/mm:`
+Current: **v0.4.1** (2026-04-29) — auto-install cache-fix proxy, lean-ctx, BurntToast; comprehensive edge-case handling

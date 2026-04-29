@@ -68,6 +68,40 @@ backup_path() {
   ok "Backed up $path"
 }
 
+# Detect Windows (MSYS/Git Bash/Cygwin)
+is_windows() {
+  [[ "${MSYSTEM:-}" != "" || "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "cygwin" ]]
+}
+
+# Find PowerShell executable (pwsh preferred over powershell.exe)
+find_pwsh() {
+  command -v pwsh 2>/dev/null || command -v powershell.exe 2>/dev/null || true
+}
+
+# Surgically add/update a key in settings.json .env block without touching anything else.
+# Skips if key already set to correct value; warns if set to a different value.
+_patch_settings_env() {
+  local key="$1" value="$2"
+  local target="$CLAUDE_HOME/settings.json"
+  [[ ! -f "$target" ]] && return 0
+  [[ $DRY_RUN -eq 1 ]] && { printf "  ${YELLOW}[dry-run]${NC} would set env.%s=%s in settings.json\n" "$key" "$value"; return 0; }
+
+  local current
+  current=$(jq -r ".env[\"${key}\"] // empty" "$target" 2>/dev/null || true)
+
+  if [[ "$current" == "$value" ]]; then
+    ok "settings.json env.${key} already correct"
+    return 0
+  fi
+  if [[ -n "$current" && "$current" != "$value" ]]; then
+    warn "settings.json env.${key} is '${current}', expected '${value}' — skipping (set manually if needed)"
+    return 0
+  fi
+
+  jq ".env[\"${key}\"] = \"${value}\"" "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+  ok "Set env.${key}=${value} in settings.json"
+}
+
 # ---------------------------------------------------------------------------
 # Parse args
 # ---------------------------------------------------------------------------
@@ -109,11 +143,11 @@ check_prereqs() {
   if [[ ${#missing[@]} -gt 0 ]]; then
     die "Missing required tools: ${missing[*]}"
   fi
-  for bin in gh ruff node; do
+  for bin in gh ruff; do
     command -v "$bin" >/dev/null 2>&1 || warn "$bin not on PATH (optional — some hook features will no-op)"
   done
 
-  # Auto-install npm-based optional tools if npm is available
+  # Auto-install npm-based formatter tools
   local npm_missing=()
   for bin in prettier tsc pyright; do
     command -v "$bin" >/dev/null 2>&1 || npm_missing+=("$bin")
@@ -128,38 +162,166 @@ check_prereqs() {
       if [[ $DRY_RUN -eq 1 ]]; then
         printf "  ${YELLOW}[dry-run]${NC} would run: npm install -g %s\n" "${npm_pkgs[*]}"
       else
-        npm install -g "${npm_pkgs[@]}" && ok "Installed: ${npm_pkgs[*]}" || warn "npm install failed — install manually: npm install -g ${npm_pkgs[*]}"
+        npm install -g "${npm_pkgs[@]}" 2>&1 | tail -2 && ok "Installed: ${npm_pkgs[*]}" \
+          || warn "npm install failed — install manually: npm install -g ${npm_pkgs[*]}"
       fi
     else
       for bin in "${npm_missing[@]}"; do
-        warn "$bin not on PATH (optional — some hook features will no-op)"
+        warn "$bin not on PATH (optional) — install Node.js to enable auto-install"
       done
     fi
   fi
+}
 
-  # cache-fix-wrapper detection (advisory — CC v2.1.81+ cache TTL regression)
-  if command -v cache-fix-wrapper >/dev/null 2>&1; then
-    ok "cache-fix-wrapper detected: $(command -v cache-fix-wrapper)"
+# ---------------------------------------------------------------------------
+# Cache-fix installer
+# Installs claude-code-cache-fix npm proxy, patches settings.json, wires hook.
+# Handles: npm missing, already installed, install failure, settings missing,
+#          env key conflicts, dry-run, version detection.
+# ---------------------------------------------------------------------------
+install_cache_fix() {
+  say "Installing cache-fix (claude-code-cache-fix)"
+
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "npm not found — skipping cache-fix (install Node.js to enable)"
+    return 0
+  fi
+  if ! command -v node >/dev/null 2>&1; then
+    warn "node not found — skipping cache-fix"
+    return 0
+  fi
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would run: npm install -g claude-code-cache-fix\n"
+    printf "  ${YELLOW}[dry-run]${NC} would set ANTHROPIC_BASE_URL + ENABLE_PROMPT_CACHING_1H in settings.json\n"
+    return 0
+  fi
+
+  # Check if already installed (fast path)
+  local npm_root; npm_root=$(npm root -g 2>/dev/null || true)
+  local proxy_script="${npm_root}/claude-code-cache-fix/proxy/server.mjs"
+
+  if [[ -f "$proxy_script" ]]; then
+    ok "claude-code-cache-fix already installed: $proxy_script"
   else
-    local cc_version=""
-    cc_version=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
-    if [[ -n "$cc_version" ]]; then
-      local major minor patch
-      IFS='.' read -r major minor patch <<< "$cc_version"
-      if (( major > 2 )) || (( major == 2 && minor > 1 )) || (( major == 2 && minor == 1 && patch >= 81 )); then
-        warn "Claude Code v${cc_version} may suffer 4-20x cost increase on resumed sessions"
-        warn "  due to 5m TTL cache regression. Consider installing:"
-        warn "  https://github.com/cnighswonger/claude-code-cache-fix"
-        warn "  See COST-OPTIMIZATION.md for details"
+    say "  Running: npm install -g claude-code-cache-fix"
+    if npm install -g claude-code-cache-fix 2>&1 | tail -3; then
+      # Re-resolve after install
+      npm_root=$(npm root -g 2>/dev/null || true)
+      proxy_script="${npm_root}/claude-code-cache-fix/proxy/server.mjs"
+      if [[ -f "$proxy_script" ]]; then
+        ok "Installed claude-code-cache-fix"
+      else
+        warn "npm install ran but proxy/server.mjs not found at expected path — check manually"
+        warn "  Expected: $proxy_script"
+        return 0
       fi
+    else
+      warn "npm install claude-code-cache-fix failed — skipping proxy setup"
+      warn "  Install manually: npm install -g claude-code-cache-fix"
+      return 0
     fi
   fi
 
-  # lean-ctx detection (optional token-saving layer)
+  # Patch settings.json with required env vars
+  # ANTHROPIC_BASE_URL: routes Claude Code API calls through the local proxy
+  _patch_settings_env "ANTHROPIC_BASE_URL" "http://127.0.0.1:9801"
+  # ENABLE_PROMPT_CACHING_1H: restores 1h TTL natively on CC v2.1.108+ (belt-and-suspenders)
+  _patch_settings_env "ENABLE_PROMPT_CACHING_1H" "1"
+
+  ok "Cache-fix installed — proxy will auto-start on session start via hook"
+}
+
+# ---------------------------------------------------------------------------
+# Optional tools installer
+# lean-ctx: file-read caching (~13 tokens/re-read)
+# BurntToast: Windows toast notifications (Windows only)
+# ---------------------------------------------------------------------------
+install_optional_tools() {
+  say "Installing optional tools"
+
+  # lean-ctx — prefer npm (pre-built binary, fast) over cargo (compiles from source)
   if command -v lean-ctx >/dev/null 2>&1; then
-    ok "lean-ctx detected: $(command -v lean-ctx)"
+    ok "lean-ctx already installed: $(command -v lean-ctx)"
+  elif [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx via npm or cargo\n"
   else
-    warn "lean-ctx not found (optional) — install for ~13-token file re-reads: cargo install lean-ctx"
+    if command -v npm >/dev/null 2>&1; then
+      say "  Installing lean-ctx via npm..."
+      npm install -g lean-ctx-bin 2>&1 | tail -2 \
+        && ok "Installed lean-ctx (npm)" \
+        || {
+          warn "npm install lean-ctx-bin failed — trying cargo..."
+          if command -v cargo >/dev/null 2>&1; then
+            cargo install lean-ctx 2>&1 | tail -3 \
+              && ok "Installed lean-ctx (cargo)" \
+              || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
+          else
+            warn "lean-ctx not installed (npm failed, cargo not available)"
+          fi
+        }
+    elif command -v cargo >/dev/null 2>&1; then
+      say "  Installing lean-ctx via cargo (this may take a minute)..."
+      cargo install lean-ctx 2>&1 | tail -3 \
+        && ok "Installed lean-ctx (cargo)" \
+        || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
+    else
+      warn "lean-ctx not installed (requires npm or cargo)"
+    fi
+  fi
+
+  # BurntToast — Windows toast notifications (Windows only, requires PowerShell)
+  if is_windows; then
+    local pwsh; pwsh=$(find_pwsh)
+    if [[ -z "$pwsh" ]]; then
+      warn "PowerShell not found — skipping BurntToast"
+    elif [[ $DRY_RUN -eq 1 ]]; then
+      printf "  ${YELLOW}[dry-run]${NC} would install BurntToast via PowerShell\n"
+    else
+      # Check if already installed
+      local already
+      already=$("$pwsh" -NoProfile -Command \
+        "if (Get-Module -ListAvailable -Name BurntToast) { 'yes' } else { 'no' }" \
+        2>/dev/null || echo "no")
+      if [[ "$already" == "yes" ]]; then
+        ok "BurntToast already installed"
+      else
+        say "  Installing BurntToast for Windows toast notifications..."
+        "$pwsh" -NoProfile -Command \
+          "Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue; \
+           Install-Module BurntToast -Scope CurrentUser -Force -Confirm:\$false -ErrorAction Stop" \
+          2>&1 | tail -3 \
+          && ok "Installed BurntToast" \
+          || warn "BurntToast install failed (optional) — install manually: Install-Module BurntToast -Scope CurrentUser"
+      fi
+    fi
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Windows encoding setup
+# Runs Setup-WindowsEncoding.ps1 to set UTF-8 env vars, patch PowerShell
+# profile, and ensure settings.json is written in UTF-8.
+# ---------------------------------------------------------------------------
+setup_windows_encoding() {
+  is_windows || return 0
+  local pwsh; pwsh=$(find_pwsh)
+  [[ -z "$pwsh" ]] && return 0
+
+  local script="$CLAUDE_HOME/scripts/Setup-WindowsEncoding.ps1"
+  [[ ! -f "$script" ]] && return 0
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would run Setup-WindowsEncoding.ps1\n"
+    return 0
+  fi
+
+  say "Configuring Windows UTF-8 encoding"
+  if "$pwsh" -NoProfile -ExecutionPolicy Bypass -File "$script" 2>&1 | tail -3; then
+    ok "Windows encoding configured (UTF-8)"
+  else
+    warn "Windows encoding setup encountered errors — run manually if needed:"
+    warn "  powershell -ExecutionPolicy Bypass -File ~/.claude/scripts/Setup-WindowsEncoding.ps1"
   fi
 }
 
@@ -183,7 +345,6 @@ install_scripts() {
     ok "Installed $(basename "$f")"
     (( count++ )) || true
   done
-  # Also install any .ps1 scripts (Windows helpers)
   for f in "$src_dir/"*.ps1; do
     do_run cp "$f" "$dst_dir/$(basename "$f")"
     ok "Installed $(basename "$f")"
@@ -215,10 +376,10 @@ install_agents() {
   local count=0
   for f in "$src_dir/"*.md; do
     local name; name=$(basename "$f" .md)
-    # ult- prefix avoids collisions with user-managed agents in merge mode
     local target="$CLAUDE_HOME/agents/ult-${name}.md"
     [[ -f "$target" ]] && backup_path "$target"
     do_run cp "$f" "$target"
+    # Add ult- prefix only if not already present (idempotent)
     do_run sed -i "s/^name: ${name}$/name: ult-${name}/" "$target"
     ok "Installed ult-$name.md"
     _manifest_add "$manifest" "agents/ult-${name}.md"
@@ -229,7 +390,7 @@ install_agents() {
 }
 
 # ---------------------------------------------------------------------------
-# Skills install — top-level (~/.claude/skills/<name>/SKILL.md)
+# Skills install
 # ---------------------------------------------------------------------------
 install_skills() {
   local src_dir="$1"
@@ -257,8 +418,7 @@ install_skills() {
 }
 
 # ---------------------------------------------------------------------------
-# Commands install — top-level (~/.claude/commands/<name>.md)
-# Preserves mm: namespace prefix in frontmatter (invoked as /mm:name).
+# Commands install
 # ---------------------------------------------------------------------------
 install_commands() {
   local src_dir="$1"
@@ -281,7 +441,7 @@ install_commands() {
 }
 
 # ---------------------------------------------------------------------------
-# Rules install — ~/.claude/rules/<name>.md
+# Rules install
 # ---------------------------------------------------------------------------
 install_rules() {
   local src_dir="$1"
@@ -329,25 +489,19 @@ install_settings() {
 }
 
 # ---------------------------------------------------------------------------
-# Purge prior claude-solo artifacts (fresh mode only)
+# Purge prior artifacts (fresh mode)
 # ---------------------------------------------------------------------------
 purge_artifacts() {
   local manifest="$1"
   say "Purging prior claude-solo artifacts (fresh mode)"
   _manifest_uninstall "$manifest"
-
-  # Legacy cleanup: prior installs used namespaced subdirs
-  if [[ -d "$CLAUDE_HOME/skills/ult" ]]; then
-    backup_path "$CLAUDE_HOME/skills/ult"
-    do_run rm -rf "$CLAUDE_HOME/skills/ult"
-    ok "Removed legacy skills/ult/"
-  fi
-  if [[ -d "$CLAUDE_HOME/commands/mm" ]]; then
-    backup_path "$CLAUDE_HOME/commands/mm"
-    do_run rm -rf "$CLAUDE_HOME/commands/mm"
-    ok "Removed legacy commands/mm/"
-  fi
-  # Legacy variant script dirs
+  for dir_name in "skills/ult" "commands/mm"; do
+    if [[ -d "$CLAUDE_HOME/$dir_name" ]]; then
+      backup_path "$CLAUDE_HOME/$dir_name"
+      do_run rm -rf "$CLAUDE_HOME/$dir_name"
+      ok "Removed legacy $dir_name/"
+    fi
+  done
   for ns in ultimate ultimate-windows; do
     if [[ -d "$CLAUDE_HOME/$ns" ]]; then
       backup_path "$CLAUDE_HOME/$ns"
@@ -358,7 +512,7 @@ purge_artifacts() {
 }
 
 # ---------------------------------------------------------------------------
-# Remove every path listed in a manifest (paths relative to $CLAUDE_HOME)
+# Manifest uninstall
 # ---------------------------------------------------------------------------
 _manifest_uninstall() {
   local manifest="$1"
@@ -383,11 +537,15 @@ _manifest_uninstall() {
 }
 
 # ---------------------------------------------------------------------------
-# Ensure all hooks are wired in settings.json.
-# Uses jq to surgically add missing entries without touching user-managed keys.
+# Wire hooks into settings.json
+# NOTE: _wire_hook PREPENDS each entry. To control execution order, the hook
+# that should run FIRST must be wired LAST (it ends up at array index 0).
+# Current SessionStart execution order (first→last):
+#   start-cache-proxy → bootstrap-windows-encoding → cost-summary →
+#   quota-warmup-warn → session-hud → session-start-context →
+#   morae-context → update-check
 # ---------------------------------------------------------------------------
 ensure_hooks_wired() {
-  local scripts_dir="$1"
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return
   if [[ $DRY_RUN -eq 1 ]]; then
@@ -419,34 +577,41 @@ ensure_hooks_wired() {
     "morae-powerbi-validate" \
     '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/scripts/morae-powerbi-validate.sh","timeout":10000}]}'
 
-  # SessionStart
+  # SessionStart — wired in REVERSE execution order (last wired = first executed)
+  # update-check runs last in the session start sequence
   _wire_hook "SessionStart" \
-    "bootstrap-windows-encoding" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/bootstrap-windows-encoding.sh","statusMessage":"Bootstrapping Windows UTF-8 encoding...","timeout":5000}]}'
-
-  _wire_hook "SessionStart" \
-    "cost-summary" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/cost-summary.sh","statusMessage":"Summarizing today'"'"'s token usage...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "quota-warmup-warn" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/quota-warmup-warn.sh","statusMessage":"Checking quota window...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "session-hud" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-hud.sh","statusMessage":"Loading session HUD...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "session-start-context" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-start-context.sh","statusMessage":"Loading git + sprint context...","timeout":10000}]}'
+    "update-check" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/update-check.sh","statusMessage":"Checking for updates...","timeout":15000}]}'
 
   _wire_hook "SessionStart" \
     "morae-context" \
     '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/morae-context.sh","statusMessage":"Checking project context...","timeout":5000}]}'
 
   _wire_hook "SessionStart" \
-    "update-check" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/update-check.sh","statusMessage":"Checking for updates...","timeout":15000}]}'
+    "session-start-context" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-start-context.sh","statusMessage":"Loading git + sprint context...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "session-hud" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-hud.sh","statusMessage":"Loading session HUD...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "quota-warmup-warn" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/quota-warmup-warn.sh","statusMessage":"Checking quota window...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "cost-summary" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/cost-summary.sh","statusMessage":"Summarizing today'"'"'s token usage...","timeout":10000}]}'
+
+  _wire_hook "SessionStart" \
+    "bootstrap-windows-encoding" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/bootstrap-windows-encoding.sh","statusMessage":"Bootstrapping Windows UTF-8 encoding...","timeout":5000}]}'
+
+  # start-cache-proxy wired LAST → prepended to front → runs FIRST
+  # Ensures proxy is up before any API calls are made in the session
+  _wire_hook "SessionStart" \
+    "start-cache-proxy" \
+    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/start-cache-proxy.sh","statusMessage":"Starting cache proxy...","timeout":8000}]}'
 
   # PreCompact
   _wire_hook "PreCompact" \
@@ -496,7 +661,6 @@ install_claude_md() {
     return
   fi
 
-  # Merge mode: append a clearly-marked block
   [[ -f "$target" ]] && backup_path "$target"
   say "Appending claude-solo block to CLAUDE.md"
   if [[ $DRY_RUN -eq 1 ]]; then
@@ -535,10 +699,14 @@ install_project_override() {
     if grep -Fq ".claude/settings.local.json" .gitignore 2>/dev/null; then
       ok ".gitignore already has claude-solo entries"
     else
-      backup_path "$PWD/.gitignore"
-      dry_append .gitignore printf '\n# --- claude-solo additions ---\n'
-      dry_append .gitignore cat "$REPO_DIR/gitignore-additions.txt"
-      ok "Appended gitignore-additions.txt"
+      if [[ ! -f "$REPO_DIR/gitignore-additions.txt" ]]; then
+        warn "gitignore-additions.txt not found in $REPO_DIR, skipping .gitignore append"
+      else
+        backup_path "$PWD/.gitignore"
+        dry_append .gitignore printf '\n# --- claude-solo additions ---\n'
+        dry_append .gitignore cat "$REPO_DIR/gitignore-additions.txt"
+        ok "Appended gitignore-additions.txt"
+      fi
     fi
   else
     if [[ -f "$REPO_DIR/gitignore-additions.txt" ]]; then
@@ -570,7 +738,7 @@ smoke_test() {
     smoke_ok=0
   fi
 
-  # 2. Encoding check — validate settings.json is valid UTF-8
+  # 2. Encoding check
   if [[ -f "$settings" ]]; then
     if command -v iconv >/dev/null 2>&1; then
       if iconv -f UTF-8 -t UTF-8 "$settings" >/dev/null 2>&1; then
@@ -593,8 +761,9 @@ smoke_test() {
   shopt -u nullglob
   ok "Hook scripts executable: $n"
 
-  # 4. Verify critical hooks are wired in settings.json
+  # 4. Critical hooks wired
   local expected_hooks=(
+    "start-cache-proxy"
     "bootstrap-windows-encoding"
     "cost-summary"
     "quota-warmup-warn"
@@ -623,7 +792,7 @@ smoke_test() {
     smoke_ok=0
   fi
 
-  # 5. Hook syntax check — bash -n validates without executing (avoids stdin hangs)
+  # 5. Hook syntax check (bash -n — no stdin hang risk)
   local syntax_pass=0 syntax_fail=0
   shopt -s nullglob
   for f in "$scripts_dir/"*.sh; do
@@ -643,22 +812,57 @@ smoke_test() {
     ok "Hook syntax check: $syntax_pass scripts OK"
   fi
 
-  # 6. Agent count
+  # 6. Cache-fix proxy package present
+  local npm_root; npm_root=$(npm root -g 2>/dev/null || true)
+  if [[ -n "$npm_root" && -f "${npm_root}/claude-code-cache-fix/proxy/server.mjs" ]]; then
+    ok "claude-code-cache-fix proxy installed"
+    # Check ANTHROPIC_BASE_URL is set
+    local proxy_url; proxy_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$settings" 2>/dev/null || true)
+    if [[ "$proxy_url" == "http://127.0.0.1:9801" ]]; then
+      ok "ANTHROPIC_BASE_URL → proxy (:9801)"
+    else
+      warn "ANTHROPIC_BASE_URL not set to proxy — cache-fix may not be active"
+      smoke_ok=0
+    fi
+  else
+    warn "claude-code-cache-fix not installed — sessions may cost 4-20x more (CC v2.1.81+)"
+    warn "  Retry: bash install.sh  (requires npm)"
+  fi
+
+  # 7. lean-ctx
+  if command -v lean-ctx >/dev/null 2>&1; then
+    ok "lean-ctx installed: $(command -v lean-ctx)"
+  else
+    warn "lean-ctx not installed — file re-reads cost full tokens instead of ~13"
+  fi
+
+  # 8. BurntToast (Windows only)
+  if is_windows; then
+    local pwsh; pwsh=$(find_pwsh)
+    if [[ -n "$pwsh" ]]; then
+      local bt
+      bt=$("$pwsh" -NoProfile -Command \
+        "if (Get-Module -ListAvailable -Name BurntToast) { 'yes' } else { 'no' }" \
+        2>/dev/null || echo "unknown")
+      if [[ "$bt" == "yes" ]]; then
+        ok "BurntToast installed (Windows notifications active)"
+      else
+        warn "BurntToast not installed — notifications will fall back to terminal bell"
+      fi
+    fi
+  fi
+
+  # 9. Agent, skill, command counts
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
-  ok "Agents installed (ult-*): $agents/5"
-
-  # 7. Skills count
   local skills; skills=$(ls -d "$CLAUDE_HOME/skills/"*/ 2>/dev/null | wc -l)
-  ok "Skills installed: $skills"
-
-  # 8. Commands count
   local cmds; cmds=$(ls "$CLAUDE_HOME/commands/"*.md 2>/dev/null | wc -l)
-  ok "Commands installed: $cmds"
+  ok "Agents: $agents/5  |  Skills: $skills  |  Commands: $cmds"
 
+  echo ""
   if [[ $smoke_ok -eq 1 ]]; then
     ok "All smoke checks passed"
   else
-    warn "Some smoke checks failed — review warnings above before using"
+    warn "Some checks failed — review warnings above"
   fi
 }
 
@@ -672,20 +876,22 @@ uninstall() {
     _manifest_uninstall "$MANIFEST"
     ok "Manifest cleared"
   else
-    warn "No manifest at $MANIFEST — cannot safely identify files"
+    warn "No manifest at $MANIFEST — cannot safely identify installed files"
     warn "Manually remove ~/.claude/agents/ult-*.md, ~/.claude/scripts/, etc."
   fi
 
-  # Remove scripts dir
   if [[ -d "$CLAUDE_HOME/scripts" ]]; then
     backup_path "$CLAUDE_HOME/scripts"
     do_run rm -rf "$CLAUDE_HOME/scripts"
     ok "Removed ~/.claude/scripts/"
   fi
 
-  # Legacy variant dirs
   for ns in ultimate ultimate-windows; do
-    [[ -d "$CLAUDE_HOME/$ns" ]] && { backup_path "$CLAUDE_HOME/$ns"; do_run rm -rf "$CLAUDE_HOME/$ns"; ok "Removed ~/.claude/$ns/"; }
+    [[ -d "$CLAUDE_HOME/$ns" ]] && {
+      backup_path "$CLAUDE_HOME/$ns"
+      do_run rm -rf "$CLAUDE_HOME/$ns"
+      ok "Removed ~/.claude/$ns/"
+    }
   done
 
   local cm="$CLAUDE_HOME/CLAUDE.md"
@@ -700,7 +906,7 @@ uninstall() {
   fi
 
   say "Uninstall complete."
-  say "NOTE: settings.json is NOT touched — remove hook entries manually from ~/.claude/settings.json."
+  say "NOTE: settings.json is NOT touched — remove hook entries manually if desired."
   exit 0
 }
 
@@ -733,7 +939,6 @@ run_install() {
 
   check_prereqs
   [[ $VERIFY_ONLY -eq 1 ]] && { say "Verify-only — exiting"; exit 0; }
-
   [[ $PROJECT_MODE -eq 1 ]] && { install_project_override "$src_project_override"; exit 0; }
   [[ $UNINSTALL -eq 1 ]] && { uninstall; exit 0; }
 
@@ -745,10 +950,10 @@ run_install() {
   install_commands "$src_commands" "$MANIFEST"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
-  ensure_hooks_wired "$dst_scripts"
+  ensure_hooks_wired
   install_claude_md "$src_claude_md"
 
-  # statusline.sh
+  # statusline
   if [[ -f "$dst_scripts/statusline.sh" ]]; then
     [[ -f "$CLAUDE_HOME/statusline.sh" ]] && backup_path "$CLAUDE_HOME/statusline.sh"
     do_run cp "$dst_scripts/statusline.sh" "$CLAUDE_HOME/statusline.sh"
@@ -756,33 +961,36 @@ run_install() {
     ok "Installed statusline.sh → $CLAUDE_HOME/statusline.sh"
   fi
 
-  # COST-OPTIMIZATION.md reference doc
+  # Reference docs
   if [[ -f "$REPO_DIR/COST-OPTIMIZATION.md" ]]; then
     do_run cp "$REPO_DIR/COST-OPTIMIZATION.md" "$CLAUDE_HOME/COST-OPTIMIZATION.md"
     ok "Installed COST-OPTIMIZATION.md → $CLAUDE_HOME/"
   fi
 
-  # Write installed version SHA (used by update-check.sh)
+  # Version SHA for update-check.sh
   if command -v git >/dev/null 2>&1 && [[ -d "$REPO_DIR/.git" ]]; then
-    local installed_sha; installed_sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
-    if [[ -n "$installed_sha" ]] && [[ $DRY_RUN -eq 0 ]]; then
-      echo "$installed_sha" > "$CLAUDE_HOME/.claude-solo-version"
-      ok "Wrote installed version: ${installed_sha:0:8}"
+    local sha; sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
+    if [[ -n "$sha" ]] && [[ $DRY_RUN -eq 0 ]]; then
+      echo "$sha" > "$CLAUDE_HOME/.claude-solo-version"
+      ok "Wrote installed version: ${sha:0:8}"
     fi
   fi
+
+  # Auto-install everything optional
+  echo ""
+  install_cache_fix
+  echo ""
+  install_optional_tools
+  echo ""
+  setup_windows_encoding
 
   echo ""
   smoke_test "$dst_scripts"
   echo ""
   say "Install complete."
-  say "Start a fresh claude session and run /agents to confirm ult-code-reviewer, etc."
-  say "Commands are invoked as /mm:name (e.g. /mm:brief, /mm:cost, /mm:hud)."
+  say "Start a fresh Claude Code session — all hooks, agents, and commands are active."
+  say "Commands: /mm:brief  /mm:plan  /mm:build  /mm:cost  /mm:hud  /mm:review ..."
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
-  echo ""
-  say "Optional: BurntToast for Windows toast notifications:"
-  say "  Run in PowerShell: Install-Module BurntToast -Scope CurrentUser"
-  say "Optional: lean-ctx for file-read caching (~13 tokens/re-read):"
-  say "  cargo install lean-ctx  (or: npm install -g lean-ctx-bin)"
 }
 
 # ---------------------------------------------------------------------------
