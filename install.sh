@@ -317,11 +317,10 @@ install_optional_tools() {
     fi
   fi
 
-  # Wire lean-ctx into Claude Code (idempotent — safe to re-run)
-  if command -v lean-ctx >/dev/null 2>&1 && [[ $DRY_RUN -eq 0 ]]; then
-    lean-ctx init --agent claude-code >/dev/null 2>&1 \
-      && ok "lean-ctx wired into Claude Code" \
-      || warn "lean-ctx init failed — run manually: lean-ctx init --agent claude-code"
+  # lean-ctx hooks are opt-in — they intercept every Read/Grep/Bash call which is
+  # too noisy to auto-enable. Users who want it: lean-ctx init --agent claude-code
+  if command -v lean-ctx >/dev/null 2>&1; then
+    ok "lean-ctx installed — to enable hooks run: lean-ctx init --agent claude-code"
   fi
 
   # BurntToast — Windows toast notifications (Windows only, requires PowerShell)

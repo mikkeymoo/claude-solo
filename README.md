@@ -26,7 +26,7 @@ bash install.sh --verify
 
 **Requirements:** `bash` (Git Bash on Windows), `jq`
 
-**Auto-installed by the installer (if not present):** `claude-code-cache-fix` (npm), `lean-ctx` (pre-built binary; cargo fallback), `BurntToast` (Windows PowerShell notification module)
+**Auto-installed by the installer (if not present):** `claude-code-cache-fix` (npm), `lean-ctx` binary (pre-built; cargo fallback — hooks opt-in), `BurntToast` (Windows PowerShell notification module)
 
 ## What gets installed
 
@@ -37,13 +37,13 @@ bash install.sh --verify
   commands/          30 slash commands (/mm:name)
   skills/            25 skills (/mm:name)
   rules/             10 engineering rules (auto-loaded)
-  settings.json      Wired hooks, permissions, env vars, lean-ctx MCP server
+  settings.json      Wired hooks, permissions, env vars
   CLAUDE.md          Working style + agent/skill routing
   statusline.sh      One Dark Pro compact statusline
   COST-OPTIMIZATION.md  Cache TTL fix + lean-ctx notes
 ```
 
-## Hooks (18 entries across 5 events)
+## Hooks (16 entries across 5 events)
 
 | Event        | Hook                            | Purpose                                                    |
 | ------------ | ------------------------------- | ---------------------------------------------------------- |
@@ -57,14 +57,14 @@ bash install.sh --verify
 | SessionStart | `update-check.sh`               | Daily update notice (network-failure-tolerant)             |
 | PreToolUse   | `validate-readonly-query.sh`    | Block write SQL from db-reader subagent                    |
 | PreToolUse   | `validate-utf8-source.sh`       | Block mojibake before it corrupts files                    |
-| PreToolUse   | `lean-ctx hook rewrite`         | Compress Bash output before it hits context                |
-| PreToolUse   | `lean-ctx hook redirect`        | Redirect Read/Grep to lean-ctx MCP for cached reads        |
+| PreToolUse   | `enforce-lsp-navigation.sh`     | Nudge: prefer LSP over Grep for code symbols               |
 | PostToolUse  | `post-format-and-heal.sh`       | Auto-format + LSP diagnostics after edits                  |
 | PostToolUse  | `compress-lsp-output.sh`        | Trim verbose Serena MCP output                             |
 | PostToolUse  | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in via env var)        |
 | Notification | `notify-desktop.sh`             | BurntToast → MessageBox → terminal bell                    |
 | PreCompact   | `pre-compact-checkpoint.sh`     | Save checkpoint before context compaction                  |
-| _(MCP)_      | `lean-ctx` server               | 48 MCP tools for cached reads, shell compression, AST      |
+
+> **lean-ctx hooks are opt-in.** The binary is auto-installed but hooks are NOT wired by default (they intercept every Read/Grep/Bash call). To enable: `lean-ctx init --agent claude-code`
 
 ## Specialist subagents
 
@@ -136,7 +136,7 @@ powershell -ExecutionPolicy Bypass -File scripts/Setup-WindowsEncoding.ps1
 The installer handles all three automatically:
 
 1. **cache-fix proxy** — fixes the 5m→1h cache TTL regression in CC v2.1.81+. Auto-installed via `npm install -g claude-code-cache-fix`; proxy starts each session via `start-cache-proxy.sh` hook; `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` patched into `settings.json`.
-2. **lean-ctx** — file-read caching (~13 tokens/re-read vs full re-read). Auto-installed via pre-built binary from [yvgude/lean-ctx releases](https://github.com/yvgude/lean-ctx/releases) (seconds); `cargo install lean-ctx` fallback if download fails.
+2. **lean-ctx** — file-read caching (~13 tokens/re-read vs full re-read). Binary auto-installed; hooks are **opt-in** — run `lean-ctx init --agent claude-code` to enable (wires PreToolUse hooks that intercept Read/Grep/Bash).
 3. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep.
 
 See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
@@ -156,4 +156,4 @@ See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.4.2** (2026-04-29) — lean-ctx MCP server wired; cargo-only install; PS encoding fix (`$env:` dynamic var)
+Current: **v0.4.3** (2026-04-29) — lean-ctx hooks opt-in only (binary still auto-installed)

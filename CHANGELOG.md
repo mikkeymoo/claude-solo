@@ -7,6 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.4.3] - 2026-04-29
+
+### Changed
+
+- **lean-ctx hooks are now opt-in** — installer installs the binary but no longer calls `lean-ctx init --agent claude-code` automatically. The init wires PreToolUse hooks that intercept every Read/Grep/Bash call, which was too noisy as a default. To enable: `lean-ctx init --agent claude-code`
+- README hooks table corrected: removed lean-ctx PreToolUse rows and MCP row; count updated to 16; added missing `enforce-lsp-navigation.sh` row
+
+---
+
 ## [0.4.2] - 2026-04-29
 
 ### Added
