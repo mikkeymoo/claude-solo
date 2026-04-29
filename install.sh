@@ -1072,7 +1072,8 @@ run_install() {
     local sha; sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
     if [[ -n "$sha" ]] && [[ $DRY_RUN -eq 0 ]]; then
       echo "$sha" > "$CLAUDE_HOME/.claude-solo-version"
-      ok "Wrote installed version: ${sha:0:8}"
+      echo "$REPO_DIR" > "$CLAUDE_HOME/.claude-solo-repo"
+      ok "Wrote installed version: ${sha:0:8} (repo: $REPO_DIR)"
     fi
   fi
 
