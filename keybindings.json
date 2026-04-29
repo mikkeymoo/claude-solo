@@ -12,7 +12,6 @@
       "context": "Chat",
       "bindings": {
         "enter": "chat:submit",
-        "ctrl+j": "chat:newline",
         "ctrl+l": "chat:clearInput",
         "ctrl+s": "chat:stash",
         "ctrl+g": "chat:externalEditor",
