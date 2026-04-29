@@ -32,35 +32,45 @@ bash install.sh --verify
 
 ```
 ~/.claude/
-  scripts/           17 lifecycle hook scripts
+  scripts/           18 lifecycle scripts (bash + node)
+  hooks/             21 JS hooks (PreToolUse, PostToolUse, Stop, SubagentStart/Stop)
   agents/            5 specialist subagents (ult-* prefix)
-  skills/            37 skills (bare /name invocation)
+  skills/            47 skills (bare /name invocation)
   rules/             10 engineering rules (auto-loaded)
   settings.json      Wired hooks, permissions, env vars
   CLAUDE.md          Working style + agent/skill routing
   statusline.sh      One Dark Pro compact statusline
-  COST-OPTIMIZATION.md  Cache TTL fix + lean-ctx notes
 ```
 
-## Hooks (14 entries across 4 events)
+## Hooks (25 entries across 6 events)
 
-| Event        | Hook                            | Purpose                                                    |
-| ------------ | ------------------------------- | ---------------------------------------------------------- |
-| SessionStart | `start-cache-proxy.sh`          | Start claude-code-cache-fix proxy on :9801 (runs first)    |
-| SessionStart | `bootstrap-windows-encoding.sh` | Set UTF-8 env vars before anything runs                    |
-| SessionStart | `cost-summary.sh`               | Today's token/cost summary (throttled 5min)                |
-| SessionStart | `quota-warmup-warn.sh`          | 5h quota window visibility                                 |
-| SessionStart | `session-hud.sh`                | Branch, sprint, recent files, TODO count (throttled 10min) |
-| SessionStart | `session-start-context.sh`      | Git + sprint state injected into model context             |
-| SessionStart | `morae-context.sh`              | eDiscovery reminders when CWD matches known patterns       |
-| SessionStart | `update-check.sh`               | Daily update notice (network-failure-tolerant)             |
-| PreToolUse   | `validate-readonly-query.sh`    | Block write SQL from db-reader subagent                    |
-| PreToolUse   | `validate-utf8-source.sh`       | Block mojibake before it corrupts files                    |
-| PreToolUse   | `enforce-lsp-navigation.sh`     | Nudge: prefer LSP over Grep for code symbols               |
-| PostToolUse  | `post-format-and-heal.sh`       | Auto-format + LSP diagnostics after edits                  |
-| PostToolUse  | `compress-lsp-output.sh`        | Trim verbose Serena MCP output                             |
-| PostToolUse  | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in via env var)        |
-| PreCompact   | `pre-compact-checkpoint.sh`     | Save checkpoint before context compaction                  |
+| Event         | Hook                            | Purpose                                                        |
+| ------------- | ------------------------------- | -------------------------------------------------------------- |
+| SessionStart  | `bootstrap-windows-encoding.sh` | Set UTF-8 env vars before anything runs                        |
+| SessionStart  | `cost-summary.sh`               | Today's token/cost summary (throttled 5min)                    |
+| SessionStart  | `quota-warmup-warn.sh`          | 5h quota window visibility                                     |
+| SessionStart  | `session-hud.sh`                | Branch, sprint, recent files, TODO count (throttled 10min)     |
+| SessionStart  | `session-start-context.sh`      | Git + sprint state injected into model context                 |
+| SessionStart  | `morae-context.sh`              | eDiscovery reminders when CWD matches known patterns           |
+| SessionStart  | `update-check.sh`               | Daily update notice (network-failure-tolerant)                 |
+| PreToolUse    | `validate-readonly-query.sh`    | Block write SQL from db-reader subagent                        |
+| PreToolUse    | `pre-tool-use.js`               | Conventional commits enforcement + danger warnings             |
+| PreToolUse    | `validate-utf8-source.sh`       | Block mojibake before it corrupts files                        |
+| PreToolUse    | `large-file.js`                 | Warn on Write >500 lines or >50KB (advisory)                   |
+| PreToolUse    | `gitignore-check.js`            | Warn on writes to gitignored paths (advisory)                  |
+| PreToolUse    | `enforce-lsp-navigation.sh`     | Nudge: prefer LSP over Grep for code symbols                   |
+| PostToolUse   | `post-format-and-heal.sh`       | Auto-format + LSP diagnostics after edits                      |
+| PostToolUse   | `lint-fix.js`                   | Auto lint-then-fix: runs eslint/ruff/clippy, exits 2 on error  |
+| PostToolUse   | `compress-lsp-output.sh`        | Trim verbose Serena MCP output                                 |
+| PostToolUse   | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in via env var)            |
+| PostToolUse   | `dashboard-agent.js`            | Post tool lifecycle events to local dashboard on :9876         |
+| PostToolUse   | `test-fix.js`                   | Run tests after edits, exit 2 on failure (opt-in: AUTO_TEST=1) |
+| PostToolUse   | `commit-msg.js`                 | Suggest conventional commit message from staged diff           |
+| PostToolUse   | `latency-track.js`              | Track per-tool timing, alert if >30s (advisory)                |
+| PreCompact    | `pre-compact-checkpoint.sh`     | Save checkpoint before context compaction                      |
+| Stop          | `stop-gate.js`                  | Block stop if dirty tree, TODO markers, or tests fail          |
+| SubagentStart | `dashboard-agent.js`            | Post subagent lifecycle events to dashboard                    |
+| SubagentStop  | `dashboard-agent.js`            | Post subagent lifecycle events to dashboard                    |
 
 ## Specialist subagents
 
@@ -88,6 +98,7 @@ Sprint pipeline
 
 Observability
   /cost               Token/cost analysis from JSONL logs
+  /cost --trend       Week-over-week comparison + 7-day bar chart
   /hud                Session HUD with token chart
   /session            Save/restore context
 
@@ -96,24 +107,47 @@ Workflow
   /riper --auto       Full autopilot pipeline
   /workflow           Execution mode selector
   /swarm              Parallel multi-agent orchestration
+  /swarm --status     Inspect active worktrees
+  /swarm --results    List merged wave outcomes
   /quick              Rapid flow for small tasks
 
 Quality & security
   /tdd                Red-green-refactor TDD loop
+  /test-gen           Generate tests for existing code
   /quality --deps     Dependency audit
   /cleanup            Dead code + duplication removal
-  /security           OWASP audit (manual trigger only)
+  /cleanup --aggressive  Maximum removal with diff table + confirmation
+  /security           OWASP + CVE scan (manual trigger only)
+  /perf               Performance profiling (--quick, --deep, --db)
 
 Debug
   /fix                Tactical bug fix
   /fix --deep         Systematic debugging
   /fix --triage       Universal troubleshooting
+  /fix --bisect       Git bisect regression finder
+
+Review & design
+  /api-design         REST API review/design (--review, --design, --breaking)
+  /code-review-excellence --staff        Staff-engineer review
+  /code-review-excellence --adversarial  Adversarial review
+
+Dependencies & CI
+  /deps               Audit/upgrade/clean deps (npm/pip/cargo)
+  /changelog          Generate Keep a Changelog output from git log
+  /ci                 CI status, failing checks, retry, logs
+
+Incident response
+  /incident           Guided postmortem Q&A → .planning/POSTMORTEM.md
+  /migrate            Migration assistant (--plan, --execute, --verify)
 
 DX & tooling
   /hud --doctor       Project health check
-  /scaffold           Scaffold Python/PS/SQL starter
+  /onboard            Generate project onboarding guide
+  /sketch             Rapid prototype (--api, --cli, --ui, --script)
+  /scaffold           New project starter (--react, --next, --fastapi, --express)
   /config             Manage rules, schedule, CI
-  /docs               Docs sync, onboarding, distill
+  /docs               Docs sync and onboarding
+  /docs --api         Generate OpenAPI 3.0 spec from route handlers
   /release            Changelog + version bump + tag
   /refactor           Targeted refactoring
   /zoom-out           Higher-level perspective
@@ -138,10 +172,9 @@ powershell -ExecutionPolicy Bypass -File scripts/Setup-WindowsEncoding.ps1
 
 The installer handles all three automatically:
 
-1. **cache-fix proxy** — fixes the 5m→1h cache TTL regression in CC v2.1.81+. Auto-installed via `npm install -g claude-code-cache-fix`; proxy starts each session via `start-cache-proxy.sh` hook; `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` patched into `settings.json`.
+1. **cache-fix proxy** — fixes the 5m→1h cache TTL regression in CC v2.1.81+. Auto-installed via `npm install -g claude-code-cache-fix`; `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` patched into `settings.json`.
 2. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep.
-
-See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
+3. **`/cost --trend`** — week-over-week token/cost comparison to spot regressions early.
 
 ## Install modes
 
@@ -158,4 +191,4 @@ See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.5.0** (2026-04-29) — skills consolidation: 37 skills replace commands+skills, bare `/name` invocation
+Current: **v0.8.0** (2026-04-29) — 47 skills, 21 hooks, observability dashboard, auto lint-fix, confidence scoring
