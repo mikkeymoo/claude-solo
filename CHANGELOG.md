@@ -7,6 +7,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.4.2] - 2026-04-29
+
+### Added
+
+- **lean-ctx MCP server** — wired into `~/.claude/settings.json` `mcpServers`; provides 48 MCP tools for cached reads, shell compression, and AST navigation
+- **`lean-ctx init --agent claude-code`** — now called automatically by `install_optional_tools()` after cargo install; hooks + rules deployed in one step
+
+### Fixed
+
+- **`install_optional_tools()` lean-ctx** — removed non-existent `lean-ctx-bin` npm attempt; installer now goes directly to `cargo install lean-ctx`
+- **`Setup-WindowsEncoding.ps1:46`** — replaced invalid `$env:($kv.Key)` dynamic property syntax with `[System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, 'Process')`
+
+---
+
 ## [0.4.1] - 2026-04-29
 
 ### Added

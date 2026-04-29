@@ -37,13 +37,13 @@ bash install.sh --verify
   commands/          30 slash commands (/mm:name)
   skills/            25 skills (/mm:name)
   rules/             10 engineering rules (auto-loaded)
-  settings.json      Wired hooks, permissions, env vars
+  settings.json      Wired hooks, permissions, env vars, lean-ctx MCP server
   CLAUDE.md          Working style + agent/skill routing
   statusline.sh      One Dark Pro compact statusline
   COST-OPTIMIZATION.md  Cache TTL fix + lean-ctx notes
 ```
 
-## Hooks (16 entries across 5 events)
+## Hooks (18 entries across 5 events)
 
 | Event        | Hook                            | Purpose                                                    |
 | ------------ | ------------------------------- | ---------------------------------------------------------- |
@@ -57,12 +57,14 @@ bash install.sh --verify
 | SessionStart | `update-check.sh`               | Daily update notice (network-failure-tolerant)             |
 | PreToolUse   | `validate-readonly-query.sh`    | Block write SQL from db-reader subagent                    |
 | PreToolUse   | `validate-utf8-source.sh`       | Block mojibake before it corrupts files                    |
-| PreToolUse   | `enforce-lsp-navigation.sh`     | Nudge: prefer LSP over Grep for code symbols               |
+| PreToolUse   | `lean-ctx hook rewrite`         | Compress Bash output before it hits context                |
+| PreToolUse   | `lean-ctx hook redirect`        | Redirect Read/Grep to lean-ctx MCP for cached reads        |
 | PostToolUse  | `post-format-and-heal.sh`       | Auto-format + LSP diagnostics after edits                  |
 | PostToolUse  | `compress-lsp-output.sh`        | Trim verbose Serena MCP output                             |
 | PostToolUse  | `morae-powerbi-validate.sh`     | Power BI brand/JSON validation (opt-in via env var)        |
 | Notification | `notify-desktop.sh`             | BurntToast → MessageBox → terminal bell                    |
 | PreCompact   | `pre-compact-checkpoint.sh`     | Save checkpoint before context compaction                  |
+| _(MCP)_      | `lean-ctx` server               | 48 MCP tools for cached reads, shell compression, AST      |
 
 ## Specialist subagents
 
@@ -154,4 +156,4 @@ See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.4.1** (2026-04-29) — auto-install cache-fix proxy, lean-ctx, BurntToast; comprehensive edge-case handling
+Current: **v0.4.2** (2026-04-29) — lean-ctx MCP server wired; cargo-only install; PS encoding fix (`$env:` dynamic var)
