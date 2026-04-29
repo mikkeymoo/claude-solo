@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code statusline — One Dark Pro, compact
+# Install: copied to ~/.claude/statusline.sh by install.sh
 input=$(cat)
 
 # ── One Dark Pro ────────────────────────────────────────

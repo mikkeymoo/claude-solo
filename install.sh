@@ -857,6 +857,14 @@ run_windows() {
     ok "Installed COST-OPTIMIZATION.md → $CLAUDE_HOME/"
   fi
 
+  # Install statusline.sh to ~/.claude/statusline.sh
+  if [[ -f "$src/scripts/statusline.sh" ]]; then
+    [[ -f "$CLAUDE_HOME/statusline.sh" ]] && backup_path "$CLAUDE_HOME/statusline.sh"
+    do_run cp "$src/scripts/statusline.sh" "$CLAUDE_HOME/statusline.sh"
+    do_run chmod +x "$CLAUDE_HOME/statusline.sh"
+    ok "Installed statusline.sh → $CLAUDE_HOME/statusline.sh"
+  fi
+
   # Write installed version SHA (used by update-check.sh)
   if command -v git >/dev/null 2>&1 && [[ -d "$REPO_DIR/.git" ]]; then
     local installed_sha; installed_sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)

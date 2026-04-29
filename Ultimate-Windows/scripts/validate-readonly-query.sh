@@ -23,9 +23,10 @@ block() {
   exit 0
 }
 
-# If this hook is registered globally, skip when not running as db-reader.
-# If it is registered only under the agent's frontmatter.hooks, this gate is a no-op.
-if [[ -n "$AGENT_TYPE" && "$AGENT_TYPE" != "db-reader" ]]; then
+# Only enforce when running as the db-reader subagent.
+# When registered globally (matcher: Bash), skip all non-db-reader contexts — including
+# the main agent (AGENT_TYPE="") so normal git/shell commands are never blocked.
+if [[ "$AGENT_TYPE" != "db-reader" ]]; then
   exit 0
 fi
 
