@@ -123,6 +123,100 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
+# Ruff: find on disk, add to PATH, or install
+# ---------------------------------------------------------------------------
+fix_ruff() {
+  # Already on PATH — done
+  if command -v ruff >/dev/null 2>&1; then
+    ok "ruff: $(command -v ruff)"
+    return
+  fi
+
+  # Search common install locations (not yet on PATH)
+  local ruff_dir=""
+  local search_dirs=()
+
+  if is_windows; then
+    # Python installer default: %LOCALAPPDATA%\Programs\Python\Python3x\Scripts
+    local lad="${LOCALAPPDATA:-}"
+    if [[ -z "$lad" ]] && command -v cmd.exe >/dev/null 2>&1; then
+      lad=$(cmd.exe /c "echo %LOCALAPPDATA%" 2>/dev/null | tr -d '\r\n' || true)
+    fi
+    if [[ -n "$lad" ]]; then
+      local lad_unix
+      lad_unix=$(cygpath -u "$lad" 2>/dev/null \
+        || printf '%s' "$lad" | sed 's|\\|/|g; s|^\([A-Za-z]\):|/\L\1|')
+      for d in "$lad_unix"/Programs/Python/Python3*/Scripts; do
+        search_dirs+=("$d")
+      done
+    fi
+    search_dirs+=("$HOME/scoop/apps/python/current/Scripts")
+    search_dirs+=("$HOME/AppData/Roaming/Python/Python3"*/Scripts)
+  fi
+  search_dirs+=("$HOME/.local/bin" "$HOME/.cargo/bin" "/usr/local/bin")
+
+  for d in "${search_dirs[@]}"; do
+    if [[ -f "$d/ruff" || -f "$d/ruff.exe" ]]; then
+      ruff_dir="$d"
+      break
+    fi
+  done
+
+  # Not found anywhere — install via pip or pipx
+  if [[ -z "$ruff_dir" ]]; then
+    if [[ $DRY_RUN -eq 1 ]]; then
+      printf "  ${YELLOW}[dry-run]${NC} would install ruff via pip\n"
+      return
+    fi
+    local pip_cmd
+    pip_cmd=$(command -v pip3 2>/dev/null || command -v pip 2>/dev/null || true)
+    if [[ -n "$pip_cmd" ]]; then
+      say "  Installing ruff via pip..."
+      if ! "$pip_cmd" install ruff --quiet 2>&1 | tail -2; then
+        warn "pip install ruff failed — install manually: pip install ruff"
+        return
+      fi
+    elif command -v pipx >/dev/null 2>&1; then
+      say "  Installing ruff via pipx..."
+      if ! pipx install ruff >/dev/null 2>&1; then
+        warn "pipx install ruff failed — install manually: pipx install ruff"
+        return
+      fi
+    else
+      warn "ruff not installed and pip/pipx unavailable — install manually: pip install ruff"
+      return
+    fi
+    # Re-check PATH after install (pip may have put it there)
+    if command -v ruff >/dev/null 2>&1; then
+      ok "ruff installed: $(command -v ruff)"
+      return
+    fi
+    # Re-scan for the newly installed binary
+    for d in "${search_dirs[@]}"; do
+      if [[ -f "$d/ruff" || -f "$d/ruff.exe" ]]; then
+        ruff_dir="$d"
+        break
+      fi
+    done
+  fi
+
+  if [[ -n "$ruff_dir" ]]; then
+    export PATH="$ruff_dir:$PATH"
+    ok "ruff found at $ruff_dir — added to PATH for this session"
+    # Persist to ~/.bashrc
+    local bashrc="$HOME/.bashrc"
+    if ! grep -qF "$ruff_dir" "$bashrc" 2>/dev/null; then
+      printf '\n# ruff — added by claude-solo installer\nexport PATH="%s:$PATH"\n' "$ruff_dir" >> "$bashrc"
+      ok "Persisted to ~/.bashrc (takes effect in new shells)"
+    else
+      ok "$ruff_dir already in ~/.bashrc"
+    fi
+  else
+    warn "ruff not found after install — hooks requiring ruff will no-op"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Prerequisite checks
 # ---------------------------------------------------------------------------
 check_prereqs() {
@@ -143,9 +237,8 @@ check_prereqs() {
   if [[ ${#missing[@]} -gt 0 ]]; then
     die "Missing required tools: ${missing[*]}"
   fi
-  for bin in gh ruff; do
-    command -v "$bin" >/dev/null 2>&1 || warn "$bin not on PATH (optional — some hook features will no-op)"
-  done
+  command -v gh >/dev/null 2>&1 || warn "gh not on PATH (optional — GitHub features will no-op)"
+  fix_ruff
 
   # Auto-install npm-based formatter tools
   local npm_missing=()
