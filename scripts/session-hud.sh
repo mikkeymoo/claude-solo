@@ -46,7 +46,10 @@ fi
 
 # Last checkpoint
 if [[ -f "${planning_dir}/CHECKPOINT.md" ]]; then
-  cp_time=$(grep '^Saved:' "${planning_dir}/CHECKPOINT.md" 2>/dev/null | head -1 | sed 's/^Saved: //')
+  cp_time=$(grep -E '^(Saved:|# Compaction checkpoint)' "${planning_dir}/CHECKPOINT.md" 2>/dev/null \
+    | head -1 \
+    | sed -E 's/^Saved: //; s/^# Compaction checkpoint — //' \
+    || true)
   [[ -n "$cp_time" ]] && echo "  checkpoint: $cp_time"
 fi
 
