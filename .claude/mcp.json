@@ -3,6 +3,14 @@
   "_comment": "claude-solo recommended MCP servers. Copy to .mcp.json in your project root or ~/.claude/.mcp.json for global use. Fill in credentials where needed.",
 
   "mcpServers": {
+    "serena": {
+      "_comment": "LSP-powered semantic code navigation — find_symbol, find_references, get_symbols_overview, rename_symbol. Requires uv (https://docs.astral.sh/uv/getting-started/installation/). No credentials needed. Docs: https://github.com/oraios/serena",
+      "command": "uvx",
+      "args": ["--from", "serena", "serena-mcp-server"],
+      "env": {},
+      "disabled": true
+    },
+
     "cclsp": {
       "_comment": "LSP navigation — find_definition, find_references, get_diagnostics, find_workspace_symbols. Requires: npm install -g cclsp. Python: pip install python-lsp-server. See https://github.com/ktnyt/cclsp for config.",
       "command": "cclsp",
@@ -44,7 +52,12 @@
     "filesystem": {
       "_comment": "File system access with configurable allowed directories.",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "--allowed-directories", "."],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "--allowed-directories",
+        "."
+      ],
       "env": {},
       "disabled": true
     },
