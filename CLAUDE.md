@@ -65,7 +65,9 @@ Exploration: `/zoom-out` (quick context), `/zoom-out --explore` (deep-dive), `/h
 
 Dependencies: `/deps` (audit/upgrade/clean deps), `/deps --audit`, `/deps --clean`, `/changelog` (generate from conventional commits), `/ci` (CI status/retry)
 
-Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/sketch` (rapid prototype), `/session`, `/cost`, `/config`, `/release`, `/docs`, `/refactor`, `/swarm`
+Incident response: `/incident` (structured postmortem Q&A), `/migrate` (migration assistant: `--plan`, `--execute`, `--verify`)
+
+Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/sketch` (rapid prototype), `/session`, `/cost` (`--trend` for week-over-week comparison), `/config`, `/release`, `/docs` (`--api` for OpenAPI spec generation), `/refactor`, `/swarm` (`--status`, `--results` modes), `/cleanup` (`--aggressive` for maximum dead code removal)
 
 ## Execution defaults
 

@@ -7,6 +7,69 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.8.0] - 2026-04-29
+
+### Added
+
+- **`/incident` skill** — structured postmortem via guided Q&A, writes `.planning/POSTMORTEM-{date}.md`
+- **`/migrate` skill** — migration assistant with `--plan`, `--execute`, `--verify` modes; uses Context7 MCP for official migration guides
+- **`hooks/dashboard-agent.js`** — PostToolUse/SubagentStart/SubagentStop hook that POSTs tool lifecycle events to a local dashboard server on port 9876; fire-and-forget
+- **`hooks/test-fix.js`** — opt-in PostToolUse hook (requires `AUTO_TEST=1`); discovers test command, runs it, exits 2 on failure to trigger auto-fix; skips e2e
+- **`hooks/commit-msg.js`** — PostToolUse Bash hook; analyzes staged diff, infers conventional commit type/scope, suggests message to stderr; advisory
+- **`hooks/latency-track.js`** — PostToolUse hook tracking per-tool elapsed times, alerts if >30s, prints summary every 25 calls; advisory
+- **`scripts/dashboard.js`** — Node.js HTTP server (port 9876) with dark-theme HTML dashboard showing active agents and recent tool events; auto-refresh every 2s
+- **Confidence scoring** added to `/security`, `/code-review-excellence`, `/perf`, `/api-design` skills (HIGH/MEDIUM/LOW rating with reasoning)
+
+### Changed
+
+- **`/swarm`** — added `--status` (worktree inspection table) and `--results` (merged outcomes list) modes
+- **`/cleanup`** — added `--aggressive` mode: full static analysis, diff review table with planned removals, interactive confirmation, atomic commit with stats
+- **`/cost`** — added `--trend` mode: week-over-week token/cost comparison, 7-day ASCII bar chart, model breakdown (`cost_report.py` +166 lines)
+- **`/docs`** — added `--api` mode: OpenAPI 3.0 spec generation from Express/FastAPI/Next.js route handlers, writes `openapi.yaml`
+- **`settings.json`** — registered 4 new PostToolUse hooks (dashboard-agent, test-fix, commit-msg, latency-track); added SubagentStart/SubagentStop events for dashboard-agent
+
+---
+
+## [0.7.0] - 2026-04-29
+
+### Added
+
+- **`/api-design` skill** — REST API review/design with `--review`, `--design`, `--breaking` modes; labels: BREAKING, INCONSISTENCY, SUGGESTION
+- **`/onboard` skill** — project onboarding guide generator; writes `.planning/ONBOARDING.md` with architecture, key files, conventions, and common tasks
+- **`/sketch` skill** — rapid prototype generator with `--api`, `--cli`, `--ui`, `--script` modes; marks output as `// PROTOTYPE - not production ready`
+- **`/changelog` skill** + `changelog_gen.py` — generates Keep a Changelog output from git log with `--preview`, `--write`, `--since` modes
+- **`/deps` skill** + `dep_analyzer.py` — dependency analysis with `--audit`, `--upgrade`, `--clean`, `--why <pkg>` modes; supports npm/pip/cargo
+- **`/perf` skill** + `perf_analyzer.py` — performance profiler detecting O(n²) loops, N+1 queries, allocations in loops; `--quick`, `--deep`, `--db` modes
+- **`/test-gen` skill** — test generation with `--unit`, `--integration`, `--edge`, `--snapshot` modes; chain-of-thought: happy path → edge → error → security
+- **`/ci` skill** — CI status management wrapping `gh run` / `gh pr checks`; `--status`, `--failing`, `--retry`, `--logs` modes
+
+### Changed
+
+- **`/fix`** — added `--bisect` mode: git bisect integration, auto-finds regression commit, always resets after
+- **`/scaffold`** — added `--react`, `--next`, `--fastapi`, `--express` templates with working file contents
+- **`/security`** — added CVE scanning commands, SELF-CHECK, CONFIDENCE SCORING
+- **`/code-review-excellence`** — added SUCCESS CRITERIA, EXAMPLE OUTPUT, SELF-CHECK, CONFIDENCE SCORING
+- **`/quality`** — added SUCCESS CRITERIA, SELF-CHECK
+- **`/tdd`** — added SUCCESS CRITERIA, SELF-CHECK
+
+---
+
+## [0.6.0] - 2026-04-29
+
+### Added
+
+- **`hooks/lint-fix.js`** — PostToolUse hook for Edit|Write|MultiEdit; detects eslint/ruff/clippy from config files, runs on changed file, exits 2 with errors to trigger auto-fix
+- **`hooks/stop-gate.js`** — Stop hook; blocks if dirty working tree, advisory check for TODO/FIXME markers, optional test gate
+- **`hooks/large-file.js`** — PreToolUse Write hook; warns (advisory) if content >500 lines or >50KB
+- **`hooks/gitignore-check.js`** — PreToolUse Write hook; warns when writing to typically-gitignored paths (node_modules/, dist/, .env, etc.)
+- **Conventional commits enforcement** in `hooks/pre-tool-use.js` — validates `git commit -m` messages against regex, exits 2 with suggestion if invalid
+
+### Changed
+
+- **`settings.json`** — registered lint-fix.js (PostToolUse), large-file.js (PreToolUse Write), gitignore-check.js (PreToolUse Write), stop-gate.js (Stop)
+
+---
+
 ## [0.5.0] - 2026-04-29
 
 ### Changed

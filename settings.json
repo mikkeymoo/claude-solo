@@ -265,6 +265,50 @@
             "timeout": 10000
           }
         ]
+      },
+      {
+        "_comment": "Dashboard agent events — POSTs tool lifecycle to local dashboard server on port 9876. Fire-and-forget, always exits 0. Only active when dashboard server is running.",
+        "matcher": "Bash|Edit|Write|MultiEdit|Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dashboard-agent.js",
+            "timeout": 2000
+          }
+        ]
+      },
+      {
+        "_comment": "Opt-in auto test-then-fix: runs test suite on changed file. Requires AUTO_TEST=1 in env. Exits 2 on failure to trigger auto-fix. Skips e2e/playwright/cypress.",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/test-fix.js",
+            "timeout": 35000
+          }
+        ]
+      },
+      {
+        "_comment": "Conventional commit message suggester — analyzes staged diff, infers type/scope, suggests message to stderr. Advisory only, always exits 0.",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/commit-msg.js",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "_comment": "Latency tracker — records per-tool elapsed times, alerts if >30s, prints summary every 25 calls. Advisory only, always exits 0.",
+        "matcher": "Bash|Edit|Write|MultiEdit|Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/latency-track.js",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -286,6 +330,30 @@
             "type": "command",
             "command": "node ~/.claude/hooks/stop-gate.js",
             "timeout": 35000
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "_comment": "Dashboard agent lifecycle — POSTs subagent start events to local dashboard on port 9876.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dashboard-agent.js",
+            "timeout": 2000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "_comment": "Dashboard agent lifecycle — POSTs subagent stop events to local dashboard on port 9876.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dashboard-agent.js",
+            "timeout": 2000
           }
         ]
       }
