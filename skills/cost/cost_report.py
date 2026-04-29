@@ -2,7 +2,7 @@
 """Parse Claude Code JSONL logs and produce a cost report.
 
 Usage:
-    python cost_report.py [--today | --week | --month | --all]
+    python cost_report.py [--today | --week | --month | --all | --trend]
     python cost_report.py --top-sessions 5
     python cost_report.py --by-project
     python cost_report.py --by-model
@@ -216,9 +216,173 @@ def print_suggestions(totals):
         print("  ✓ Usage looks healthy")
 
 
+def format_trend_bar(value, max_value, width=20):
+    """Format a value as a bar chart using block characters."""
+    if max_value == 0:
+        return ""
+    filled = int((value / max_value) * width)
+    return "█" * filled
+
+
+def extract_usage_by_date(entries):
+    """Extract token usage grouped by date."""
+    by_date = defaultdict(lambda: defaultdict(int))
+    by_model_total = defaultdict(lambda: defaultdict(int))
+
+    for entry in entries:
+        usage = entry.get("usage") or entry.get("costData") or {}
+        if not usage:
+            continue
+
+        model = entry.get("model", "unknown")
+        ts = entry.get("timestamp") or entry.get("ts")
+        if not ts:
+            continue
+
+        try:
+            entry_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            date_key = entry_time.date().isoformat()
+        except (ValueError, TypeError, AttributeError):
+            continue
+
+        cache_read = usage.get("cache_creation_input_tokens", 0) or usage.get(
+            "cacheReadTokens", 0
+        )
+        cache_write = usage.get("cache_read_input_tokens", 0) or usage.get(
+            "cacheWriteTokens", 0
+        )
+        input_tokens = usage.get("input_tokens", 0) or usage.get("inputTokens", 0)
+        output_tokens = usage.get("output_tokens", 0) or usage.get("outputTokens", 0)
+
+        metrics = {
+            "cache_read": cache_read,
+            "cache_write": cache_write,
+            "input": input_tokens,
+            "output": output_tokens,
+        }
+
+        for k, v in metrics.items():
+            by_date[date_key][k] += v
+            by_model_total[model][k] += v
+
+    return by_date, by_model_total
+
+
+def print_trend_report(files):
+    """Print week-over-week trend comparison."""
+    now = datetime.now().astimezone()
+    this_week_start = now - timedelta(days=now.weekday())
+    last_week_start = this_week_start - timedelta(days=7)
+
+    # Parse last 14 days
+    entries = parse_jsonl(files, since=last_week_start)
+    if not entries:
+        print("No log entries found for the past 14 days")
+        return
+
+    by_date, by_model_total = extract_usage_by_date(entries)
+
+    # Split into weeks
+    this_week_totals = defaultdict(int)
+    last_week_totals = defaultdict(int)
+
+    for date_str, metrics in by_date.items():
+        date_obj = datetime.fromisoformat(date_str).date()
+        if date_obj >= this_week_start.date():
+            for k, v in metrics.items():
+                this_week_totals[k] += v
+        else:
+            for k, v in metrics.items():
+                last_week_totals[k] += v
+
+    # Compute costs
+    this_week_cost = compute_cost(this_week_totals)
+    last_week_cost = compute_cost(last_week_totals)
+
+    # Calculate percent change
+    this_week_tokens = sum(
+        [
+            this_week_totals.get("cache_read", 0),
+            this_week_totals.get("cache_write", 0),
+            this_week_totals.get("input", 0),
+            this_week_totals.get("output", 0),
+        ]
+    )
+    last_week_tokens = sum(
+        [
+            last_week_totals.get("cache_read", 0),
+            last_week_totals.get("cache_write", 0),
+            last_week_totals.get("input", 0),
+            last_week_totals.get("output", 0),
+        ]
+    )
+
+    token_change = (
+        ((this_week_tokens - last_week_tokens) / last_week_tokens * 100)
+        if last_week_tokens > 0
+        else 0
+    )
+    cost_change = (
+        ((this_week_cost - last_week_cost) / last_week_cost * 100)
+        if last_week_cost > 0
+        else 0
+    )
+
+    print("\n── Week-over-Week Comparison ──")
+    print(f"  This week:  {fmt_tokens(this_week_tokens):>8}  ${this_week_cost:>7.2f}")
+    print(f"  Last week:  {fmt_tokens(last_week_tokens):>8}  ${last_week_cost:>7.2f}")
+    print(f"  Change:     {token_change:>+7.1f}%  tokens  {cost_change:>+7.1f}%  cost")
+
+    # Build last 7 days bar chart
+    print("\n── Last 7 Days (tokens) ──")
+    days_data = []
+    day_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    for i in range(6, -1, -1):
+        day = now.date() - timedelta(days=i)
+        day_str = day.isoformat()
+        tokens = sum(
+            [
+                by_date[day_str].get("cache_read", 0),
+                by_date[day_str].get("cache_write", 0),
+                by_date[day_str].get("input", 0),
+                by_date[day_str].get("output", 0),
+            ]
+        )
+        days_data.append((day_labels[i], tokens))
+
+    max_day_tokens = max([v for _, v in days_data]) if days_data else 1
+    for label, tokens in days_data:
+        bar = format_trend_bar(tokens, max_day_tokens, width=20)
+        print(f"  {label}  {bar:<20}  {fmt_tokens(tokens):>8}")
+
+    # Model breakdown
+    print("\n── Model Breakdown (this week) ──")
+    sorted_models = sorted(
+        by_model_total.items(),
+        key=lambda x: sum(x[1].values()),
+        reverse=True,
+    )
+    for model, metrics in sorted_models:
+        cost = compute_cost(metrics)
+        total = sum(metrics.values())
+        short_model = model.split("-")[2] if "-" in model else model
+        print(f"  {short_model:<30} {fmt_tokens(total):>8}  ${cost:.2f}")
+
+
 def main():
     args = sys.argv[1:]
     now = datetime.now().astimezone()
+
+    # Handle --trend flag first (separate from time windows)
+    if "--trend" in args:
+        files = find_jsonl_files()
+        if not files:
+            print("No JSONL log files found in ~/.claude/projects/")
+            sys.exit(1)
+        print("Cost Report — Trend Analysis")
+        print_trend_report(files)
+        return
 
     # Determine time window
     since = None

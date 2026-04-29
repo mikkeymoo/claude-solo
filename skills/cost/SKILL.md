@@ -9,7 +9,7 @@ Parse `~/.claude/projects/**/*.jsonl` and produce a cost report.
 
 ## Helper script
 
-Run `python ~/.claude/skills/cost/cost_report.py` to generate the report. Flags: `--today`, `--week`, `--month`, `--by-project`, `--by-model`, `--top-sessions N`. No flag = full report (all time).
+Run `python ~/.claude/skills/cost/cost_report.py` to generate the report. Flags: `--today`, `--week`, `--month`, `--trend`, `--by-project`, `--by-model`, `--top-sessions N`. No flag = full report (all time).
 
 ## Report structure
 
@@ -44,3 +44,27 @@ Sort by cost descending.
 - Low cache hit → longer sessions
 - High output ratio → shorter responses
 - High daily spend → review top sessions
+
+## Trend mode (--trend)
+
+Compare current week vs. previous week:
+
+```
+Week-over-Week Comparison
+  This week:  123.4k tokens  $4.56
+  Last week:  107.2k tokens  $3.89
+  Change:     +15.1% tokens  +17.2% cost
+
+Last 7 days (tokens):
+  Mon  ███████                  32.1k
+  Tue  ████████████             56.3k
+  Wed  ██████                   28.5k
+  Thu  ████████████████         71.2k
+  Fri  ██████████               48.3k
+  Sat  ████                     18.9k
+  Sun  ███                      15.6k
+
+Model breakdown (this week):
+  claude-sonnet-4-6            89.2k  $3.24
+  claude-haiku-4-5             34.2k  $1.32
+```
