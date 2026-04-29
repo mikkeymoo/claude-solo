@@ -10,3 +10,21 @@
 .swarm/
 logs/
 convert-skills.mjs
+*.pyc
+
+# Claude Code local/runtime artifacts
+.claude/settings.local.json
+.claude/worktrees/
+.claude/state/
+.claude/cache-fix-tools.json
+
+# Python caches
+.ruff_cache/
+__pycache__/
+*.pyo
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
