@@ -912,10 +912,11 @@ smoke_test() {
     shopt -s nullglob
     for f in "$hooks_dir/"*.js; do
       local base; base=$(basename "$f")
-      if node --check "$f" 2>/dev/null; then
+      local node_err
+      if node_err=$(node --check "$f" 2>&1); then
         (( js_pass++ )) || true
       else
-        warn "$base: JS syntax error (node --check failed)"
+        warn "$base: JS syntax error — $node_err"
         (( js_fail++ )) || true
       fi
     done
