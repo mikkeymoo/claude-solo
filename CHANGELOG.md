@@ -16,7 +16,8 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Fixed
 
-- **`install_optional_tools()` lean-ctx** — removed non-existent `lean-ctx-bin` npm attempt; installer now goes directly to `cargo install lean-ctx`
+- **`install_optional_tools()` lean-ctx** — installer now downloads pre-built binary from `yvgude/lean-ctx` GitHub releases (cross-platform: Windows zip, macOS/Linux tgz); `cargo install lean-ctx` retained as fallback (~15 min compile eliminated for most installs)
+- **Removed non-existent `lean-ctx-bin` npm attempt**
 - **`Setup-WindowsEncoding.ps1:46`** — replaced invalid `$env:($kv.Key)` dynamic property syntax with `[System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, 'Process')`
 
 ---

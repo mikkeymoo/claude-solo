@@ -26,7 +26,7 @@ bash install.sh --verify
 
 **Requirements:** `bash` (Git Bash on Windows), `jq`
 
-**Auto-installed by the installer (if not present):** `claude-code-cache-fix` (npm), `lean-ctx` (cargo), `BurntToast` (Windows PowerShell notification module)
+**Auto-installed by the installer (if not present):** `claude-code-cache-fix` (npm), `lean-ctx` (pre-built binary; cargo fallback), `BurntToast` (Windows PowerShell notification module)
 
 ## What gets installed
 
@@ -136,7 +136,7 @@ powershell -ExecutionPolicy Bypass -File scripts/Setup-WindowsEncoding.ps1
 The installer handles all three automatically:
 
 1. **cache-fix proxy** — fixes the 5m→1h cache TTL regression in CC v2.1.81+. Auto-installed via `npm install -g claude-code-cache-fix`; proxy starts each session via `start-cache-proxy.sh` hook; `ANTHROPIC_BASE_URL=http://127.0.0.1:9801` patched into `settings.json`.
-2. **lean-ctx** — file-read caching (~13 tokens/re-read vs full re-read). Auto-installed via `cargo install lean-ctx` + `lean-ctx init --agent claude-code`.
+2. **lean-ctx** — file-read caching (~13 tokens/re-read vs full re-read). Auto-installed via pre-built binary from [yvgude/lean-ctx releases](https://github.com/yvgude/lean-ctx/releases) (seconds); `cargo install lean-ctx` fallback if download fails.
 3. **Session hygiene** — keep sessions long, use checkpoints, prefer LSP over Grep.
 
 See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.

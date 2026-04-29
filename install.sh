@@ -240,18 +240,81 @@ install_cache_fix() {
 install_optional_tools() {
   say "Installing optional tools"
 
-  # lean-ctx — cargo only (no npm binary package exists)
+  # lean-ctx — pre-built binary from GitHub releases (fast), cargo fallback
   if command -v lean-ctx >/dev/null 2>&1; then
     ok "lean-ctx already installed: $(command -v lean-ctx)"
   elif [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx via cargo\n"
-  elif command -v cargo >/dev/null 2>&1; then
-    say "  Installing lean-ctx via cargo (this may take a minute)..."
-    cargo install lean-ctx 2>&1 | tail -3 \
-      && ok "Installed lean-ctx (cargo)" \
-      || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
+    printf "  ${YELLOW}[dry-run]${NC} would install lean-ctx (pre-built binary or cargo)\n"
   else
-    warn "lean-ctx not installed (requires cargo: https://rustup.rs)"
+    # Install dir: prefer ~/.cargo/bin (already in PATH for Rust users)
+    local lc_dir
+    if [[ -d "$HOME/.cargo/bin" ]]; then
+      lc_dir="$HOME/.cargo/bin"
+    else
+      lc_dir="$HOME/.local/bin"
+      mkdir -p "$lc_dir"
+    fi
+
+    # Pick the right asset for this OS/arch
+    local lc_asset lc_ext
+    if is_windows; then
+      lc_asset="lean-ctx-x86_64-pc-windows-msvc.zip"; lc_ext="zip"
+    elif [[ "$(uname -s)" == "Darwin" ]]; then
+      [[ "$(uname -m)" == "arm64" ]] \
+        && lc_asset="lean-ctx-aarch64-apple-darwin.tar.gz" \
+        || lc_asset="lean-ctx-x86_64-apple-darwin.tar.gz"
+      lc_ext="tgz"
+    else
+      [[ "$(uname -m)" == "aarch64" ]] \
+        && lc_asset="lean-ctx-aarch64-unknown-linux-gnu.tar.gz" \
+        || lc_asset="lean-ctx-x86_64-unknown-linux-gnu.tar.gz"
+      lc_ext="tgz"
+    fi
+
+    # Attempt pre-built download
+    local lc_installed=0
+    if command -v curl >/dev/null 2>&1; then
+      say "  Downloading lean-ctx pre-built binary..."
+      local lc_url="https://github.com/yvgude/lean-ctx/releases/latest/download/$lc_asset"
+      local lc_tmp; lc_tmp=$(mktemp "/tmp/lean-ctx-XXXXXX.$lc_ext")
+      if curl -fsSL "$lc_url" -o "$lc_tmp" 2>/dev/null; then
+        local lc_tmpdir; lc_tmpdir=$(mktemp -d /tmp/lean-ctx-extract-XXXXXX)
+        if [[ "$lc_ext" == "zip" ]]; then
+          if command -v unzip >/dev/null 2>&1; then
+            unzip -q "$lc_tmp" -d "$lc_tmpdir" 2>/dev/null \
+              && find "$lc_tmpdir" -name "lean-ctx.exe" -exec cp {} "$lc_dir/lean-ctx.exe" \; \
+              && lc_installed=1
+          else
+            local pwsh; pwsh=$(find_pwsh)
+            [[ -n "$pwsh" ]] \
+              && "$pwsh" -Command "Expand-Archive -Path '$lc_tmp' -DestinationPath '$lc_tmpdir' -Force" 2>/dev/null \
+              && find "$lc_tmpdir" -name "lean-ctx.exe" -exec cp {} "$lc_dir/lean-ctx.exe" \; \
+              && lc_installed=1
+          fi
+        else
+          tar -xzf "$lc_tmp" -C "$lc_tmpdir" 2>/dev/null \
+            && find "$lc_tmpdir" -name "lean-ctx" -not -name "*.sh" -exec cp {} "$lc_dir/lean-ctx" \; \
+            && chmod +x "$lc_dir/lean-ctx" \
+            && lc_installed=1
+        fi
+        rm -rf "$lc_tmpdir"
+      else
+        warn "  Pre-built download failed — falling back to cargo..."
+      fi
+      rm -f "$lc_tmp"
+    fi
+
+    if [[ $lc_installed -eq 1 ]]; then
+      ok "Installed lean-ctx (pre-built)"
+    elif command -v cargo >/dev/null 2>&1; then
+      say "  Installing lean-ctx via cargo (~15 min)..."
+      cargo install lean-ctx 2>&1 | tail -3 \
+        && ok "Installed lean-ctx (cargo)" \
+        || warn "lean-ctx install failed — install manually: cargo install lean-ctx"
+    else
+      warn "lean-ctx not installed — download failed and cargo unavailable"
+      warn "  Manual: cargo install lean-ctx  (requires https://rustup.rs)"
+    fi
   fi
 
   # Wire lean-ctx into Claude Code (idempotent — safe to re-run)
