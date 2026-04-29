@@ -115,7 +115,6 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 - `morae-context.sh` SessionStart hook — injects environment reminders (Zurich/US, Custom Pages DLL version, RabbitMQ pin) when CWD matches Morae/Relativity/Nuix/Prudential patterns; silent no-op otherwise
 - `morae-powerbi-validate.sh` PostToolUse hook — validates PBIP/PBIR/TMDL/JSON files; checks JSON validity and Morae brand palette (`#FF6900` orange, `#EDE5DE` off-white); gated on `MORAE_POWERBI_VALIDATION=1`
-- `/nuix-binary-store` skill — encapsulates three-phase Prudential binary store audit: Phase 1 case scan, Phase 2 MD5 extraction (9.2 vs 9.10 routing), Phase 3 orphan detection
 - `/relativity-sql` skill — verified SQL bundle (domain dedup, processing exceptions, saved-search sizes, multi-object field population) with `Invoke-RelativityQuery` PowerShell wrapper and CSV/Parquet output formatters
 
 **Polish & DX (Tier 7)**

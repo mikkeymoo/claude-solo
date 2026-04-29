@@ -114,7 +114,6 @@ LSP & skills
   /mm:skill-from-template  Scaffold a new skill
 
 eDiscovery / Morae
-  /mm:nuix-binary-store    Prudential binary store audit
   /mm:relativity-sql       Relativity SQL bundle + PS wrappers
 ```
 
