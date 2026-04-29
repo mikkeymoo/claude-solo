@@ -1,5 +1,5 @@
 ---
-name: mm:lsp-status
+name: lsp-status
 description: Show registered LSP MCP servers, active language servers, and run a sample query against each. Use when diagnosing LSP availability or why the Grep/Glob LSP nudge fires but no results appear.
 ---
 

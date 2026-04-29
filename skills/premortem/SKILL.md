@@ -1,5 +1,5 @@
 ---
-name: mm:premortem
+name: premortem
 description: Identify failure modes before they occur using structured risk analysis
 allowed-tools: [Read, Grep, Glob, Task, AskUserQuestion, TodoWrite]
 ---
