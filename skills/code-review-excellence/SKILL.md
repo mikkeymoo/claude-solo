@@ -527,3 +527,60 @@ When author disagrees with your feedback:
 
 ✅ Approve after addressing required changes
 ```
+
+## SUCCESS CRITERIA
+
+- [ ] Every finding has: severity label (🔴 blocking / 🟡 important / 🟢 nit / 💡 suggestion), file:line location, specific explanation, and concrete fix or alternative
+- [ ] Critical issues are listed first, then important, then nits, then suggestions
+- [ ] At least one positive comment highlighting what was done well
+- [ ] Summary includes decision (✅ Approve / 💬 Comment / 🔄 Request Changes) and number of findings by severity
+- [ ] No feedback without a "why" — every comment explains the impact or rationale
+- [ ] All requested changes are blocking; all suggestions are explicitly marked as "not blocking"
+
+## EXAMPLE OUTPUT
+
+```markdown
+## Code Review: Add user authentication middleware
+
+### Summary
+
+Good structure and comprehensive testing. Found 2 blocking issues and 1 suggestion.
+
+### Strengths
+
+- 🎉 Excellent test coverage with both happy path and error cases
+- 🎉 Well-organized middleware with clear separation of concerns
+- 🎉 Good error handling with specific HTTP status codes
+
+### Required Changes
+
+🔴 [blocking] **SQL injection risk** (src/auth/middleware.ts:42)
+The JWT claims are directly interpolated into the SQL query:
+```
+
+const user = db.query(`SELECT * FROM users WHERE id = ${claims.sub}`);
+
+```
+This is vulnerable if claims can be manipulated. Use parameterized queries:
+```
+
+const user = db.query('SELECT \* FROM users WHERE id = ?', [claims.sub]);
+
+```
+
+🔴 [blocking] **Missing token refresh expiry check** (src/auth/middleware.ts:18)
+The code validates `exp` but not `iat` (issued-at time). If an old token is replayed after password reset, it could grant access. Add:
+```
+
+if (claims.iat < lastPasswordChange) throw new Error('Token too old');
+
+```
+
+### Suggestions
+
+💡 **Consider extracting JWT validation** (src/auth/middleware.ts:10-30)
+This validation logic appears in 3 middleware functions. Could extract into a shared utility function `validateAndDecodeJWT()` to reduce duplication and centralize security logic.
+
+### Verdict
+🔄 Request Changes — fix the 2 blocking issues before merge. Happy to pair on the refactoring suggestion.
+```

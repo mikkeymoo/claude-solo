@@ -307,8 +307,8 @@ def find_package_imports_with_locations(
                     try:
                         content = file.read_text(encoding="utf-8", errors="ignore")
                         for line_no, line in enumerate(content.split("\n"), 1):
-                            if search_pattern in line and re.search(
-                                rf"(?:require|import|from)\s*['\"].*{re.escape(search_pattern)}",
+                            if re.search(
+                                rf"(?:require|import|from)\s*\(?\s*['\"].*?{re.escape(search_pattern)}\b",
                                 line,
                             ):
                                 rel_path = str(file.relative_to(cwd))

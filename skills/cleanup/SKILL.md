@@ -64,3 +64,13 @@ unused imports, potentially unused functions/classes, `console.log`/`debugger` s
 commented-out code blocks (3+ lines), and stale TODOs with git-blame age.
 
 Use in `--audit` mode: run the script first, then present its output as the checklist.
+
+## SUCCESS CRITERIA
+
+- [ ] In `--audit` mode: Output is a checklist with categories (stale TODOs, dead code, dead exports, deprecated patterns) and no code is modified
+- [ ] In default mode: All tests pass before cleanup starts (baseline established)
+- [ ] Each pass (dead code → duplication → abstraction → padding) runs independently and tests pass after each pass
+- [ ] Deleted items are verified as unused: checked for imports, references, and git history (30+ days old for TODOs)
+- [ ] Summary shows counts: "Removed X unused imports, Y dead functions, Z commented blocks, N old TODOs"
+- [ ] No refactoring is attempted during dead-code removal — each pass focuses on one smell type
+- [ ] Final commit message references the pass and changes: `chore(cleanup): remove dead code pass 1`

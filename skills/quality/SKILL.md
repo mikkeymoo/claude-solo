@@ -75,3 +75,60 @@ Flags functions exceeding thresholds and identifies file hotspots.
 Uses Python AST for `.py` and regex heuristics for JS/TS.
 
 Use this as part of `--gate` or `--all` to surface complexity risks before shipping.
+
+## SUCCESS CRITERIA
+
+- [ ] For `--gate`: All checks (lint, typecheck, tests, secrets, smoke) show explicit pass/fail status
+- [ ] Each failing check lists violation count and specific errors, not just "failed"
+- [ ] Report includes `.planning/VERIFY.md` with results table summarizing all checks
+- [ ] Files with changes but no test coverage are flagged by name with coverage percentage
+- [ ] Summary line clearly states "✅ Verification passed. Ready to /ship." OR "🔴 Verification failed." with what must be fixed
+- [ ] For `--deps`: Vulnerabilities are prioritized (now, this week, next sprint) with actionable steps
+- [ ] For `--route`: Response includes status code, validation results, and timing; no stack traces exposed
+
+## EXAMPLE OUTPUT
+
+```markdown
+## Verification Gate Report
+
+### Summary
+
+🔴 Verification failed. 2 checks failed, see details below.
+
+### Results
+
+| Check        | Status     | Details                             |
+| ------------ | ---------- | ----------------------------------- |
+| Lint         | ✅ PASS    | 0 violations                        |
+| Type Check   | 🔴 FAIL    | 3 errors in src/api/routes.ts       |
+| Tests        | ✅ PASS    | 142/142 passed (5.2s)               |
+| Secrets Scan | ✅ PASS    | No secrets detected                 |
+| Smoke Check  | ✅ PASS    | Dev server starts, CLI --help works |
+| Coverage     | 🟡 WARNING | 3 files changed with <80% coverage  |
+
+### Failed Checks
+
+#### Type Check: 3 errors
+
+- `src/api/routes.ts:42` — Parameter 'userId' implicitly has type 'any'
+- `src/api/routes.ts:156` — Property 'email' does not exist on type 'User'
+- `src/types/index.ts:8` — Missing return type annotation on function 'parseConfig'
+
+**Action**: Fix type errors and re-run `tsc`
+
+#### Coverage Warning
+
+Files changed with <80% coverage:
+
+- `src/utils/helpers.ts` — 62% (need 5 more lines covered)
+- `src/validators/email.ts` — 71% (need 8 more lines covered)
+
+**Action**: Add tests for uncovered branches or explain why coverage is acceptable.
+
+### Next Steps
+
+1. Fix the 3 TypeScript errors
+2. Improve coverage in 2 files or accept coverage gaps
+3. Re-run `/quality --gate` to verify
+4. Then run `/ship`
+```
