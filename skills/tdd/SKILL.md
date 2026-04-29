@@ -122,3 +122,13 @@ Reports: files below threshold with uncovered line ranges, priority list of what
 and how many lines need coverage to reach the threshold.
 
 Run this after generating a coverage report to decide which tests to write next.
+
+## SUCCESS CRITERIA
+
+- [ ] Every test exercises behavior through the public interface only — no private method calls
+- [ ] Each RED→GREEN cycle is one test at a time, not a batch
+- [ ] Tests are named descriptively: `should <behavior> when <condition>`
+- [ ] All tests pass before moving to the Refactor phase
+- [ ] No test was written to always pass (e.g., `assert True`)
+- [ ] Coverage gaps script run and results reviewed before declaring done
+- [ ] Commit message format: `test: <what behavior is now verified>`

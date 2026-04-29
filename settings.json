@@ -172,12 +172,42 @@
         ]
       },
       {
+        "_comment": "Conventional commits enforcement + danger warnings + RTK auto-wrap",
+        "matcher": "Bash|mcp__desktop-commander__start_process",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/pre-tool-use.js"
+          }
+        ]
+      },
+      {
         "_comment": "Block mojibake content before it corrupts files (exits 2 to block)",
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/scripts/validate-utf8-source.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Warn when writing files > 500 lines or > 50KB (advisory, exit 0)",
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/large-file.js"
+          }
+        ]
+      },
+      {
+        "_comment": "Warn when writing to typically-gitignored paths (advisory, exit 0)",
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/gitignore-check.js"
           }
         ]
       },
@@ -200,6 +230,17 @@
             "type": "command",
             "command": "bash ~/.claude/scripts/post-format-and-heal.sh",
             "timeout": 60000
+          }
+        ]
+      },
+      {
+        "_comment": "Auto lint-then-fix: runs linter on changed file, exits 2 with errors so Claude auto-fixes",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/lint-fix.js",
+            "timeout": 15000
           }
         ]
       },
