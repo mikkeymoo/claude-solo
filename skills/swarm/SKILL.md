@@ -1,7 +1,7 @@
 ---
 name: swarm
 description: "Parallel multi-agent orchestration — break a plan into independent tasks and farm them out to parallel agents in isolated worktrees, then merge results. Use when you want maximum parallelism on a multi-task plan."
-argument-hint: "[number of agents (default: 3)] or path to PLAN.md"
+argument-hint: "[number of agents (default: 3)] or path to PLAN.md, --status, or --results"
 ---
 
 # /swarm — Parallel Agent Orchestration
@@ -44,3 +44,55 @@ Reads PLAN.md, finds 8 tasks, groups into:
 - Tasks under 3 items (just do them sequentially)
 - Tasks that all touch the same files (no parallelism possible)
 - Schema migrations (must be sequential)
+
+## --status mode
+
+Monitor real-time progress of running parallel agents:
+
+```
+/swarm --status
+```
+
+Shows:
+
+1. Active worktrees from `git worktree list`
+2. For each worktree: branch name, last commit, recent tool activity from `.claude/logs/session-*.log`
+3. Status: Running/Idle/Complete based on log recency
+
+Output example:
+
+```
+Wave: 2/3  |  Agents: 3 running, 1 complete
+
+Agent          | Branch              | Last Activity | Status
+─────────────────────────────────────────────────────────────
+claude-wt-123  | feat/task-1-hooks   | 12s ago       | Running
+claude-wt-456  | feat/task-2-skills  | 45s ago       | Running
+claude-wt-789  | main (merged)       | 2m ago        | Complete
+```
+
+## --results mode
+
+View outcomes after swarm wave completes:
+
+```
+/swarm --results
+```
+
+Shows:
+
+1. List of merged commits since swarm started (from `.planning/SWARM-LOG.md` or `git log main`)
+2. Per-agent summary: task description, files changed, commit messages
+3. Overall stats: total tasks, merge success rate
+
+Output example:
+
+```
+Wave 1 Results: 5 agents, all merged to main
+
+✓ Task 1 — feat(hooks): add lint-fix hook (2 files)
+✓ Task 2 — feat(hooks): add conventional commits (1 file)
+✓ Task 3 — feat(hooks): add stop gate (2 files)
+✓ Task 4 — feat(hooks): add git-guardrails (3 files)
+✓ Task 5 — feat(hooks): add deployment checks (2 files)
+```
