@@ -55,15 +55,17 @@ Sprint pipeline: `/brief` → `/riper --plan` → `/riper --build` → `/code-re
 
 Workflow modes: `/riper` (phased), `/riper --auto` (autopilot), `/workflow --parallel`, `/swarm` (multi-agent), `/quick` (fast path)
 
-Debugging: `/fix` (tactical), `/fix --deep` (systematic), `/fix --triage` (universal)
+Debugging: `/fix` (tactical), `/fix --deep` (systematic), `/fix --triage` (universal), `/fix --bisect` (git bisect regression finder)
 
-Quality: `/tdd` (red-green-refactor), `/tdd --write` (test writing), `/quality --deps`, `/quality --gate`, `/cleanup`, `/security`
+Quality: `/tdd` (red-green-refactor), `/tdd --write` (test writing), `/test-gen` (generate tests for existing code), `/quality --deps`, `/quality --gate`, `/cleanup`, `/security` (OWASP + CVE scan), `/perf` (performance profiling)
 
-Review: `/code-review-excellence` (constructive), `/code-review-excellence --staff`, `/code-review-excellence --adversarial`
+Review: `/code-review-excellence` (constructive), `/code-review-excellence --staff`, `/code-review-excellence --adversarial`, `/api-design` (REST API review/design)
 
-Exploration: `/zoom-out` (quick context), `/zoom-out --explore` (deep-dive), `/hud` (session), `/hud --doctor` (health)
+Exploration: `/zoom-out` (quick context), `/zoom-out --explore` (deep-dive), `/hud` (session), `/hud --doctor` (health), `/onboard` (generate project onboarding guide)
 
-Meta: `/scaffold`, `/session`, `/cost`, `/config`, `/release`, `/docs`, `/refactor`, `/swarm`
+Dependencies: `/deps` (audit/upgrade/clean deps), `/deps --audit`, `/deps --clean`, `/changelog` (generate from conventional commits), `/ci` (CI status/retry)
+
+Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/sketch` (rapid prototype), `/session`, `/cost`, `/config`, `/release`, `/docs`, `/refactor`, `/swarm`
 
 ## Execution defaults
 
