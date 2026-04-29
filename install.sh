@@ -426,6 +426,34 @@ install_hooks() {
 }
 
 # ---------------------------------------------------------------------------
+# MCP config install (mcp.json → ~/.claude/mcp.json)
+# ---------------------------------------------------------------------------
+install_mcp() {
+  local src="$1"
+  local dst="$CLAUDE_HOME/mcp.json"
+  [[ ! -f "$src" ]] && { warn "mcp.json not found at $src — skipping"; return 0; }
+  say "Installing mcp.json → $dst"
+  if [[ -f "$dst" ]]; then
+    backup_path "$dst"
+  fi
+  do_run cp "$src" "$dst"
+  ok "Installed mcp.json (all servers disabled by default — enable what you need)"
+}
+
+# ---------------------------------------------------------------------------
+# Keybindings install (keybindings.json → ~/.claude/keybindings.json)
+# ---------------------------------------------------------------------------
+install_keybindings() {
+  local src="$1"
+  local dst="$CLAUDE_HOME/keybindings.json"
+  [[ ! -f "$src" ]] && { warn "keybindings.json not found at $src — skipping"; return 0; }
+  say "Installing keybindings.json → $dst"
+  [[ -f "$dst" ]] && backup_path "$dst"
+  do_run cp "$src" "$dst"
+  ok "Installed keybindings.json"
+}
+
+# ---------------------------------------------------------------------------
 # Agents install
 # ---------------------------------------------------------------------------
 install_agents() {
@@ -981,6 +1009,8 @@ uninstall() {
 run_install() {
   local src_scripts="$REPO_DIR/scripts"
   local src_hooks="$REPO_DIR/hooks"
+  local src_keybindings="$REPO_DIR/keybindings.json"
+  local src_mcp="$REPO_DIR/mcp.json"
   local src_agents="$REPO_DIR/agents"
   local src_skills="$REPO_DIR/skills"
   local src_commands="$REPO_DIR/commands"
@@ -1011,9 +1041,11 @@ run_install() {
 
   [[ "$MODE" == "fresh" ]] && purge_artifacts "$MANIFEST"
 
-  install_scripts  "$src_scripts"  "$dst_scripts"
-  install_hooks    "$src_hooks"    "$dst_hooks"
-  install_agents   "$src_agents"   "$MANIFEST"
+  install_scripts     "$src_scripts"     "$dst_scripts"
+  install_hooks       "$src_hooks"       "$dst_hooks"
+  install_keybindings "$src_keybindings"
+  install_mcp         "$src_mcp"
+  install_agents      "$src_agents"      "$MANIFEST"
   install_skills   "$src_skills"   "$MANIFEST"
   install_commands "$src_commands" "$MANIFEST"
   install_rules    "$src_rules"    "$MANIFEST"

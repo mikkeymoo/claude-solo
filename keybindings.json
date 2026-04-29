@@ -1,0 +1,50 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "bindings": [
+    {
+      "context": "Global",
+      "bindings": {
+        "ctrl+t": "app:toggleTodos",
+        "ctrl+o": "app:toggleTranscript"
+      }
+    },
+    {
+      "context": "Chat",
+      "bindings": {
+        "enter": "chat:submit",
+        "ctrl+j": "chat:newline",
+        "ctrl+l": "chat:clearInput",
+        "ctrl+s": "chat:stash",
+        "ctrl+g": "chat:externalEditor",
+        "escape": "chat:cancel"
+      }
+    },
+    {
+      "context": "Autocomplete",
+      "bindings": {
+        "tab": "autocomplete:accept",
+        "escape": "autocomplete:dismiss",
+        "up": "autocomplete:previous",
+        "down": "autocomplete:next"
+      }
+    },
+    {
+      "context": "HistorySearch",
+      "bindings": {
+        "ctrl+r": "historySearch:next",
+        "enter": "historySearch:execute",
+        "escape": "historySearch:accept",
+        "ctrl+c": "historySearch:cancel"
+      }
+    },
+    {
+      "context": "Select",
+      "bindings": {
+        "j": "select:next",
+        "k": "select:previous",
+        "enter": "select:accept",
+        "escape": "select:cancel"
+      }
+    }
+  ]
+}

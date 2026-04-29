@@ -1,0 +1,29 @@
+{
+  "$schema": "https://code.claude.com/schemas/mcp.json",
+  "_comment": "Project-scoped MCP servers — layered on top of ~/.claude/mcp.json. Enable servers specific to this project by setting disabled: false and filling in env vars.",
+
+  "mcpServers": {
+    "filesystem": {
+      "_comment": "File system access — scope to this project's directories.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "--allowed-directories",
+        "."
+      ],
+      "env": {},
+      "disabled": true
+    },
+
+    "postgres": {
+      "_comment": "Project database. Set DATABASE_URL in .claude/settings.local.json env block (never commit credentials).",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+      },
+      "disabled": true
+    }
+  }
+}

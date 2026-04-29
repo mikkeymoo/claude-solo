@@ -2,7 +2,9 @@
 *.log
 *.omx
 .omx/
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/mcp.json
 .planning/
 .claude-flow/
 .swarm/
