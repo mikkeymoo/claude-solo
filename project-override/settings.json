@@ -34,18 +34,6 @@
   },
 
   "hooks": {
-    "_comment_hooks": "Extra hooks layered on top of the user-scope ones. The user-scope validate-bash runs first; this one adds project-specific bash guards (forbid editing generated files, etc.).",
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash $CLAUDE_PROJECT_DIR/ultimate/scripts/validate-bash.sh",
-            "timeout": 3000
-          }
-        ]
-      }
-    ]
+    "_comment_hooks": "Extra hooks layered on top of the user-scope ones. Add project-specific PreToolUse/PostToolUse entries here as needed."
   }
 }

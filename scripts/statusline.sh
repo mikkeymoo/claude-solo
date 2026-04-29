@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Claude Code statusline — One Dark Pro, compact
 # Install: copied to ~/.claude/statusline.sh by install.sh
+#
+# Note: set -e intentionally omitted — color_left/color_used use && short-circuit
+# for flow control, which returns non-zero on the "else" branches.
+# set -uo pipefail still active to catch undefined vars and broken pipes.
+set -uo pipefail
 input=$(cat)
 
 # ── One Dark Pro ────────────────────────────────────────
