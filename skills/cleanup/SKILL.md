@@ -48,3 +48,19 @@ Pass 1: Dead code → delete unused imports, functions, variables, debug logs. R
 Pass 2: Duplication → consolidate repeated logic. Run tests.
 Pass 3: Needless abstraction → inline single-use helpers. Run tests.
 Pass 4: AI padding → remove obvious docstrings, shorten verbose names. Run tests.
+
+## Bundled Script
+
+Run `python skills/cleanup/dead_code_scanner.py [path]` for automated scanning.
+
+Flags:
+
+- `--py-only` / `--js-only` — language filter
+- `--todos` — stale TODOs only
+- `--commented` — commented-out code blocks only
+
+The script uses Python AST for `.py` files and regex heuristics for JS/TS. It detects:
+unused imports, potentially unused functions/classes, `console.log`/`debugger` statements,
+commented-out code blocks (3+ lines), and stale TODOs with git-blame age.
+
+Use in `--audit` mode: run the script first, then present its output as the checklist.

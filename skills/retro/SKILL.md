@@ -17,3 +17,21 @@ Write `.planning/RETRO-[date].md` with:
 Keep it under 200 words. No fluff. If it took twice as long as expected, say why.
 
 End with: "Retro saved. What's next?"
+
+## Bundled Script
+
+Run `python skills/retro/git_stats.py` to generate sprint statistics.
+
+Flags:
+
+- `--days N` — last N days (default: 7)
+- `--since YYYY-MM-DD` — since specific date
+- `--since-tag v1.0` — since a git tag
+- `--churn` — show file churn hotspots
+- `--authors` — per-author breakdown
+
+Reports: commits by type (feat/fix/chore), commits by day with ASCII bars,
+file churn hotspots, most-changed files by lines, features shipped, bugs fixed,
+and velocity (commits/day, lines/day).
+
+Run this script first to populate the "What shipped" and "Estimate vs actual" sections.

@@ -58,3 +58,20 @@ Run before /ship. Mechanical checks, not a code review.
 Write `.planning/VERIFY.md` with results table.
 If all pass: "✅ Verification passed. Ready to /ship."
 If any fail: "🔴 Verification failed." — list what to fix.
+
+## Bundled Script
+
+Run `python skills/quality/complexity_report.py [path]` for code complexity analysis.
+
+Flags:
+
+- `--py-only` / `--js-only` — language filter
+- `--threshold N` — custom complexity threshold (default: 10)
+- `--top N` — show top N functions (default: 15)
+- `--json` — machine-readable JSON output
+
+Reports: cyclomatic complexity, function length, parameter count, nesting depth.
+Flags functions exceeding thresholds and identifies file hotspots.
+Uses Python AST for `.py` and regex heuristics for JS/TS.
+
+Use this as part of `--gate` or `--all` to surface complexity risks before shipping.

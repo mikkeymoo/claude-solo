@@ -107,3 +107,18 @@ After all tests pass, look for [refactor candidates](refactoring.md):
 [ ] Code is minimal for this test
 [ ] No speculative features added
 ```
+
+## Bundled Script
+
+Run `python skills/tdd/coverage_gaps.py [coverage-file]` to find untested code.
+
+Flags:
+
+- `--changed` — only show gaps in recently changed files (last 7 days)
+- `--threshold N` — custom coverage threshold (default: 80%)
+
+Auto-detects coverage report format: lcov, Istanbul JSON, coverage.py JSON, Cobertura XML.
+Reports: files below threshold with uncovered line ranges, priority list of what to test first,
+and how many lines need coverage to reach the threshold.
+
+Run this after generating a coverage report to decide which tests to write next.

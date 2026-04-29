@@ -21,3 +21,19 @@ Labels:
 - 🔵 MEDIUM/LOW — backlog
 
 Auto-fix 🔴 CRITICAL findings and commit: `fix(security): <issue>`
+
+## Bundled Script
+
+Run `python skills/security/secrets_scanner.py [path]` for automated secret detection.
+
+Flags:
+
+- `--entropy` — include Shannon entropy analysis for high-entropy strings
+- `--strict` — lower thresholds, more findings
+- `--json` — machine-readable JSON output
+
+Detects: AWS keys, GitHub/Slack/Stripe/OpenAI/Anthropic tokens, private key headers,
+database URLs with passwords, generic API keys/secrets, unignored `.env` files.
+Exits with code 1 if CRITICAL findings exist.
+
+Use this script for step 3 (Secrets) of the audit. Review its output before auto-fixing.
