@@ -521,6 +521,7 @@ install_commands() {
   do_run mkdir -p "$CLAUDE_HOME/commands"
   shopt -s nullglob
   local count=0
+  # Root-level .md files
   for f in "$src_dir/"*.md; do
     local base; base=$(basename "$f")
     local target="$CLAUDE_HOME/commands/$base"
@@ -529,6 +530,21 @@ install_commands() {
     ok "Installed command: $base"
     _manifest_add "$manifest" "commands/$base"
     (( count++ )) || true
+  done
+  # Subdirectory namespaces (e.g. mm/ → /mm:*)
+  for subdir in "$src_dir"/*/; do
+    [[ -d "$subdir" ]] || continue
+    local ns; ns=$(basename "$subdir")
+    do_run mkdir -p "$CLAUDE_HOME/commands/$ns"
+    for f in "$subdir"*.md; do
+      local base; base=$(basename "$f")
+      local target="$CLAUDE_HOME/commands/$ns/$base"
+      [[ -f "$target" ]] && backup_path "$target"
+      do_run cp "$f" "$target"
+      ok "Installed command: $ns/$base"
+      _manifest_add "$manifest" "commands/$ns/$base"
+      (( count++ )) || true
+    done
   done
   shopt -u nullglob
   [[ $count -eq 0 ]] && warn "No command .md files found in $src_dir" || true
