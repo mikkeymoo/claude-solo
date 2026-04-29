@@ -30,7 +30,7 @@ no on-call rotation, no product manager.
 For any task touching more than 2 files or spanning multiple subsystems:
 
 1. Create or update `.planning/CURRENT_TASK.md` with goal, files in scope, acceptance criteria
-2. Wait for user confirmation OR explicit `/mm:build` invocation before writing code
+2. Wait for user confirmation OR explicit `/riper --build` invocation before writing code
 3. Reference the plan file in commit messages
 
 Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can proceed without a plan.
@@ -49,29 +49,21 @@ Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can procee
 - `ult-db-reader` — any production DB inspection. SELECT-only, enforced by hook.
 - `ult-deploy-guard` — **human-trigger only**. Do not auto-spawn.
 
-## Skill routing
+## Skills (all bare names — no prefix)
 
-```
-/mm:riper          Research→Plan→Execute phase separation for complex work
-/mm:daily-brief    One-shot context aggregator (git, PRs, tests, TODOs)
-/mm:tech-debt      Prioritized debt scan with file:line refs
-/mm:diagnose       Disciplined bug diagnosis loop (reproduce→fix→regress)
-/mm:security-review  OWASP audit — manual trigger only
-/mm:grill-me       Stress-test a plan through relentless questioning
-/mm:premortem      Identify failure modes before they occur
-/mm:hud            Full session HUD with token chart and hook status
-/mm:cost           Token/cost analysis from JSONL logs
-```
+Sprint pipeline: `/brief` → `/riper --plan` → `/riper --build` → `/code-review-excellence` → `/quality --gate` → `/ship` → `/retro`
 
-## Commands (all /mm: prefixed)
+Workflow modes: `/riper` (phased), `/riper --auto` (autopilot), `/workflow --parallel`, `/swarm` (multi-agent), `/quick` (fast path)
 
-Sprint pipeline: `/mm:brief` → `/mm:plan` → `/mm:build` → `/mm:review` → `/mm:verify` → `/mm:ship` → `/mm:retro`
+Debugging: `/fix` (tactical), `/fix --deep` (systematic), `/fix --triage` (universal)
 
-Utilities: `/mm:fix`, `/mm:debug`, `/mm:troubleshoot`, `/mm:explore`, `/mm:docs`, `/mm:refactor`
+Quality: `/tdd` (red-green-refactor), `/tdd --write` (test writing), `/quality --deps`, `/quality --gate`, `/cleanup`, `/security`
 
-Quality: `/mm:test`, `/mm:tdd`, `/mm:quality`, `/mm:cleanup`, `/mm:security`, `/mm:redteam`
+Review: `/code-review-excellence` (constructive), `/code-review-excellence --staff`, `/code-review-excellence --adversarial`
 
-Meta: `/mm:scaffold`, `/mm:session`, `/mm:cost`, `/mm:config`, `/mm:skill-from-template`
+Exploration: `/zoom-out` (quick context), `/zoom-out --explore` (deep-dive), `/hud` (session), `/hud --doctor` (health)
+
+Meta: `/scaffold`, `/session`, `/cost`, `/config`, `/release`, `/docs`, `/refactor`, `/swarm`
 
 ## Execution defaults
 

@@ -1,6 +1,6 @@
 ---
-name: mm:hud
-description: Full-featured heads-up display for the current session. Shows token usage chart, recent tool call distribution, active hooks list, git state, and sprint context. Use when you want a comprehensive "you are here" view.
+name: hud
+description: "Session HUD (default), project health check (--doctor), codebase map (--map), or pre-build gate (--ready). Use for 'you are here' view or project diagnostics."
 ---
 
 # /hud — Session HUD
@@ -68,6 +68,10 @@ Active hooks
 ### Section 5: Open TODOs
 
 Show first 5 unchecked items from `.planning/TODO.md` or repo-root `TODO.md`.
+
+## Helper script
+
+Run `python ~/.claude/skills/hud/hud_report.py` for token usage and tool distribution sections. Flags: `--tokens` (tokens only), `--tools` (tools only). No flag = both.
 
 ## Implementation notes
 

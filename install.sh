@@ -502,53 +502,20 @@ install_skills() {
     fi
     [[ -d "$target" ]] && backup_path "$target"
     do_run mkdir -p "$target"
-    do_run cp "$dir/SKILL.md" "$target/SKILL.md"
+    # Copy all files in the skill directory (SKILL.md + helpers like .py, .sh)
+    for f in "$dir"*; do
+      [[ -f "$f" ]] || continue
+      local fname; fname=$(basename "$f")
+      do_run cp "$f" "$target/$fname"
+      _manifest_add "$manifest" "skills/$name/$fname"
+    done
     ok "Installed skill: $name"
-    _manifest_add "$manifest" "skills/$name/SKILL.md"
     (( count++ )) || true
   done
   shopt -u nullglob
   [[ $count -eq 0 ]] && warn "No skill directories found in $src_dir" || true
 }
 
-# ---------------------------------------------------------------------------
-# Commands install
-# ---------------------------------------------------------------------------
-install_commands() {
-  local src_dir="$1"
-  local manifest="$2"
-  say "Installing commands → $CLAUDE_HOME/commands/"
-  do_run mkdir -p "$CLAUDE_HOME/commands"
-  shopt -s nullglob
-  local count=0
-  # Root-level .md files
-  for f in "$src_dir/"*.md; do
-    local base; base=$(basename "$f")
-    local target="$CLAUDE_HOME/commands/$base"
-    [[ -f "$target" ]] && backup_path "$target"
-    do_run cp "$f" "$target"
-    ok "Installed command: $base"
-    _manifest_add "$manifest" "commands/$base"
-    (( count++ )) || true
-  done
-  # Subdirectory namespaces (e.g. mm/ → /mm:*)
-  for subdir in "$src_dir"/*/; do
-    [[ -d "$subdir" ]] || continue
-    local ns; ns=$(basename "$subdir")
-    do_run mkdir -p "$CLAUDE_HOME/commands/$ns"
-    for f in "$subdir"*.md; do
-      local base; base=$(basename "$f")
-      local target="$CLAUDE_HOME/commands/$ns/$base"
-      [[ -f "$target" ]] && backup_path "$target"
-      do_run cp "$f" "$target"
-      ok "Installed command: $ns/$base"
-      _manifest_add "$manifest" "commands/$ns/$base"
-      (( count++ )) || true
-    done
-  done
-  shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No command .md files found in $src_dir" || true
-}
 
 # ---------------------------------------------------------------------------
 # Rules install
@@ -966,11 +933,10 @@ smoke_test() {
     warn "  Retry: bash install.sh  (requires npm)"
   fi
 
-  # 7. Agent, skill, command counts
+  # 7. Agent, skill counts
   local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
   local skills; skills=$(ls -d "$CLAUDE_HOME/skills/"*/ 2>/dev/null | wc -l)
-  local cmds; cmds=$(ls "$CLAUDE_HOME/commands/"*.md 2>/dev/null | wc -l)
-  ok "Agents: $agents/5  |  Skills: $skills  |  Commands: $cmds"
+  ok "Agents: $agents/5  |  Skills: $skills"
 
   echo ""
   if [[ $smoke_ok -eq 1 ]]; then
@@ -1034,7 +1000,6 @@ run_install() {
   local src_mcp="$REPO_DIR/mcp.json"
   local src_agents="$REPO_DIR/agents"
   local src_skills="$REPO_DIR/skills"
-  local src_commands="$REPO_DIR/commands"
   local src_rules="$REPO_DIR/rules"
   local src_settings="$REPO_DIR/settings.json"
   local src_claude_md="$REPO_DIR/CLAUDE.md"
@@ -1042,7 +1007,7 @@ run_install() {
   local dst_scripts="$CLAUDE_HOME/scripts"
   local dst_hooks="$CLAUDE_HOME/hooks"
 
-  for d in "$src_scripts" "$src_hooks" "$src_agents" "$src_skills" "$src_commands" "$src_rules"; do
+  for d in "$src_scripts" "$src_hooks" "$src_agents" "$src_skills" "$src_rules"; do
     [[ ! -d "$d" ]] && die "Required directory not found: $d"
   done
   [[ ! -f "$src_settings" ]] && die "settings.json not found at $src_settings"
@@ -1068,7 +1033,6 @@ run_install() {
   install_mcp         "$src_mcp"
   install_agents      "$src_agents"      "$MANIFEST"
   install_skills   "$src_skills"   "$MANIFEST"
-  install_commands "$src_commands" "$MANIFEST"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
   ensure_hooks_wired
@@ -1110,8 +1074,8 @@ run_install() {
   smoke_test "$dst_scripts"
   echo ""
   say "Install complete."
-  say "Start a fresh Claude Code session — all hooks, agents, and commands are active."
-  say "Commands: /mm:brief  /mm:plan  /mm:build  /mm:cost  /mm:hud  /mm:review ..."
+  say "Start a fresh Claude Code session — all hooks, agents, and skills are active."
+  say "Skills: /brief  /riper  /fix  /quality  /ship  /hud  /cost  /swarm ..."
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
 }
 

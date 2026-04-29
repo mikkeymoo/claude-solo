@@ -34,8 +34,7 @@ bash install.sh --verify
 ~/.claude/
   scripts/           17 lifecycle hook scripts
   agents/            5 specialist subagents (ult-* prefix)
-  commands/          30 slash commands (/mm:name)
-  skills/            25 skills (/mm:name)
+  skills/            37 skills (bare /name invocation)
   rules/             10 engineering rules (auto-loaded)
   settings.json      Wired hooks, permissions, env vars
   CLAUDE.md          Working style + agent/skill routing
@@ -75,46 +74,54 @@ Installed with `ult-` prefix (invoke via `Agent` tool or `/agents`):
 | `ult-db-reader`      | SELECT-only DB inspector (hook-enforced)      |
 | `ult-deploy-guard`   | Pre-deploy checklist (human-trigger only)     |
 
-## Commands & skills (`/mm:name`)
+## Skills (bare `/name`)
 
 ```
-Planning & execution
-  /mm:brief           Capture idea → .planning/BRIEF.md
-  /mm:plan            Expand brief → PLAN.md with atomic tasks
-  /mm:build           Execute tasks from PLAN.md
-  /mm:review          Run code-reviewer before commit
-  /mm:retro           Sprint retrospective
-  /mm:verify          Hard pass/fail gate (lint, types, tests)
-  /mm:ship            Merge + deploy + monitor
+Sprint pipeline
+  /brief              Capture idea → .planning/BRIEF.md
+  /riper --plan       Expand brief → PLAN.md with atomic tasks
+  /riper --build      Execute tasks from PLAN.md
+  /code-review-excellence  Run code-reviewer before commit
+  /quality --gate     Hard pass/fail gate (lint, types, tests)
+  /ship               Merge + deploy + monitor
+  /retro              Sprint retrospective
 
 Observability
-  /mm:cost            Token/cost analysis from JSONL logs
-  /mm:hud             Full session HUD with token chart
-  /mm:daily-brief     One-shot context aggregator
-  /mm:session         Save/restore context
+  /cost               Token/cost analysis from JSONL logs
+  /hud                Session HUD with token chart
+  /session            Save/restore context
+
+Workflow
+  /riper              Phased development (Research→Plan→Execute→Review)
+  /riper --auto       Full autopilot pipeline
+  /workflow           Execution mode selector
+  /swarm              Parallel multi-agent orchestration
+  /quick              Rapid flow for small tasks
 
 Quality & security
-  /mm:riper           Enforce Research→Plan→Execute phases
-  /mm:security-review OWASP audit (manual trigger only)
-  /mm:tech-debt       Prioritized debt scan with file:line refs
-  /mm:quality         Code quality audit
-  /mm:cleanup         Code cleanup
+  /tdd                Red-green-refactor TDD loop
+  /quality --deps     Dependency audit
+  /cleanup            Dead code + duplication removal
+  /security           OWASP audit (manual trigger only)
+
+Debug
+  /fix                Tactical bug fix
+  /fix --deep         Systematic debugging
+  /fix --triage       Universal troubleshooting
 
 DX & tooling
-  /mm:doctor          Project health check
-  /mm:scaffold        Scaffold Python/PS/SQL starter
-  /mm:config          Manage rules, schedule, CI
-  /mm:workflow        Execution modes (--auto, --parallel, --tdd)
-  /mm:search          Deep research + explain + estimate
-  /mm:docs            Docs sync, onboarding, distill
-  /mm:release         Changelog + version bump + tag
-
-LSP & skills
-  /mm:lsp-status      Diagnose LSP server registration
-  /mm:skill-from-template  Scaffold a new skill
+  /hud --doctor       Project health check
+  /scaffold           Scaffold Python/PS/SQL starter
+  /config             Manage rules, schedule, CI
+  /docs               Docs sync, onboarding, distill
+  /release            Changelog + version bump + tag
+  /refactor           Targeted refactoring
+  /zoom-out           Higher-level perspective
+  /write-a-skill      Scaffold a new skill
+  /lsp-status         Diagnose LSP server registration
 
 eDiscovery / Morae
-  /mm:relativity-sql       Relativity SQL bundle + PS wrappers
+  /relativity-sql     Relativity SQL bundle + PS wrappers
 ```
 
 ## Windows encoding
@@ -151,4 +158,4 @@ See `COST-OPTIMIZATION.md` (installed to `~/.claude/`) for full guide.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-Current: **v0.4.4** (2026-04-29) — removed notifications (BurntToast/toast); --fresh now wipes all managed dirs
+Current: **v0.5.0** (2026-04-29) — skills consolidation: 37 skills replace commands+skills, bare `/name` invocation

@@ -7,6 +7,32 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.5.0] - 2026-04-29
+
+### Changed
+
+- **Skills consolidation** — 37 skills replace all commands + old skills. Bare `/name` invocation (no `mm:` prefix). Commands directory removed entirely.
+- **install.sh** — removed `install_commands` function, `src_commands` variable, and command counts from smoke test. Skills installer now copies all files in skill dirs (not just SKILL.md).
+- **CLAUDE.md** — updated skill routing to bare names, removed `/mm:` references throughout.
+- **README.md** — rewritten skills section with new names and structure.
+
+### Added
+
+- **Python helper scripts** — `cost/cost_report.py` (JSONL parsing + cost math), `hud/hud_report.py` (ASCII bar charts + tool distribution), `release/release_bump.py` (multi-format manifest bumping + changelog update).
+- **17 new skills** — brief, cleanup, config, cost, docs, fix, quality, quick, refactor, release, retro, scaffold, security, session, ship, workflow, swarm.
+
+### Removed
+
+- `commands/` directory (all 30 commands migrated to skills or absorbed)
+- `daily-brief`, `diagnose`, `security-review`, `tech-debt`, `update` skills (consolidated into other skills)
+- `/mm:` prefix requirement
+
+### Fixed
+
+- Stale `/mm:resume` references in `post-compact.js` and `session-end.js` hooks
+
+---
+
 ## [0.4.3] - 2026-04-29
 
 ### Changed
