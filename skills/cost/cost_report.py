@@ -12,9 +12,9 @@ Output: structured text report to stdout.
 
 import json
 import sys
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from collections import defaultdict
 
 # ── Rate cards (per 1M tokens) ────────────────────────────────────────────────
 RATES = {
@@ -53,7 +53,7 @@ def parse_jsonl(files, since=None):
     entries = []
     for f in files:
         try:
-            with open(f, "r", encoding="utf-8", errors="replace") as fh:
+            with open(f, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     line = line.strip()
                     if not line:
@@ -66,9 +66,7 @@ def parse_jsonl(files, since=None):
                     ts = obj.get("timestamp") or obj.get("ts")
                     if ts and since:
                         try:
-                            entry_time = datetime.fromisoformat(
-                                ts.replace("Z", "+00:00")
-                            )
+                            entry_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                             if entry_time < since:
                                 continue
                         except (ValueError, TypeError):
@@ -87,18 +85,17 @@ def extract_usage(entries):
     sessions = defaultdict(lambda: defaultdict(int))
 
     for entry in entries:
-        usage = entry.get("usage") or entry.get("costData") or {}
+        msg = entry.get("message") or {}
+        usage = msg.get("usage") or entry.get("usage") or entry.get("costData") or {}
         if not usage:
             continue
 
-        model = entry.get("model", "unknown")
+        model = msg.get("model") or entry.get("model", "unknown")
         cwd = entry.get("cwd", "unknown")
         session_id = entry.get("sessionId") or entry.get("session_id", "unknown")
 
-        cache_read = usage.get("cache_creation_input_tokens", 0) or usage.get(
-            "cacheReadTokens", 0
-        )
-        cache_write = usage.get("cache_read_input_tokens", 0) or usage.get(
+        cache_read = usage.get("cache_read_input_tokens", 0) or usage.get("cacheReadTokens", 0)
+        cache_write = usage.get("cache_creation_input_tokens", 0) or usage.get(
             "cacheWriteTokens", 0
         )
         input_tokens = usage.get("input_tokens", 0) or usage.get("inputTokens", 0)
@@ -142,13 +139,9 @@ def fmt_tokens(n):
 def print_summary(totals, label="Summary"):
     """Print token summary table."""
     total_input = (
-        totals.get("cache_read", 0)
-        + totals.get("cache_write", 0)
-        + totals.get("input", 0)
+        totals.get("cache_read", 0) + totals.get("cache_write", 0) + totals.get("input", 0)
     )
-    cache_hit = (
-        (totals.get("cache_read", 0) / total_input * 100) if total_input > 0 else 0
-    )
+    cache_hit = (totals.get("cache_read", 0) / total_input * 100) if total_input > 0 else 0
     cost = compute_cost(totals)
 
     print(f"\n── {label} ──")
@@ -195,13 +188,9 @@ def print_top_sessions(sessions, top_n=5):
 def print_suggestions(totals):
     """Print optimization suggestions."""
     total_input = (
-        totals.get("cache_read", 0)
-        + totals.get("cache_write", 0)
-        + totals.get("input", 0)
+        totals.get("cache_read", 0) + totals.get("cache_write", 0) + totals.get("input", 0)
     )
-    cache_hit = (
-        (totals.get("cache_read", 0) / total_input * 100) if total_input > 0 else 0
-    )
+    cache_hit = (totals.get("cache_read", 0) / total_input * 100) if total_input > 0 else 0
     output_ratio = totals.get("output", 0) / max(total_input, 1)
 
     print("\n── Suggestions ──")
@@ -230,11 +219,12 @@ def extract_usage_by_date(entries):
     by_model_total = defaultdict(lambda: defaultdict(int))
 
     for entry in entries:
-        usage = entry.get("usage") or entry.get("costData") or {}
+        msg = entry.get("message") or {}
+        usage = msg.get("usage") or entry.get("usage") or entry.get("costData") or {}
         if not usage:
             continue
 
-        model = entry.get("model", "unknown")
+        model = msg.get("model") or entry.get("model", "unknown")
         ts = entry.get("timestamp") or entry.get("ts")
         if not ts:
             continue
@@ -245,10 +235,8 @@ def extract_usage_by_date(entries):
         except (ValueError, TypeError, AttributeError):
             continue
 
-        cache_read = usage.get("cache_creation_input_tokens", 0) or usage.get(
-            "cacheReadTokens", 0
-        )
-        cache_write = usage.get("cache_read_input_tokens", 0) or usage.get(
+        cache_read = usage.get("cache_read_input_tokens", 0) or usage.get("cacheReadTokens", 0)
+        cache_write = usage.get("cache_creation_input_tokens", 0) or usage.get(
             "cacheWriteTokens", 0
         )
         input_tokens = usage.get("input_tokens", 0) or usage.get("inputTokens", 0)
@@ -323,9 +311,7 @@ def print_trend_report(files):
         else 0
     )
     cost_change = (
-        ((this_week_cost - last_week_cost) / last_week_cost * 100)
-        if last_week_cost > 0
-        else 0
+        ((this_week_cost - last_week_cost) / last_week_cost * 100) if last_week_cost > 0 else 0
     )
 
     print("\n── Week-over-Week Comparison ──")
