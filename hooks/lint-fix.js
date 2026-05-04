@@ -12,9 +12,9 @@
  */
 
 import { createInterface } from "readline";
-import { existsSync, statSync } from "fs";
+import { existsSync } from "fs";
 import { spawnSync } from "child_process";
-import { resolve, extname, dirname } from "path";
+import { resolve, extname } from "path";
 import { cwd } from "process";
 
 // Binary file extensions to skip
@@ -41,6 +41,45 @@ const BINARY_EXTS = new Set([
   ".a",
 ]);
 
+// Plain-text / non-code extensions - never pass to a linter
+const NON_CODE_EXTS = new Set([
+  ".txt",
+  ".md",
+  ".mdx",
+  ".csv",
+  ".tsv",
+  ".log",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".ini",
+  ".cfg",
+  ".conf",
+  ".env",
+  ".gitignore",
+  ".gitattributes",
+  ".editorconfig",
+  ".xml",
+  ".svg",
+  ".lock",
+  ".sum",
+]);
+
+// Extensions that ruff (Python linter) should run on
+const RUFF_EXTS = new Set([".py", ".pyi"]);
+
+// Extensions that ESLint should run on
+const ESLINT_EXTS = new Set([
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".ts",
+  ".tsx",
+  ".mts",
+  ".cts",
+]);
+
 // Directories to skip
 const SKIP_DIRS = new Set([
   "node_modules",
@@ -52,9 +91,13 @@ const SKIP_DIRS = new Set([
 ]);
 
 function shouldSkipFile(filePath) {
-  // Skip binary files
   const ext = extname(filePath).toLowerCase();
+
+  // Skip binary files
   if (BINARY_EXTS.has(ext)) return true;
+
+  // Skip plain-text / non-code files - linters cannot parse these
+  if (NON_CODE_EXTS.has(ext)) return true;
 
   // Skip files in excluded directories
   const parts = filePath.split(/[/\\]/);
@@ -100,9 +143,12 @@ function detectLinter(projectRoot) {
 
 function runLinter(linter, filePath, projectRoot) {
   const timeout = 10000; // 10 seconds
+  const ext = extname(filePath).toLowerCase();
 
   if (linter.type === "eslint") {
-    // Use npx eslint with the detected config
+    // Only run ESLint on JS/TS files
+    if (!ESLINT_EXTS.has(ext)) return { noLinter: true };
+
     const result = spawnSync(
       "npx",
       ["eslint", "--no-eslintrc", "-c", linter.config, filePath],
@@ -118,7 +164,6 @@ function runLinter(linter, filePath, projectRoot) {
       return { error: `Failed to run eslint: ${result.error.message}` };
     }
 
-    // eslint returns 0 on success, non-zero on lint errors
     if (result.status !== 0) {
       return { lintErrors: result.stdout || result.stderr };
     }
@@ -127,6 +172,9 @@ function runLinter(linter, filePath, projectRoot) {
   }
 
   if (linter.type === "ruff") {
+    // Only run ruff on Python files
+    if (!RUFF_EXTS.has(ext)) return { noLinter: true };
+
     const result = spawnSync("ruff", ["check", filePath], {
       cwd: projectRoot,
       encoding: "utf8",
@@ -138,7 +186,6 @@ function runLinter(linter, filePath, projectRoot) {
       return { error: `Failed to run ruff: ${result.error.message}` };
     }
 
-    // ruff returns 0 on success, non-zero on lint errors
     if (result.status !== 0) {
       return { lintErrors: result.stdout || result.stderr };
     }
@@ -147,8 +194,7 @@ function runLinter(linter, filePath, projectRoot) {
   }
 
   if (linter.type === "clippy") {
-    // Only run clippy if we're in a Rust project
-    // Use cargo clippy for the specific file (Rust doesn't lint individual files)
+    // Clippy runs project-wide, no per-file extension check needed
     const result = spawnSync("cargo", ["clippy", "--quiet"], {
       cwd: projectRoot,
       encoding: "utf8",
@@ -160,7 +206,6 @@ function runLinter(linter, filePath, projectRoot) {
       return { error: `Failed to run cargo clippy: ${result.error.message}` };
     }
 
-    // clippy returns 0 on success, non-zero on warnings/errors
     if (result.status !== 0) {
       return { lintErrors: result.stdout || result.stderr };
     }
@@ -202,7 +247,7 @@ rl.on("close", () => {
   // Resolve to absolute path
   const absolutePath = resolve(filePath);
 
-  // Skip binary files and excluded directories
+  // Skip binary, plain-text, and excluded-directory files
   if (shouldSkipFile(absolutePath)) {
     process.stdout.write(JSON.stringify({ action: "continue" }));
     return;
@@ -233,17 +278,17 @@ rl.on("close", () => {
   }
 
   if (result.error) {
-    // Linter not available or failed — don't block
+    // Linter not available or failed - don't block
     process.stdout.write(JSON.stringify({ action: "continue" }));
     return;
   }
 
   if (result.lintErrors) {
-    // Lint errors found — write to stderr and exit with code 2
+    // Lint errors found - write to stderr and exit with code 2
     process.stderr.write(result.lintErrors);
     process.exit(2);
   }
 
-  // Success — continue
+  // Success - continue
   process.stdout.write(JSON.stringify({ action: "continue" }));
 });
