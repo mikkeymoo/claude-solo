@@ -1,16 +1,15 @@
 ---
 name: python-windows-gui
 description: >
-  Best practices for building modern, beautiful Windows desktop GUI applications using Python.
+  Best practices for building modern, professional Windows desktop GUI applications using Python.
   Use this skill whenever the user wants to create a Windows desktop app, GUI application, or
-  desktop tool with Python. Triggers include: mentions of Flet, NiceGUI, PySide6, PyQt6,
-  customtkinter, Dear PyGui, tkinter, "modern UI", "beautiful interface", "looks good",
+  desktop tool with Python. Triggers include: mentions of PySide6, PyQt6, customtkinter,
+  Flet, NiceGUI, Dear PyGui, tkinter, "modern UI", "beautiful interface", "looks good",
   "desktop app", "Windows app", "GUI", "graphical interface", "desktop tool", or any request
   to build a Python application with buttons, windows, forms, dialogs, menus, or visual
   interfaces. Also use when the user asks about packaging Python apps as .exe files,
-  distributing Python desktop apps, using PyInstaller, `flet build`, or `flet pack`. Even if
-  the user just says "build me an app" or "make a tool with a UI" in a Python context, use
-  this skill.
+  distributing Python desktop apps, or using PyInstaller. Even if the user just says "build me
+  an app" or "make a tool with a UI" in a Python context, use this skill.
 ---
 
 # Modern Python Windows GUI Application Development
@@ -19,47 +18,55 @@ This skill provides best practices, patterns, and guidance for building **modern
 Windows desktop GUI applications with Python in 2026. It covers framework selection, project
 structure, coding patterns, modern styling, threading, packaging, and distribution.
 
-## What's Modern in 2026
+## Best-Practices Default: PySide6
 
-The Python desktop GUI landscape changed substantially. The current top picks:
+**For production Windows desktop apps in 2026, the default best-practices choice is PySide6** (Qt 6.11+, official Python binding from The Qt Company, classified `Production/Stable` on PyPI). It is:
 
-- **Flet** (Apache 2.0) — Flutter-based, gorgeous Material 3 UI, single Python codebase to desktop/web/mobile. The "modern look" default in 2026.
-- **NiceGUI** (MIT) — Vue/Quasar/FastAPI under the hood, native desktop window via pywebview, web-styling fluency, fantastic for dashboards and internal tools.
-- **PySide6** (LGPL) — The professional Qt6 binding. Still the gold standard for complex commercial desktop apps.
-- **CustomTkinter** (MIT) — Modern flat look on top of stock tkinter; the quick-and-clean choice for simple internal utilities.
-- **Dear PyGui** (MIT) — GPU-accelerated, ideal for real-time data viz, instrumentation, game-like UIs.
+- **Mature** — Qt has 30+ years of development, PySide since 2009. Used by Spotify, Dropbox, Calibre, Autodesk Maya, Blender's UI patterns, and countless commercial apps.
+- **Stable API** — semantic versioning, predictable upgrades, deep documentation.
+- **Native widgets** — looks correct on Windows 11, including high-DPI and dark mode.
+- **Comprehensive** — 600+ classes covering UI, networking, multimedia, SQL, charts, 3D, web view, etc.
+- **Permissive licensing** — LGPL means free for commercial closed-source use.
+- **Modern look is achievable** — with thoughtful QSS theming you can build UIs that look as good as anything in Electron or Flutter (read `references/modern-look-guide.md`).
 
-**Notable changes:** PySimpleGUI is no longer actively maintained — do **not** start new projects with it. Plain tkinter still ships with Python and works, but its default look is dated; reach for CustomTkinter or Flet instead. PyQt6 still works but PySide6 is preferred for new Qt projects (LGPL > GPL for commercial work).
+**Default this skill to PySide6 unless the user explicitly asks for something else or has a clear reason to choose differently.**
 
-## Quick Framework Decision
+## When to Choose Something Else
 
-Choose based on what the user actually wants:
+Other frameworks have legitimate niches. Pick them only when the trade-offs match the user's real needs:
 
-| User says... | Recommend | Why |
-|---|---|---|
-| "Modern", "beautiful", "looks like a real app" | **Flet** | Material 3 out of the box, animations, dark mode, looks 2026 |
-| "Dashboard", "internal tool", "data viz UI" | **NiceGUI** | Charts, tables, bindings, served as web or native window |
-| "Professional", "complex", "commercial app", "enterprise" | **PySide6** | 600+ classes, native widgets, mature tooling, QtSql, QtCharts |
-| "Quick utility", "simple tool", "wrap a script" | **CustomTkinter** | Modern look, minimal API, no install pain, ships with Python's tkinter base |
-| "Realtime", "high FPS", "data viz performance" | **Dear PyGui** | GPU-rendered, immediate-mode |
-| "Just a file picker", "tiny prompt" | **tkinter** | Zero dependencies |
+| Use case | Pick | Why | Trade-off |
+|----------|------|-----|-----------|
+| Quick utility, modern flat look, minimal install | **CustomTkinter** | MIT, 5-minute setup, modern dark/light themes on top of stdlib tkinter | Limited widget set, no native networking/SQL; not for complex apps |
+| Cross-platform desktop+web+mobile from one codebase | **Flet** | Flutter under the hood, gorgeous Material 3 default, single codebase | **Pre-1.0** (currently 0.84) — APIs still changing; performance overhead from Python↔Flutter bridge; debugging spans two runtimes |
+| Internal dashboard, data tool, IoT panel | **NiceGUI** | Vue/Quasar/FastAPI stack, Tailwind classes, native or web | Web-based feel (not native widgets); ~200MB bundles via WebView2 |
+| GPU-accelerated realtime data viz / instrumentation | **Dear PyGui** | DirectX/OpenGL rendering, immediate-mode | Non-native look; different mental model |
+| Tablet/touch kiosk, mobile-first | **Kivy** | Multitouch, OpenGL ES, mobile deployment | Non-native look on desktop; KV language learning curve |
+| Tiny prompt with zero deps | **tkinter** | Ships with Python | Dated default appearance |
 
-**Default recommendation when modernity matters most: Flet.** When commercial-grade native Windows feel matters most: PySide6. When the user wants a dashboard or web-like data tool: NiceGUI.
+**Avoid:**
+- **PySimpleGUI** — no longer actively maintained as of 2026; not a safe pick for new work.
+- **PyQt6 over PySide6** for new commercial projects — PyQt6 is GPL (requires open-sourcing OR a commercial license); PySide6 is LGPL (free for closed-source). The APIs are nearly identical; pick PySide6 by default.
 
-For a detailed breakdown of every framework, read `references/framework-comparison.md`.
+For full per-framework details, read `references/framework-comparison.md`.
 
-## Modern Look — Read This First
+## Honest Note on Flet (and "Modern" Frameworks)
 
-Whenever the user asks for a "modern", "beautiful", "clean", or "professional-looking" UI, **read `references/modern-look-guide.md` before writing code.** It covers dark-mode-by-default, typography (Inter / Segoe UI Variable), spacing scales, Material 3 / Fluent patterns, icon systems (Lucide, Material Symbols, Phosphor), motion/animation, and accessibility.
+If the user says "I want a modern-looking app," it's tempting to reach for Flet because the defaults look gorgeous out of the box. But "modern look" is not the same as "best practice." A few things to be straight about:
 
-For Morae-branded apps (when the user is at Morae Global / CLUTCH Group), also load the `morae-brand` skill so colors, fonts, and theming match the brand system.
+- **Flet is pre-1.0** (0.84 as of April 2026). The team is actively working toward a 1.0 with stability guarantees, but **APIs are still changing** between releases. For a tool that needs to be maintainable for years, this is a real cost.
+- **Flet's architecture is a Python↔Flutter bridge** over a local message protocol. For UI-heavy apps with frequent state changes, this adds latency and event chatter compared to in-process Qt.
+- **Debugging is split-brain** — Flutter DevTools won't see Python-side issues, and Python debuggers don't see the Flutter rendering layer.
+- **PySide6 with a thoughtful QSS theme can look every bit as modern as Flet.** The "default look" gap is real but closeable. See `references/modern-look-guide.md`.
+
+**When Flet is the right call:** internal tools where time-to-first-UI is the main constraint, prototypes, or when the user genuinely needs the same codebase to ship to web/mobile too. **When PySide6 is the right call:** anything destined for production with a multi-year lifespan, anything that needs deep Windows integration, anything performance-sensitive.
+
+NiceGUI sits in a similar place — fantastic for what it is (web-stack dashboards), but not a default for Windows desktop apps.
 
 ## Project Structure
 
 Always structure GUI projects properly from the start. Read `references/project-structure.md`
-for full layouts for **Flet**, **NiceGUI**, and **PySide6** projects.
-
-Generic recommended layout (PySide6 example):
+for full layouts. Recommended layout for a PySide6 production app:
 
 ```
 my_app/
@@ -78,69 +85,22 @@ my_app/
 │   │   ├── config.py        # App configuration/settings
 │   │   ├── database.py      # Database layer (if needed)
 │   │   └── workers.py       # Background thread workers
-│   ├── models/              # Data models
+│   ├── models/              # Data models (Qt models for views)
 │   ├── utils/               # Helper functions
 │   └── resources/           # Icons, images, fonts
 │       ├── icons/
 │       └── images/
 ├── tests/
 ├── scripts/
-│   └── build.bat            # PyInstaller / flet build script
+│   └── build.bat            # PyInstaller build script
 ├── pyproject.toml
 ├── requirements.txt
 └── README.md
 ```
 
-## Core Coding Patterns
+## Core Coding Patterns (PySide6)
 
-### Pattern 1: Flet "Hello, modern world"
-
-```python
-# main.py
-import flet as ft
-
-def main(page: ft.Page):
-    page.title = "My App"
-    page.theme_mode = ft.ThemeMode.DARK
-    page.theme = ft.Theme(color_scheme_seed=ft.Colors.INDIGO)
-    page.padding = 24
-
-    page.add(
-        ft.Text("Welcome", size=28, weight=ft.FontWeight.W_600),
-        ft.ElevatedButton(
-            "Click me",
-            icon=ft.Icons.ROCKET_LAUNCH,
-            on_click=lambda e: page.add(ft.Text("Hello!")),
-        ),
-    )
-
-ft.app(target=main)  # Opens a native desktop window
-```
-
-Run: `pip install flet && python main.py`
-
-### Pattern 2: NiceGUI "Hello, native desktop"
-
-```python
-# main.py
-from nicegui import ui, native
-
-ui.label("Welcome").classes("text-2xl font-semibold")
-ui.button("Click me", on_click=lambda: ui.notify("Hello!"))
-
-ui.run(
-    native=True,                  # native desktop window via pywebview
-    reload=False,                 # required for native mode
-    port=native.find_open_port(), # avoid port collisions
-    title="My App",
-    window_size=(1000, 700),
-    dark=True,
-)
-```
-
-Run: `pip install "nicegui[native]" && python main.py`
-
-### Pattern 3: PySide6 Application Entry Point
+### Pattern 1: Application Entry Point
 
 ```python
 # main.py — Keep this minimal
@@ -151,14 +111,19 @@ from PySide6.QtGui import QIcon, QFont
 from ui.main_window import MainWindow
 
 def main():
-    # Windows taskbar icon fix (critical — do this before QApplication)
+    # Windows taskbar icon fix (critical — must run before QApplication)
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("mycompany.myapp.1.0")
 
     app = QApplication(sys.argv)
     app.setApplicationName("My App")
     app.setOrganizationName("MyCompany")
+    app.setOrganizationDomain("mycompany.com")
     app.setWindowIcon(QIcon("resources/icons/app.ico"))
     app.setFont(QFont("Segoe UI Variable", 10))  # Modern Windows 11 font
+
+    # Apply theme stylesheet
+    with open("ui/styles/dark.qss", "r", encoding="utf-8") as f:
+        app.setStyleSheet(f.read())
 
     window = MainWindow()
     window.show()
@@ -168,12 +133,12 @@ if __name__ == "__main__":
     main()
 ```
 
-### Pattern 4: PySide6 Main Window
+### Pattern 2: Main Window with State Persistence
 
 ```python
 # ui/main_window.py
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
-from PySide6.QtCore import QSettings, QSize
+from PySide6.QtCore import QSettings
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -199,7 +164,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
 
     def _load_settings(self):
-        settings = QSettings()
+        settings = QSettings()  # Uses app/org name set in main.py
         if (geometry := settings.value("geometry")):
             self.restoreGeometry(geometry)
         if (state := settings.value("windowState")):
@@ -212,134 +177,115 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 ```
 
-### Pattern 5: Threading — Never Block the GUI
+### Pattern 3: Threading — Never Block the GUI
 
 This is the single most common mistake in GUI development. Long-running operations MUST run in
 background threads. The GUI event loop runs on the main thread — blocking it freezes the entire
 UI and Windows may mark your app as "Not Responding."
 
-**PySide6 — QThread + signals:**
-
 ```python
+# core/workers.py
 from PySide6.QtCore import QThread, Signal
 
 class Worker(QThread):
+    """Generic worker for running a callable on a background thread."""
     progress = Signal(int)
     result = Signal(object)
     error = Signal(str)
 
-    def __init__(self, task_fn, *args):
+    def __init__(self, task_fn, *args, **kwargs):
         super().__init__()
         self.task_fn = task_fn
         self.args = args
+        self.kwargs = kwargs
 
     def run(self):
         try:
-            self.result.emit(self.task_fn(*self.args))
+            result = self.task_fn(*self.args, **self.kwargs)
+            self.result.emit(result)
         except Exception as e:
             self.error.emit(str(e))
 ```
 
-**Flet — async or threading.Thread + page.update():**
-
 ```python
-import asyncio, flet as ft
-
-async def long_task(page: ft.Page, status: ft.Text):
-    status.value = "Working..."
-    page.update()
-    await asyncio.sleep(3)  # or await your real async work
-    status.value = "Done!"
-    page.update()
+# In your window class:
+def start_long_task(self):
+    self.run_button.setEnabled(False)
+    self.worker = Worker(do_heavy_work, "input.csv")  # store ref!
+    self.worker.result.connect(self.on_done)
+    self.worker.error.connect(self.on_error)
+    self.worker.finished.connect(lambda: self.run_button.setEnabled(True))
+    self.worker.start()
 ```
 
-**NiceGUI — async-native (FastAPI under the hood):**
+**Threading rules:**
+- NEVER call widget methods from a worker thread — emit signals, connect them on the main thread
+- NEVER use `time.sleep()` on the main thread
+- ALWAYS keep a reference to the worker (`self.worker = ...`) — local refs get garbage collected and crash the app
+- ALWAYS disable the trigger button while work is running
+- ALWAYS handle errors in `run()` — uncaught exceptions in QThreads vanish silently
 
-```python
-from nicegui import ui
-import asyncio
-
-async def long_task():
-    ui.notify("Working...")
-    await asyncio.sleep(3)
-    ui.notify("Done!")
-
-ui.button("Run", on_click=long_task)
-```
-
-**Threading rules across all frameworks:**
-- NEVER call GUI/widget methods from a worker thread — use signals (Qt) or `page.update()` (Flet) or async (NiceGUI)
-- NEVER use `time.sleep()` in the main thread — use `asyncio.sleep()` or move work to a worker
-- Keep a reference to QThread workers (`self.worker = ...`) to prevent garbage collection crashes
-- Disable trigger buttons while work is running to prevent duplicate execution
-- Always handle errors in workers and surface them to the user
-
-### Pattern 6: Settings and Configuration
-
-**PySide6 — `QSettings` (maps to Windows Registry):**
+### Pattern 4: Settings via QSettings
 
 ```python
 from PySide6.QtCore import QSettings
-settings = QSettings("MyCompany", "MyApp")
+
+settings = QSettings()  # Uses app/org name set with setApplicationName/setOrganizationName
 settings.setValue("last_directory", path)
-last_dir = settings.value("last_directory", "")
+last_dir = settings.value("last_directory", "", type=str)  # Default empty string
 ```
 
-**Flet / NiceGUI — `pathlib` + JSON in `%LOCALAPPDATA%`:**
+`QSettings` writes to the Windows Registry on Windows automatically — no JSON file management needed.
 
-```python
-import json, os
-from pathlib import Path
+### Pattern 5: Model/View for Data
 
-config_dir = Path(os.getenv("LOCALAPPDATA")) / "MyApp"
-config_dir.mkdir(parents=True, exist_ok=True)
-config_file = config_dir / "config.json"
-```
+For any list, table, or tree of more than ~50 items, use Qt's Model/View architecture rather than naive `QListWidget`/`QTableWidget`. It scales to millions of rows, supports sorting/filtering proxy models, and separates data from presentation. See `references/patterns-and-recipes.md` Section 1 for a working `QAbstractTableModel` example.
 
-NiceGUI also has `app.storage.user`, `app.storage.general`, and `app.storage.tab` for built-in persistence.
+## Modern Look — Read This For Visual Polish
+
+If the user wants a "modern", "beautiful", or "professional-looking" UI, **read `references/modern-look-guide.md` before writing code.** It covers a 2026 design system: dark mode by default, typography (Segoe UI Variable / Inter), 4-point spacing, generous radius, Material 3 / Fluent patterns, icons (Lucide / Material Symbols / Phosphor), motion (150-250ms ease-out), accessibility, and a complete dark-mode QSS theme for PySide6.
+
+**Modern look is absolutely achievable in PySide6 with QSS.** The framework's "default" appearance is conservative, but a thoughtful 200-line stylesheet brings it fully up to 2026 standards.
+
+For Morae-branded apps (Morae Global / CLUTCH Group), also load the `morae-brand` skill so colors, fonts, and theming match the brand system.
 
 ## Styling and Theming
 
-For polished modern apps, **always** apply a deliberate visual theme. Read
-`references/modern-look-guide.md` for a 2026 design system: colors, typography, spacing,
-motion, icons, dark mode. Read `references/styling-guide.md` for QSS stylesheet specifics.
+Read `references/styling-guide.md` for QSS specifics. Quick wins:
 
-**Quick wins by framework:**
-
-- **Flet**: `page.theme = ft.Theme(color_scheme_seed=...)` + `page.theme_mode = ft.ThemeMode.DARK` — Material 3 done.
-- **NiceGUI**: `ui.run(dark=True)` plus Tailwind-style utility classes (`.classes("text-2xl rounded-2xl")`).
-- **PySide6**: Load a `.qss` file with `app.setStyleSheet(...)`. Use `Segoe UI Variable` on Windows 11.
-- **CustomTkinter**: `ctk.set_appearance_mode("dark")` and `ctk.set_default_color_theme("blue")`.
+- Load a QSS file at startup with `app.setStyleSheet(open("dark.qss").read())`
+- Use `Segoe UI Variable` on Windows 11, fall back to `Segoe UI`
+- Use `setProperty("role", "primary")` on widgets and target with `QPushButton[role="primary"]` in QSS — keeps stylesheets clean
+- Refresh styles after property changes with `widget.style().unpolish(widget); widget.style().polish(widget)`
 
 ## Windows-Specific Considerations
 
-### Taskbar Icon Fix (PySide6 / PyQt6 / tkinter)
+### Taskbar Icon Fix (Required)
 
-Windows groups Python apps under the Python icon by default. Always fix this **before** creating QApplication / Tk:
+Windows groups Python apps under the Python icon by default. Always fix this **before** creating QApplication:
 
 ```python
 import ctypes
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("mycompany.myapp.1.0")
 ```
 
-Flet and NiceGUI handle this internally — no fix needed there.
-
 ### High-DPI Support
 
-Qt6 (PySide6 / PyQt6) handles high-DPI scaling automatically. Flet inherits Flutter's per-monitor DPI awareness. NiceGUI inherits the embedded Edge WebView2 engine's scaling. No extra code needed.
+Qt6 handles high-DPI scaling automatically — no extra code needed for most apps.
 
 ### File and Directory Paths
 
 ```python
 from pathlib import Path
 import os
+from PySide6.QtCore import QStandardPaths
 
+# Native Windows
 app_data    = Path(os.getenv("APPDATA"))         # Roaming
 local_data  = Path(os.getenv("LOCALAPPDATA"))    # Local
 documents   = Path.home() / "Documents"
 
-# Qt cross-platform helper
-from PySide6.QtCore import QStandardPaths
+# Qt cross-platform helper (preferred — works on macOS/Linux too)
 config_dir = QStandardPaths.writableLocation(QStandardPaths.AppConfigLocation)
 ```
 
@@ -358,35 +304,7 @@ def resource_path(relative_path: str) -> str:
 
 ## Packaging and Distribution
 
-Read `references/packaging-guide.md` for the complete workflows. Quick summary by framework:
-
-### Flet — Two Paths
-
-**`flet build` (recommended, modern)** — uses Flutter SDK, embeds Python runtime, produces a fast offline executable. Requires Visual Studio 2022/2026 with the **Desktop development with C++** workload installed on Windows.
-
-```bash
-flet build windows
-```
-
-**`flet pack` (simpler, PyInstaller wrapper)** — works for most cases, fewer system prerequisites:
-
-```bash
-flet pack main.py --name "MyApp" --icon assets/icon.ico
-```
-
-### NiceGUI
-
-NiceGUI ships a packaging helper (`nicegui-pack`) that wraps PyInstaller correctly. The key flags you need on Windows:
-
-```bash
-nicegui-pack --onefile --windowed --name "MyApp" main.py
-# OR with raw PyInstaller:
-pyinstaller --windowed --collect-all nicegui --hidden-import numpy --name "MyApp" main.py
-```
-
-The `--collect-all nicegui` flag is mandatory — without it, the static assets folder is missing at runtime. Use `native=True, reload=False` in `ui.run()` for packaged apps.
-
-### PySide6 / CustomTkinter / Dear PyGui — PyInstaller
+Read `references/packaging-guide.md` for full details. The mature path for Python desktop apps is **PyInstaller**:
 
 ```bash
 pip install pyinstaller pyinstaller-hooks-contrib
@@ -394,27 +312,29 @@ pyinstaller --name "MyApp" --windowed --icon=resources/icons/app.ico --onedir sr
 ```
 
 **Universal packaging rules:**
-- Build inside a clean virtual environment
+- Build inside a clean virtual environment (extra installed packages get bundled, bloating output)
 - Use `--onedir` for production — `--onefile` has slow startup and is harder to debug
-- Test the packaged app on a clean machine without Python installed
+- Test the packaged app on a clean Windows machine without Python installed
 - Use a `.spec` file for reproducible, version-controlled builds
-- Only install ONE Qt binding (PySide6 OR PyQt6) per environment
+- Only install ONE Qt binding per environment (PySide6 OR PyQt6, never both)
+- For installers, use **Inno Setup** (free, scriptable) — covered in the packaging guide
 
 ## Common Pitfalls
 
-1. **Choosing PySimpleGUI** — no longer maintained as of 2026; pick Flet, NiceGUI, or PySide6 instead
-2. **Blocking the main thread** — Use QThread / async / workers for anything taking > 100ms
-3. **Forgetting to keep worker references** — `self.worker = ...`, not `worker = ...`
-4. **Modifying GUI from threads** — Always use signals / `page.update()` / async
-5. **Missing AppUserModelID** — Causes wrong/missing taskbar icon on Windows for Qt/tkinter apps
-6. **Using `--onefile` in production** — Slow startup, hard to debug; use `--onedir`
-7. **Hardcoding file paths** — Use `pathlib`, `QStandardPaths`, or `os.getenv("LOCALAPPDATA")`
-8. **Not saving/restoring window state** — Users expect geometry persistence
-9. **Missing error handling in workers** — Unhandled exceptions in threads vanish silently
-10. **Mixing Qt bindings** — Never import from both PyQt6 and PySide6 in the same project
-11. **Not using layout managers** — Always use layouts, never fixed pixel positions
-12. **NiceGUI native packaging without `--collect-all nicegui`** — Static assets won't bundle and the app crashes silently
-13. **Flet `flet build` without Visual Studio C++ workload** — Build fails; either install it or fall back to `flet pack`
+1. **Choosing PySimpleGUI** — no longer maintained as of 2026; pick PySide6 (production) or CustomTkinter (quick) instead
+2. **Choosing PyQt6 over PySide6 for commercial work** — PyQt6 is GPL; PySide6 is LGPL. Same API, very different licensing.
+3. **Choosing pre-1.0 frameworks for production** — Flet (0.84 as of 2026) is exciting but APIs are still changing. Acceptable for prototypes/internal tools; risky for multi-year production code.
+4. **Blocking the main thread** — Use QThread / workers for anything taking > 100ms
+5. **Forgetting to keep worker references** — `self.worker = ...`, not `worker = ...`
+6. **Modifying GUI from threads** — Always use signals to marshal back to the main thread
+7. **Missing AppUserModelID** — Causes wrong/missing taskbar icon on Windows
+8. **Using `--onefile` in production** — Slow startup, hard to debug; use `--onedir`
+9. **Hardcoding file paths** — Use `pathlib`, `QStandardPaths`, or `os.getenv("LOCALAPPDATA")`
+10. **Not saving/restoring window state** — Users expect geometry persistence
+11. **Missing error handling in workers** — Unhandled exceptions in threads vanish silently
+12. **Mixing Qt bindings** — Never import from both PyQt6 and PySide6 in the same project
+13. **Not using layout managers** — Always use layouts, never fixed pixel positions
+14. **Using `QListWidget`/`QTableWidget` for big datasets** — Use the Model/View architecture for anything over ~50 rows
 
 ## Reference Files
 
@@ -422,9 +342,9 @@ Read these as needed for deeper guidance on specific topics:
 
 | File | When to read |
 |------|-------------|
-| `references/modern-look-guide.md` | **Always read for "modern" / "beautiful" requests.** Color systems, typography, spacing, dark mode, motion, icons |
-| `references/framework-comparison.md` | Choosing between frameworks; full comparison incl. Flet, NiceGUI, PySide6, CustomTkinter, Dear PyGui, tkinter |
+| `references/modern-look-guide.md` | **Always read for "modern" / "beautiful" requests.** Color systems, typography, spacing, dark mode QSS theme, motion, icons |
+| `references/framework-comparison.md` | Choosing between frameworks; full PySide6/Flet/NiceGUI/CustomTkinter/Dear PyGui/tkinter/Kivy comparison |
 | `references/project-structure.md` | Starting a new project — full boilerplate and recommended layouts |
 | `references/styling-guide.md` | QSS stylesheets, dark/light QSS themes, Qt-specific styling tricks |
-| `references/packaging-guide.md` | Building .exe — `flet build`, `flet pack`, `nicegui-pack`, PyInstaller spec files, installers |
+| `references/packaging-guide.md` | Building .exe — PyInstaller spec files, Inno Setup installers, code signing |
 | `references/patterns-and-recipes.md` | Common UI patterns: tables, forms, file dialogs, tray icons, charts, etc. |

@@ -1,6 +1,8 @@
 # Modern Look & Feel Guide for Python GUIs (2026)
 
-This guide is what makes a Python desktop app look like 2026 instead of 2010. It's framework-agnostic — apply the same principles whether you're using Flet, NiceGUI, PySide6, or CustomTkinter.
+This guide is what makes a Python desktop app look like 2026 instead of 2010. It's framework-agnostic — apply the same principles whether you're using PySide6, CustomTkinter, Flet, or NiceGUI.
+
+> **Important:** "Modern look" does not require Flet. **PySide6 with a thoughtful QSS theme produces UIs every bit as polished as Flet or Electron-based apps.** The QSS theme in section 10c below gets you there in ~200 lines. The "default appearance" gap is real but closeable — and PySide6's stability and maturity make it the right choice for production work.
 
 ## Table of Contents
 1. The Five Rules of Looking Modern
@@ -282,81 +284,6 @@ Modern means accessible. These are not optional.
 
 ## 10. Framework Cookbooks
 
-### Flet — Modern Theme Setup
-
-```python
-import flet as ft
-
-def main(page: ft.Page):
-    # Theme
-    page.theme_mode = ft.ThemeMode.DARK
-    page.theme = ft.Theme(
-        color_scheme_seed=ft.Colors.INDIGO,
-        font_family="Inter",
-        visual_density=ft.VisualDensity.COMFORTABLE,
-    )
-
-    # Bundle Inter font
-    page.fonts = {
-        "Inter": "fonts/Inter-Regular.ttf",
-        "Inter Bold": "fonts/Inter-Bold.ttf",
-    }
-
-    # Window
-    page.window.width = 1200
-    page.window.height = 800
-    page.window.min_width = 800
-    page.window.min_height = 600
-    page.window.title_bar_hidden = False  # set True for fully custom chrome
-    page.padding = 0
-
-    # Modern card example
-    card = ft.Container(
-        content=ft.Column([
-            ft.Text("Quick Stats", size=18, weight=ft.FontWeight.W_600),
-            ft.Text("Updated 2 minutes ago", size=12, color=ft.Colors.with_opacity(0.6, ft.Colors.ON_SURFACE)),
-        ], spacing=4),
-        padding=20,
-        border_radius=16,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-        animate=ft.Animation(200, ft.AnimationCurve.EASE_OUT),
-    )
-    page.add(card)
-
-ft.app(target=main, assets_dir="assets")
-```
-
-### NiceGUI — Modern Theme Setup
-
-```python
-from nicegui import ui, native, app
-
-# Custom Tailwind colors via Quasar
-ui.colors(primary="#6366F1", secondary="#22262F", accent="#7C7FFF")
-
-# Global styles
-ui.add_head_html("""
-<link href="https://rsms.me/inter/inter.css" rel="stylesheet">
-<style>
-  body { font-family: 'Inter', system-ui, sans-serif; }
-</style>
-""")
-
-# Modern card
-with ui.card().classes("w-96 p-6 rounded-2xl shadow-lg"):
-    ui.label("Quick Stats").classes("text-lg font-semibold")
-    ui.label("Updated 2 minutes ago").classes("text-sm text-gray-500")
-
-ui.run(
-    native=True,
-    reload=False,
-    port=native.find_open_port(),
-    title="My App",
-    window_size=(1200, 800),
-    dark=True,
-)
-```
-
 ### PySide6 — Modern QSS Theme
 
 Save this as `styles/dark.qss` and load with `app.setStyleSheet(...)`:
@@ -475,6 +402,81 @@ ctk.CTkButton(
 ).pack(pady=20, padx=20, anchor="w")
 
 app.mainloop()
+```
+
+### Flet — Modern Theme Setup
+
+```python
+import flet as ft
+
+def main(page: ft.Page):
+    # Theme
+    page.theme_mode = ft.ThemeMode.DARK
+    page.theme = ft.Theme(
+        color_scheme_seed=ft.Colors.INDIGO,
+        font_family="Inter",
+        visual_density=ft.VisualDensity.COMFORTABLE,
+    )
+
+    # Bundle Inter font
+    page.fonts = {
+        "Inter": "fonts/Inter-Regular.ttf",
+        "Inter Bold": "fonts/Inter-Bold.ttf",
+    }
+
+    # Window
+    page.window.width = 1200
+    page.window.height = 800
+    page.window.min_width = 800
+    page.window.min_height = 600
+    page.window.title_bar_hidden = False  # set True for fully custom chrome
+    page.padding = 0
+
+    # Modern card example
+    card = ft.Container(
+        content=ft.Column([
+            ft.Text("Quick Stats", size=18, weight=ft.FontWeight.W_600),
+            ft.Text("Updated 2 minutes ago", size=12, color=ft.Colors.with_opacity(0.6, ft.Colors.ON_SURFACE)),
+        ], spacing=4),
+        padding=20,
+        border_radius=16,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        animate=ft.Animation(200, ft.AnimationCurve.EASE_OUT),
+    )
+    page.add(card)
+
+ft.app(target=main, assets_dir="assets")
+```
+
+### NiceGUI — Modern Theme Setup
+
+```python
+from nicegui import ui, native, app
+
+# Custom Tailwind colors via Quasar
+ui.colors(primary="#6366F1", secondary="#22262F", accent="#7C7FFF")
+
+# Global styles
+ui.add_head_html("""
+<link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+</style>
+""")
+
+# Modern card
+with ui.card().classes("w-96 p-6 rounded-2xl shadow-lg"):
+    ui.label("Quick Stats").classes("text-lg font-semibold")
+    ui.label("Updated 2 minutes ago").classes("text-sm text-gray-500")
+
+ui.run(
+    native=True,
+    reload=False,
+    port=native.find_open_port(),
+    title="My App",
+    window_size=(1200, 800),
+    dark=True,
+)
 ```
 
 ---
