@@ -6,6 +6,7 @@
 #   bash install.sh                     # install (merge mode, recommended)
 #   bash install.sh --fresh             # replace existing config (backup taken)
 #   bash install.sh --project           # add project override to CWD
+#   bash install.sh --with-cache-fix    # opt in to local cache proxy wiring
 #   bash install.sh --dry-run           # show what would happen, change nothing
 #   bash install.sh --uninstall         # remove a prior claude-solo install
 #   bash install.sh --verify            # check prerequisites only
@@ -27,6 +28,7 @@ VERIFY_ONLY=0
 PROJECT_MODE=0
 BACKUP=1
 ASSUME_YES=0
+INSTALL_CACHE_FIX=0
 
 # ---------------------------------------------------------------------------
 # Output helpers
@@ -102,6 +104,105 @@ _patch_settings_env() {
   ok "Set env.${key}=${value} in settings.json"
 }
 
+_remove_settings_env_key() {
+  local key="$1"
+  local target="$CLAUDE_HOME/settings.json"
+  [[ ! -f "$target" ]] && return 0
+  [[ $DRY_RUN -eq 1 ]] && { printf "  ${YELLOW}[dry-run]${NC} would remove env.%s from settings.json\n" "$key"; return 0; }
+
+  if jq -e --arg key "$key" '.env[$key] != null' "$target" >/dev/null 2>&1; then
+    jq --arg key "$key" 'if .env then .env |= with_entries(select(.key != $key)) else . end' "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+    ok "Removed env.${key} from settings.json"
+  else
+    ok "settings.json env.${key} not set"
+  fi
+}
+
+_unwire_hook_by_command_fragment() {
+  local event="$1" fragment="$2"
+  local target="$CLAUDE_HOME/settings.json"
+  [[ ! -f "$target" ]] && return 0
+  [[ $DRY_RUN -eq 1 ]] && { printf "  ${YELLOW}[dry-run]${NC} would remove %s from %s hooks\n" "$fragment" "$event"; return 0; }
+
+  jq --arg event "$event" --arg fragment "$fragment" '
+    .hooks = (.hooks // {}) |
+    .hooks[$event] = (
+      (.hooks[$event] // [])
+      | map(
+          select(
+            ((((.hooks // []) | map(.command // "") | join(" ")) | contains($fragment)) | not)
+          )
+        )
+    )
+  ' "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+  ok "Ensured ${fragment} is not wired in ${event}"
+}
+
+find_native_claude_binary() {
+  local candidate
+  local -a candidates=()
+
+  if [[ -d "$HOME/.local/share/claude/versions" ]]; then
+    mapfile -t candidates < <(find "$HOME/.local/share/claude/versions" -mindepth 1 -maxdepth 1 -type f 2>/dev/null | sort -V -r)
+    for candidate in "${candidates[@]}"; do
+      [[ -x "$candidate" ]] && { printf '%s\n' "$candidate"; return 0; }
+    done
+  fi
+
+  if [[ -d "$HOME/.vscode/extensions" ]]; then
+    mapfile -t candidates < <(find "$HOME/.vscode/extensions" -path '*/resources/native-binary/claude' -type f 2>/dev/null | sort -V -r)
+    for candidate in "${candidates[@]}"; do
+      [[ -x "$candidate" ]] && { printf '%s\n' "$candidate"; return 0; }
+    done
+  fi
+
+  if [[ -d "$HOME/.cursor/extensions" ]]; then
+    mapfile -t candidates < <(find "$HOME/.cursor/extensions" -path '*/resources/native-binary/claude' -type f 2>/dev/null | sort -V -r)
+    for candidate in "${candidates[@]}"; do
+      [[ -x "$candidate" ]] && { printf '%s\n' "$candidate"; return 0; }
+    done
+  fi
+
+  return 1
+}
+
+repair_claude_launcher() {
+  local launcher="$HOME/.local/bin/claude"
+  local resolved native head_line should_repair=0
+
+  do_run mkdir -p "$HOME/.local/bin"
+
+  if [[ -L "$launcher" ]]; then
+    resolved=$(readlink -f "$launcher" 2>/dev/null || true)
+    if [[ -n "$resolved" && "$resolved" == "$HOME/.local/share/claude/versions/"* && -x "$resolved" ]]; then
+      ok "claude launcher already points to native binary"
+      return 0
+    fi
+    should_repair=1
+  elif [[ ! -e "$launcher" ]]; then
+    should_repair=1
+  elif [[ -f "$launcher" ]]; then
+    head_line=$(head -n 1 "$launcher" 2>/dev/null || true)
+    if [[ "$head_line" == '#!'* ]] && grep -qE 'npm-global|@anthropic-ai/claude-code|claude-code-cache-fix|cli\.js' "$launcher" 2>/dev/null; then
+      should_repair=1
+    fi
+  fi
+
+  native=$(find_native_claude_binary || true)
+  if [[ -z "$native" ]]; then
+    warn "No native Claude binary found for launcher repair"
+    return 0
+  fi
+
+  if [[ $should_repair -eq 1 ]]; then
+    [[ -e "$launcher" || -L "$launcher" ]] && backup_path "$launcher"
+    do_run ln -sfn "$native" "$launcher"
+    ok "Repaired claude launcher → $native"
+  else
+    ok "Leaving existing claude launcher untouched"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Parse args
 # ---------------------------------------------------------------------------
@@ -110,6 +211,8 @@ while [[ $# -gt 0 ]]; do
     --fresh)      MODE="fresh"       ;;
     --yes|-y)     ASSUME_YES=1       ;;
     --project)    PROJECT_MODE=1     ;;
+    --with-cache-fix) INSTALL_CACHE_FIX=1 ;;
+    --without-cache-fix) INSTALL_CACHE_FIX=0 ;;
     --no-backup)  BACKUP=0           ;;
     --dry-run|-n) DRY_RUN=1          ;;
     --uninstall)  UNINSTALL=1        ;;
@@ -277,6 +380,13 @@ check_prereqs() {
 #          env key conflicts, dry-run, version detection.
 # ---------------------------------------------------------------------------
 install_cache_fix() {
+  if [[ $INSTALL_CACHE_FIX -ne 1 ]]; then
+    say "Skipping cache-fix (opt-in only; preserving native Claude path)"
+    _remove_settings_env_key "ANTHROPIC_BASE_URL"
+    _remove_settings_env_key "ENABLE_PROMPT_CACHING_1H"
+    return 0
+  fi
+
   say "Installing cache-fix (claude-code-cache-fix)"
 
   if ! command -v npm >/dev/null 2>&1; then
@@ -625,9 +735,10 @@ _manifest_uninstall() {
 # NOTE: _wire_hook PREPENDS each entry. To control execution order, the hook
 # that should run FIRST must be wired LAST (it ends up at array index 0).
 # Current SessionStart execution order (first→last):
-#   start-cache-proxy → bootstrap-windows-encoding → cost-summary →
-#   quota-warmup-warn → session-hud → session-start-context →
-#   morae-context → update-check
+#   bootstrap-windows-encoding → cost-summary → quota-warmup-warn →
+#   session-hud → session-start-context → morae-context → update-check
+# Optional when --with-cache-fix is enabled:
+#   start-cache-proxy runs before all of the above
 # ---------------------------------------------------------------------------
 ensure_hooks_wired() {
   local target="$CLAUDE_HOME/settings.json"
@@ -691,11 +802,15 @@ ensure_hooks_wired() {
     "bootstrap-windows-encoding" \
     '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/bootstrap-windows-encoding.sh","statusMessage":"Bootstrapping Windows UTF-8 encoding...","timeout":5000}]}'
 
-  # start-cache-proxy wired LAST → prepended to front → runs FIRST
-  # Ensures proxy is up before any API calls are made in the session
-  _wire_hook "SessionStart" \
-    "start-cache-proxy" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/start-cache-proxy.sh","statusMessage":"Starting cache proxy...","timeout":8000}]}'
+  if [[ $INSTALL_CACHE_FIX -eq 1 ]]; then
+    # start-cache-proxy wired LAST → prepended to front → runs FIRST
+    # Ensures proxy is up before any API calls are made in the session
+    _wire_hook "SessionStart" \
+      "start-cache-proxy" \
+      '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/start-cache-proxy.sh","statusMessage":"Starting cache proxy...","timeout":8000}]}'
+  else
+    _unwire_hook_by_command_fragment "SessionStart" "start-cache-proxy"
+  fi
 
   # PreCompact
   _wire_hook "PreCompact" \
@@ -843,7 +958,6 @@ smoke_test() {
 
   # 4. Critical hooks wired
   local expected_hooks=(
-    "start-cache-proxy"
     "bootstrap-windows-encoding"
     "cost-summary"
     "quota-warmup-warn"
@@ -858,6 +972,9 @@ smoke_test() {
     "enforce-lsp-navigation"
     "pre-compact-checkpoint"
   )
+  if [[ $INSTALL_CACHE_FIX -eq 1 ]]; then
+    expected_hooks=("start-cache-proxy" "${expected_hooks[@]}")
+  fi
   local wired=0 missing_hooks=()
   for hook in "${expected_hooks[@]}"; do
     if jq -e ".. | strings | select(contains(\"${hook}\"))" "$settings" >/dev/null 2>&1; then
@@ -918,19 +1035,30 @@ smoke_test() {
 
   # 6. Cache-fix proxy package present
   local npm_root; npm_root=$(npm root -g 2>/dev/null || true)
-  if [[ -n "$npm_root" && -f "${npm_root}/claude-code-cache-fix/proxy/server.mjs" ]]; then
-    ok "claude-code-cache-fix proxy installed"
-    # Check ANTHROPIC_BASE_URL is set
-    local proxy_url; proxy_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$settings" 2>/dev/null || true)
-    if [[ "$proxy_url" == "http://127.0.0.1:9801" ]]; then
-      ok "ANTHROPIC_BASE_URL → proxy (:9801)"
+  if [[ $INSTALL_CACHE_FIX -eq 1 ]]; then
+    if [[ -n "$npm_root" && -f "${npm_root}/claude-code-cache-fix/proxy/server.mjs" ]]; then
+      ok "claude-code-cache-fix proxy installed"
+      # Check ANTHROPIC_BASE_URL is set
+      local proxy_url; proxy_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$settings" 2>/dev/null || true)
+      if [[ "$proxy_url" == "http://127.0.0.1:9801" ]]; then
+        ok "ANTHROPIC_BASE_URL → proxy (:9801)"
+      else
+        warn "ANTHROPIC_BASE_URL not set to proxy — cache-fix may not be active"
+        smoke_ok=0
+      fi
     else
-      warn "ANTHROPIC_BASE_URL not set to proxy — cache-fix may not be active"
+      warn "claude-code-cache-fix not installed — requested proxy mode is incomplete"
+      warn "  Retry with npm available or omit --with-cache-fix"
       smoke_ok=0
     fi
   else
-    warn "claude-code-cache-fix not installed — sessions may cost 4-20x more (CC v2.1.81+)"
-    warn "  Retry: bash install.sh  (requires npm)"
+    local proxy_url; proxy_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$settings" 2>/dev/null || true)
+    if [[ -z "$proxy_url" ]]; then
+      ok "Cache-fix proxy disabled — native Claude path preserved"
+    else
+      warn "ANTHROPIC_BASE_URL is still set while cache-fix is disabled"
+      smoke_ok=0
+    fi
   fi
 
   # 7. Agent, skill counts
@@ -1020,6 +1148,7 @@ run_install() {
   say "Backup:  $([[ $BACKUP -eq 1 ]] && echo "$BACKUP_DIR" || echo 'DISABLED')"
   echo ""
 
+  repair_claude_launcher
   check_prereqs
   [[ $VERIFY_ONLY -eq 1 ]] && { say "Verify-only — exiting"; exit 0; }
   [[ $PROJECT_MODE -eq 1 ]] && { install_project_override "$src_project_override"; exit 0; }
@@ -1076,6 +1205,7 @@ run_install() {
   say "Install complete."
   say "Start a fresh Claude Code session — all hooks, agents, and skills are active."
   say "Skills: /brief  /riper  /fix  /quality  /ship  /hud  /cost  /swarm ..."
+  [[ $INSTALL_CACHE_FIX -eq 1 ]] && say "Cache-fix proxy mode: enabled (npm-managed local proxy)" || say "Cache-fix proxy mode: disabled (native Claude path preserved)"
   [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
 }
 
