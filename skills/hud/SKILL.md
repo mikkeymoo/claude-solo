@@ -60,7 +60,6 @@ Active hooks
   PreToolUse    enforce-lsp-navigation.sh       (matcher: Grep|Glob)
   PostToolUse   post-format-and-heal.sh         (matcher: Edit|Write|MultiEdit)
   PostToolUse   compress-lsp-output.sh          (matcher: mcp__serena__.*)
-  PostToolUse   morae-powerbi-validate.sh       (matcher: Edit|Write|MultiEdit) [gated: MORAE_POWERBI_VALIDATION=1]
   Notification  notify-desktop.sh
   PreCompact    pre-compact-checkpoint.sh
 ```

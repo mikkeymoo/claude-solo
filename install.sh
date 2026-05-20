@@ -768,16 +768,7 @@ ensure_hooks_wired() {
     "compress-lsp-output" \
     '{"matcher":"mcp__serena__.*","hooks":[{"type":"command","command":"bash ~/.claude/scripts/compress-lsp-output.sh","timeout":5000}]}'
 
-  _wire_hook "PostToolUse" \
-    "morae-powerbi-validate" \
-    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/scripts/morae-powerbi-validate.sh","timeout":10000}]}'
-
   # SessionStart — wired in REVERSE execution order (last wired = first executed)
-  # update-check runs last in the session start sequence
-  _wire_hook "SessionStart" \
-    "update-check" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/update-check.sh","statusMessage":"Checking for updates...","timeout":15000}]}'
-
   _wire_hook "SessionStart" \
     "morae-context" \
     '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/morae-context.sh","statusMessage":"Checking project context...","timeout":5000}]}'
@@ -1181,7 +1172,7 @@ run_install() {
     ok "Installed COST-OPTIMIZATION.md → $CLAUDE_HOME/"
   fi
 
-  # Version SHA for update-check.sh
+  # Version SHA recording
   if command -v git >/dev/null 2>&1 && [[ -d "$REPO_DIR/.git" ]]; then
     local sha; sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || true)
     if [[ -n "$sha" ]] && [[ $DRY_RUN -eq 0 ]]; then

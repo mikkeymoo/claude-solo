@@ -227,13 +227,11 @@ You:   /swarm 4
 >
 > 1. **Analyze** — identifies 8 tasks, maps dependencies
 > 2. **Partition** — groups into waves of independent work (tasks touching the same file are NOT independent)
-> 3. **Spawn** — Wave 1: 4 `ult-refactor-agent` instances (Sonnet), each in an isolated git worktree. **Hook:** `dashboard-agent.js` posts SubagentStart events
+> 3. **Spawn** — Wave 1: 4 `ult-refactor-agent` instances (Sonnet), each in an isolated git worktree
 > 4. **Monitor** — agents run in background. Each agent uses `ult-code-reviewer` before committing
 > 5. **Merge** — after Wave 1 completes, merges worktree branches back. Resolves conflicts
 > 6. **Next wave** — Wave 2: 2 agents for dependent tasks. Wave 3: remaining tasks
 > 7. **Verify** — runs `/quality --gate` on the merged result
->
-> **Hook:** `dashboard-agent.js` posts SubagentStop events as each finishes.
 
 ```
 You:   /swarm --status
@@ -454,7 +452,6 @@ Hooks fire without you doing anything. Here's what runs in the background:
 - `quota-warmup-warn.sh` — warns if you're in a quota cooling window
 - `session-hud.sh` — shows branch, sprint state, recent files, TODOs (throttled 10min)
 - `session-start-context.sh` — injects git state + sprint artifacts into context
-- `update-check.sh` — daily update notice
 
 **When Claude edits a file:**
 
@@ -468,15 +465,10 @@ Hooks fire without you doing anything. Here's what runs in the background:
 **When Claude commits:**
 
 - `pre-tool-use.js` — enforces conventional commit message format
-- `commit-msg.js` — suggests a commit message from the staged diff
 
 **When Claude searches code:**
 
 - `enforce-lsp-navigation.sh` — nudges to use Serena LSP instead of Grep for symbol navigation
-
-**When a subagent runs:**
-
-- `dashboard-agent.js` — posts lifecycle events to local dashboard on :9876
 
 **When context compacts:**
 

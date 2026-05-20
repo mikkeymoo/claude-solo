@@ -7,6 +7,29 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.8.1] - 2026-05-20
+
+### Removed
+
+- **`hooks/dashboard-agent.js`** + SubagentStart/SubagentStop event wiring — POSTed to `localhost:9876`, which was rarely running; fired on every tool call as pure overhead
+- **`hooks/commit-msg.js`** — PostToolUse Bash hook suggesting conventional commit messages; ran on every shell call to bail out 99% of the time
+- **`hooks/latency-track.js`** — PostToolUse latency telemetry; data was never inspected
+- **`scripts/dashboard.js`** — companion HTTP dashboard for `dashboard-agent.js`
+- **`scripts/morae-powerbi-validate.sh`** — gated on `MORAE_POWERBI_VALIDATION=1`, no-op for nearly all users
+- **`scripts/update-check.sh`** — SessionStart daily update nag; 15s timeout per session for low-value info
+
+### Changed
+
+- **`settings.json`** — hook count 24 → 18; removed `SubagentStart`/`SubagentStop` event arrays (the only consumer was `dashboard-agent.js`)
+- **`install.sh`** — dropped `_wire_hook` calls for removed scripts; cleaned up stale `update-check.sh` version-file comment
+- **`README.md`**, **`skills/hud/SKILL.md`** — pruned references to removed hooks
+
+### Why
+
+These hooks fired on every tool invocation but produced output nobody read, posted to servers nobody ran, or no-op'd on env-gated paths. The visible symptom was intermittent `PostToolUse:Bash hook error / No stderr output` noise. Net win: fewer subprocess spawns per tool call, no behavior change for normal workflows.
+
+---
+
 ## [0.8.0] - 2026-04-29
 
 ### Added
