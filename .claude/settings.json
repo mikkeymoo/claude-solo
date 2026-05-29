@@ -74,6 +74,15 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      },
+      {
         "matcher": "Bash|mcp__desktop-commander__start_process",
         "hooks": [
           {
