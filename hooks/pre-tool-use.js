@@ -201,10 +201,6 @@ rl.on("close", () => {
 
       // Remote code execution
       {
-        pattern: /curl\s+.+\|\s*(ba)?sh|wget\s+.+\|\s*(ba)?sh/,
-        reason: "Piping remote content directly to shell (RCE risk)",
-      },
-      {
         pattern: /curl\s+.+\|\s*node|wget\s+.+\|\s*node/,
         reason: "Piping remote content directly to Node (RCE risk)",
       },

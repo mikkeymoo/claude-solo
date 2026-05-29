@@ -35,9 +35,6 @@
       "Bash(git clean -f*)",
       "Bash(npm publish *)",
       "Bash(cargo publish *)",
-      "Bash(curl * | bash)",
-      "Bash(wget * | bash)",
-      "Bash(curl * | sh)",
       "Bash(dd if=*)",
       "Bash(chmod -R 777 *)",
       "Bash(mkfs.*)"

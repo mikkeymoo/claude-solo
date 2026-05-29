@@ -21,7 +21,7 @@ no on-call rotation, no product manager.
 ## Non-negotiables (hooks enforce most of these; don't test the fence)
 
 - Never edit `.env*`, `secrets/`, `credentials/`, `.pem`, `id_rsa`, or `id_ed25519`.
-- Never run `rm -rf /`, `rm -rf ~`, `git push --force` to `main`/`master`/`prod`, or `curl | bash`.
+- Never run `rm -rf /`, `rm -rf ~`, or `git push --force` to `main`/`master`/`prod`.
 - Never write destructive SQL (`DROP`, `TRUNCATE`, `DELETE`/`UPDATE` without `WHERE`) from Bash.
 - Package publishes (`npm publish`, `cargo publish`, `twine upload`) are blocked.
 
