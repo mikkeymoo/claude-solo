@@ -35,8 +35,14 @@ const VALID_TYPES = [
  * Handles: -m "msg", -m 'msg', --message="msg", $(cat <<EOF...EOF)
  */
 function extractCommitMessage(cmd) {
-  // Skip if --no-verify or -n flag present (bypass enforcement)
-  if (/--no-verify|-[a-zA-Z]*n[a-zA-Z]*\b/.test(cmd)) {
+  // Skip if --no-verify or bare -n flag (short form of --no-verify) is present.
+  // Intentionally NOT skipping bundled flags like -an or -fn — only the bare -n
+  // that explicitly means "skip hooks". Test fixtures:
+  //   "git commit --no-verify -m 'msg'" → skip (--no-verify present)
+  //   "git commit -n -m 'msg'" → skip (bare -n)
+  //   "git commit -an -m 'msg'" → validate (bundled, not a bare bypass)
+  //   "git commit -fn -m 'msg'" → validate (bundled, not a bare bypass)
+  if (/--no-verify/.test(cmd) || /(?:^|\s)-n(?:\s|$)/.test(cmd)) {
     return null;
   }
 
@@ -160,6 +166,11 @@ rl.on("close", () => {
       {
         pattern: /git\s+push\s+(?!.*--dry-run)(--force|-f)/,
         reason: "Force-pushing (overwrites remote history)",
+      },
+      {
+        // Catch flag-reordering bypass: git -c push.default=x push --force
+        pattern: /git\s+-c\s+\S+\s+push\b.*?(--force|-f\b)/,
+        reason: "Force-pushing via -c flag (overwrites remote history)",
       },
       {
         pattern: /git\s+reset\s+--hard/,
