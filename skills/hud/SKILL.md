@@ -54,7 +54,6 @@ Active hooks
   SessionStart  cost-summary.sh
   SessionStart  quota-warmup-warn.sh
   SessionStart  session-hud.sh
-  SessionStart  morae-context.sh
   PreToolUse    validate-readonly-query.sh      (matcher: Bash)
   PreToolUse    validate-utf8-source.sh         (matcher: Edit|Write|MultiEdit)
   PreToolUse    enforce-lsp-navigation.sh       (matcher: Grep|Glob)
