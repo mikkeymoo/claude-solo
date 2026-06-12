@@ -782,6 +782,7 @@ de_wire_old_hooks() {
     "session-hud" "quota-warmup-warn" "cost-summary" "bootstrap-windows-encoding"
     "pre-compact-checkpoint" "validate-readonly-query" "validate-utf8-source"
     "enforce-lsp-navigation" "morae-context" "start-cache-proxy"
+    "large-file.js" "gitignore-check.js" "lint-fix.js" "test-fix.js" "stop-gate.js"
   )
   local events=(
     "SessionStart" "SessionEnd" "PreToolUse" "PostToolUse" "PostToolUseFailure"
@@ -978,36 +979,26 @@ smoke_test() {
   shopt -u nullglob
   ok "Hook scripts executable: $n"
 
-  # 4. Critical hooks wired
-  local expected_hooks=(
-    "bootstrap-windows-encoding"
-    "cost-summary"
-    "quota-warmup-warn"
-    "session-hud"
-    "session-start-context"
-    "morae-context"
-    "update-check"
-    "post-format-and-heal"
-    "compress-lsp-output"
-    "validate-readonly-query"
-    "validate-utf8-source"
-    "enforce-lsp-navigation"
-    "pre-compact-checkpoint"
-  )
-  if [[ $INSTALL_CACHE_FIX -eq 1 ]]; then
-    expected_hooks=("start-cache-proxy" "${expected_hooks[@]}")
+  # 4. Plugin hooks wired (hooks live in the plugin's hooks.json since v1.0, not settings.json)
+  local plugin_link="$CLAUDE_HOME/skills/claude-solo"
+  local plugin_hooks="$plugin_link/hooks/hooks.json"
+  if [[ ! -e "$plugin_link/.claude-plugin/plugin.json" ]]; then
+    warn "Plugin not linked at $plugin_link — run installer to fix"
+    smoke_ok=0
+  elif [[ ! -f "$plugin_hooks" ]]; then
+    warn "Plugin hooks.json missing at $plugin_hooks"
+    smoke_ok=0
+  elif ! jq -e '.hooks | keys | length > 0' "$plugin_hooks" >/dev/null 2>&1; then
+    warn "Plugin hooks.json invalid or empty"
+    smoke_ok=0
+  else
+    local hook_events
+    hook_events=$(jq -r '.hooks | keys | length' "$plugin_hooks")
+    ok "Plugin linked; hooks.json wires $hook_events events"
   fi
-  local wired=0 missing_hooks=()
-  for hook in "${expected_hooks[@]}"; do
-    if jq -e ".. | strings | select(contains(\"${hook}\"))" "$settings" >/dev/null 2>&1; then
-      (( wired++ )) || true
-    else
-      missing_hooks+=("$hook")
-    fi
-  done
-  ok "Hooks wired in settings.json: $wired/${#expected_hooks[@]}"
-  if [[ ${#missing_hooks[@]} -gt 0 ]]; then
-    warn "Missing hooks (run installer to fix): ${missing_hooks[*]}"
+  # Legacy hook wiring left in settings.json would double-fire with plugin hooks
+  if jq -e '.hooks' "$settings" >/dev/null 2>&1; then
+    warn "Legacy hooks section still present in settings.json — re-run installer to de-wire"
     smoke_ok=0
   fi
 
