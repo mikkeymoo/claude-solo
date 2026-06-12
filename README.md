@@ -1,6 +1,6 @@
 # claude-solo
 
-Claude Code configuration for solo developers. 47 skills, 5 subagents, 25 hooks. One installer.
+Claude Code configuration for solo developers. 51 skills, 5 subagents, 18 hooks. One installer.
 
 ```bash
 bash install.sh
@@ -466,6 +466,10 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 - `pre-tool-use.js` — enforces conventional commit message format
 
+**On every Bash call (token savings):**
+
+- `pre-tool-use.js` — auto-prefixes matching commands with `rtk` via `updatedInput` before they run (e.g. `git status` → `rtk git status`). This is the Windows workaround for RTK's shell-level hook. ~60–90% token savings on common dev commands.
+
 **When Claude searches code:**
 
 - `enforce-lsp-navigation.sh` — nudges to use Serena LSP instead of Grep for symbol navigation
@@ -515,6 +519,24 @@ Hooks fire without you doing anything. Here's what runs in the background:
 **Scaffold:** `/scaffold --react` `/scaffold --next` `/scaffold --fastapi` `/scaffold --express` `/scaffold --python`
 
 **Meta:** `/docs` `/docs --api` `/refactor` `/config` `/session` `/cost` `/cost --trend` `/write-a-skill` `/sketch`
+
+---
+
+## Security model
+
+claude-solo uses `defaultMode: "bypassPermissions"` + `skipDangerousModePermissionPrompt: true` for solo-developer velocity (no per-call approval dialogs). **The deny rules and hooks are the only guardrails — everything else runs unprompted.**
+
+What the deny layer actually blocks:
+
+- Nested `.env*`, `secrets/`, `credentials/`, `*.pem`, `id_rsa*`, `id_ed25519*` files (Read/Edit/Write)
+- Destructive Bash: `rm -rf /`, `rm -rf ~`, `git push --force*`, `git reset --hard`, `git clean -f`, `npm/cargo/twine publish`, `curl|bash`, `dd if=`, `chmod -R 777`, `mkfs.*`
+
+What the hooks add on top:
+
+- `pre-tool-use.js` warns on dangerous patterns including `git -c ... push --force` reordering
+- `validate-readonly-query.sh` blocks all write SQL when running as the `ult-db-reader` agent
+
+Note: `git -c key=value push --force` (flag reordering) is NOT blocked by the deny rules (string matching can't catch all forms) — the hook layer is why you keep both.
 
 ---
 
