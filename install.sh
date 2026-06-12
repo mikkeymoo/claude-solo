@@ -571,6 +571,9 @@ install_scripts() {
 _manifest_add() {
   local manifest="$1" rel_path="$2"
   [[ $DRY_RUN -eq 1 ]] && return 0
+  # Idempotent: don't append a path the manifest already records, so re-running
+  # the installer keeps the manifest stable instead of growing duplicate lines.
+  grep -qxF "$rel_path" "$manifest" 2>/dev/null && return 0
   echo "$rel_path" >> "$manifest"
 }
 
