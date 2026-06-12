@@ -24,6 +24,17 @@ const DATE_STR = new Date().toISOString().slice(0, 10);
 const LOG_FILE = join(LOG_DIR, `session-${DATE_STR}.log`);
 const TOKEN_FILE = join(LOG_DIR, `tokens-${DATE_STR}.json`);
 
+// Redact secrets from command strings before writing to logs
+function redactSecrets(str) {
+  return str
+    .replace(
+      /(token|key|secret|password|api[-_]?key)\s*[=:]\s*\S+/gi,
+      "$1=[REDACTED]",
+    )
+    .replace(/Bearer\s+\S+/g, "Bearer [REDACTED]")
+    .replace(/(Authorization:\s*)\S+/gi, "$1[REDACTED]");
+}
+
 // Rough token estimator: ~4 chars per token (good enough for logging)
 function estimateTokens(value) {
   if (!value) return 0;
@@ -106,7 +117,7 @@ rl.on("close", () => {
       mkdirSync(LOG_DIR, { recursive: true });
       appendFileSync(
         LOG_FILE,
-        `[${timestamp}] Bash (~${totalTokens}tok): ${cmd.slice(0, 200)}\n`,
+        `[${timestamp}] Bash (~${totalTokens}tok): ${redactSecrets(cmd).slice(0, 200)}\n`,
       );
     } catch {
       /* not fatal */
