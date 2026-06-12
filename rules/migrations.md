@@ -1,3 +1,12 @@
+---
+paths:
+  - "**/migrations/**"
+  - "**/db/migrate/**"
+  - "**/prisma/migrations/**"
+  - "**/alembic/versions/**"
+  - "**/*.sql"
+---
+
 # Database Migration Rules
 
 When working with database migration files (e.g. files in `migrations/`, `db/migrate/`, `prisma/migrations/`, `alembic/versions/`):

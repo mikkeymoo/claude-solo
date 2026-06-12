@@ -1,3 +1,11 @@
+---
+paths:
+  - ".github/workflows/**"
+  - "**/.gitlab-ci.yml"
+  - "**/azure-pipelines*.yml"
+  - "**/Jenkinsfile"
+---
+
 # CI/CD Workflow Rules
 
 When creating or editing GitHub Actions workflows or other CI/CD config:

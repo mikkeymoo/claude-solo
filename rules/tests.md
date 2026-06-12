@@ -1,3 +1,15 @@
+---
+paths:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/tests/**"
+  - "**/test/**"
+  - "**/__tests__/**"
+  - "**/conftest.py"
+  - "**/*_test.go"
+  - "**/*_test.py"
+---
+
 # Test Writing Rules
 
 When writing or modifying tests:

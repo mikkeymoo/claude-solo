@@ -1,3 +1,17 @@
+---
+paths:
+  - "**/tsconfig*.json"
+  - "**/eslint.config.*"
+  - "**/.eslintrc*"
+  - "**/prettier.config.*"
+  - "**/.prettierrc*"
+  - "**/vite.config.*"
+  - "**/next.config.*"
+  - "**/package.json"
+  - "**/pyproject.toml"
+  - "**/Cargo.toml"
+---
+
 # Configuration File Rules
 
 When creating or modifying configuration files (`tsconfig.json`, `eslint.config.*`, `prettier.config.*`, `vite.config.*`, `next.config.*`, etc.):

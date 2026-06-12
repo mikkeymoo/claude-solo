@@ -1,3 +1,10 @@
+---
+paths:
+  - "**/.env.example"
+  - "**/config/**"
+  - "**/*.config.{js,ts,mjs}"
+---
+
 # Environment File Rules
 
 When working with `.env` files or environment configuration:

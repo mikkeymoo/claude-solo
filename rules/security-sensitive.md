@@ -1,3 +1,13 @@
+---
+paths:
+  - "**/auth/**"
+  - "**/security/**"
+  - "**/middleware/**"
+  - "**/*auth*.{ts,js,py,go,rs}"
+  - "**/*crypto*.{ts,js,py,go,rs}"
+  - "**/*token*.{ts,js,py,go,rs}"
+---
+
 # Security-Sensitive Code Rules
 
 When working with authentication, authorization, cryptography, or security-sensitive code:

@@ -1,3 +1,13 @@
+---
+paths:
+  - "**/api/**"
+  - "**/routes/**"
+  - "**/controllers/**"
+  - "**/*.route.*"
+  - "**/views.py"
+  - "**/handlers/**"
+---
+
 # API Route Rules
 
 When writing or modifying API route handlers:

@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.md"
+  - "**/docs/**"
+---
+
 # Documentation Rules
 
 When updating or creating documentation:
