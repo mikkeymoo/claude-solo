@@ -7,6 +7,21 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.8.2] - 2026-06-11
+
+### Fixed
+
+- **`settings.json`** + **`project-override/settings.json`** — broaden deny rules to cover nested project files: `**/.env*`, `**/secrets/**`, `**/credentials/**`, `**/*.pem`, `**/id_rsa*`, `**/id_ed25519*` (Read/Edit/Write). Add `Bash(git push * --force*)` for flag-reordering variant; add `Bash(twine upload *)`.
+- **`hooks/pre-tool-use.js`** — replace overbroad `/-[a-zA-Z]*n[a-zA-Z]*\b/` regex with explicit `--no-verify` / bare `-n` detection to stop false-skipping conventional-commit validation on flags like `-an`, `-fn`. Add warning for `git -c ... push --force` reordering.
+- **`hooks/post-tool-use.js`** — redact `token=`, `key=`, `secret=`, `password=`, `Bearer ` values from Bash command log before writing to `~/.claude/logs/`.
+- **`scripts/post-format-and-heal.sh`** — emit a one-time stderr warning when no formatter is installed for a given file type (prettier/biome for JS/TS/JSON, ruff/black for Python, etc.). Restructured to warn before `exec 2>/dev/null`.
+- **`scripts/validate-readonly-query.sh`** — normalize whitespace (collapse runs of spaces/tabs/newlines) before SQL keyword matching; document shell-alias limitation.
+- **`install.sh`** — add jq install hints (winget/choco/scoop/apt/brew) when jq is missing. Prune backup snapshots: keep last 5, remove older. Fix non-POSIX `sed \L` in `fix_ruff()` fallback using bash `${var,}` lowercase expansion.
+- **`.gitignore`** — ignore `.serena/` and `.plugin-config/` runtime dirs.
+- **`README.md`** — correct hook count 25→18; document RTK auto-wrap behavior in pre-tool-use.js; add honest Security model section explaining `bypassPermissions` posture.
+
+---
+
 ## [0.8.1] - 2026-05-20
 
 ### Removed
