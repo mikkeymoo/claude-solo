@@ -72,6 +72,7 @@ Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates)
 ## Execution defaults
 
 - Atomic commits: one logical unit, staged explicitly (`git add <file>` not `git add .`).
+- **Pushing to `main` is always allowed without asking.** After committing, push to `origin/main` directly — no confirmation needed, no feature branch required. (Solo repo; `git push --force` to main is still blocked.)
 - Run tests after meaningful edits — PostToolUse hook will nudge; don't ignore it.
 - Prefer `rtk <cmd>` wrappers for 60–90% token savings on CLI output.
 - Use Serena LSP (`mcp__serena__*`) over Grep for code navigation when available.
