@@ -46,23 +46,30 @@ function extractCommitMessage(cmd) {
     return null;
   }
 
+  // Heredoc / command-substitution form FIRST: -m "$(cat <<'EOF'\nmsg\nEOF\n)".
+  // Must precede the plain -m "..." matcher — otherwise the lazy quote match
+  // grabs `$(cat <<` (up to the quote in <<'EOF') and mis-reports it as the
+  // message. Tolerate the closing `)` on its own line (\n\1\s*\)).
+  const heredocMatch = cmd.match(
+    /\$\(cat\s+<<['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\1\s*\)/,
+  );
+  if (heredocMatch) {
+    return heredocMatch[2].trim();
+  }
+
   // Match -m "message", -m 'message', --message="message"
   const shortMatch = cmd.match(/(?:^|\s)-m\s+["'](.+?)["']/);
   if (shortMatch) {
+    // A command substitution we couldn't parse above (e.g. printf/echo instead
+    // of cat) — skip rather than validate the shell syntax as the message.
+    if (shortMatch[1].startsWith("$(")) return null;
     return shortMatch[1];
   }
 
   const longMatch = cmd.match(/--message\s*=\s*["'](.+?)["']/);
   if (longMatch) {
+    if (longMatch[1].startsWith("$(")) return null;
     return longMatch[1];
-  }
-
-  // Match heredoc format: $(cat <<'EOF'\nmessage\nEOF) or $(cat <<EOF\nmessage\nEOF)
-  const heredocMatch = cmd.match(
-    /\$\(cat\s+<<['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\1\)/,
-  );
-  if (heredocMatch) {
-    return heredocMatch[2].trim();
   }
 
   // No -m or --message flag found; skip enforcement (interactive commit)
@@ -73,7 +80,11 @@ function extractCommitMessage(cmd) {
  * Validate commit message against Conventional Commits format.
  */
 function isValidConventionalCommit(message) {
-  return CONVENTIONAL_COMMIT_PATTERN.test(message);
+  // Conventional Commits governs the SUBJECT line only; the body is freeform.
+  // Validate just the first line so multi-line (heredoc / multi -m) messages
+  // aren't rejected for a non-matching body.
+  const subject = message.split("\n")[0].trim();
+  return CONVENTIONAL_COMMIT_PATTERN.test(subject);
 }
 
 /**
