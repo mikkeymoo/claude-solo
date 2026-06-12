@@ -1,8 +1,8 @@
 {
   "_comment_top": "Global settings — install to ~/.claude/settings.json. Hook scripts installed at ~/.claude/scripts/. Cross-platform: bash required (Git Bash on Windows). See README.md.",
   "_precedence": "Scope precedence (high → low): Managed > Local (.claude/settings.local.json) > Project (.claude/settings.json) > User (this file). Deny rules accumulate across all scopes; first match of deny > defer > ask > allow wins.",
-  "model": "claude-sonnet-4-6",
-  "fallbackModel": ["claude-haiku-4-5-20251001"],
+  "model": "claude-opus-4-8",
+  "fallbackModel": ["claude-sonnet-4-6", "claude-haiku-4-5"],
   "effortLevel": "medium",
   "maxTurns": 200,
   "includeGitInstructions": true,
@@ -16,7 +16,7 @@
   "env": {
     "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. PYTHONIOENCODING + PYTHONUTF8: prevents charmap codec errors when Python stdout encounters Unicode (em-dashes, smart quotes, non-ASCII names in email/document parsing). CLAUDE_CODE_USE_POWERSHELL_TOOL: enables native PowerShell tool support on Windows.",
     "ENABLE_TOOL_SEARCH": "1",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
     "BASH_DEFAULT_TIMEOUT_MS": "120000",
     "BASH_MAX_TIMEOUT_MS": "600000",
