@@ -725,6 +725,26 @@ patch_existing_settings() {
 }
 
 # ---------------------------------------------------------------------------
+# Project scope: surgically allow .env reads (and drop the invalid mcp__* rule)
+# in an EXISTING project .claude/settings.json without overwriting the rest.
+# Global-only keys (disableRemoteControl, fallbackModel, skillListingBudgetFraction)
+# are intentionally NOT applied here — they belong in user scope, not an override.
+# ---------------------------------------------------------------------------
+patch_existing_project_settings() {
+  local target="$1"
+  [[ ! -f "$target" ]] && return 0
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would patch %s (allow .env read, drop mcp__*)\n" "$target"
+    return 0
+  fi
+  _apply_jq_if_changed "$target" '
+    (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
+    | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
+  ' "Patched project .claude/settings.json (allow .env read)" \
+    "project .claude/settings.json already allows .env read"
+}
+
+# ---------------------------------------------------------------------------
 # Purge prior artifacts (fresh mode)
 # Wipes ALL agents/skills/commands/rules so no legacy garbage survives.
 # ---------------------------------------------------------------------------
@@ -935,6 +955,7 @@ install_project_override() {
     warn ".claude/settings.json exists — showing diff, not overwriting:"
     diff -u .claude/settings.json "$src_dir/settings.json" || true
     warn "Merge manually if you want these rules."
+    patch_existing_project_settings .claude/settings.json
   else
     do_run cp "$src_dir/settings.json" .claude/settings.json
     ok "Wrote .claude/settings.json"
