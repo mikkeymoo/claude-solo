@@ -1,57 +1,86 @@
-# Migrating from ≤0.8.x (bare-file install) to v1.0 (plugin)
+# Migrating to v2.0 — `/mm-*` commands
 
-v1.0 converts claude-solo from copied files into a Claude Code plugin. Skills, agents,
-and hooks now load directly from the cloned repo via `~/.claude/skills/claude-solo`;
-only the settings layer (deny rules, env, statusline, CLAUDE.md) is still installed
-into `~/.claude/`.
+v2.0 renames every claude-solo skill command from the colon-namespaced
+`/claude-solo:<skill>` to a dash-prefixed `/mm-<skill>` (e.g. `/mm-fix`,
+`/mm-riper`, `/mm-quality`).
+
+## Why the form changed
+
+Plugin skills are _always_ colon-namespaced by Claude Code (`/plugin-name:skill`),
+so a plugin can only ever produce `/claude-solo:fix` or `/mm:fix` — never a dash.
+A leading-dash command requires a **standalone** skill (a `SKILL.md` directory in
+`~/.claude/skills/` with no plugin manifest), whose directory name becomes the
+command verbatim. v2.0 therefore installs the 48 skills as standalone
+`~/.claude/skills/mm-<name>/` directories. The plugin stays (same name) but now
+ships only the 5 agents and the hooks.
 
 ## TL;DR
 
 ```bash
-cd claude-solo && git pull
-bash install.sh
+npx github:mikkeymoo/claude-solo install     # or: cd claude-solo && git pull && bash install.sh
 # restart your Claude Code session
 ```
 
-The installer handles the whole migration. Specifically it:
+The installer does the whole migration idempotently:
 
-1. **Links the plugin** — junction/symlink at `~/.claude/skills/claude-solo` pointing
-   at the repo, then `claude plugin enable claude-solo@skills-dir`.
-2. **De-wires legacy hooks** from `~/.claude/settings.json` — every 0.8.x hook entry
-   (including ones pruned in 0.8.1: `lint-fix`, `test-fix`, `large-file`,
-   `gitignore-check`, `stop-gate`) is removed so nothing double-fires with the
-   plugin's `hooks/hooks.json`.
-3. **Removes superseded copies** (each backed up to `~/.claude/.claude-solo-backup/` first):
-   - bare skill dirs in `~/.claude/skills/` that match repo skills
-   - `ult-*` agent files in `~/.claude/agents/` — the plugin ships them unprefixed
+1. **Installs standalone `/mm-*` skills** into `~/.claude/skills/mm-<name>/`.
+2. **Drops the old colon commands** — the plugin no longer serves skills, so
+   `/claude-solo:*` simply stops existing after the plugin reloads.
+3. **Removes legacy un-prefixed skill copies** (`~/.claude/skills/<name>/` left by
+   ≤0.8.x installs), each backed up to `~/.claude/.claude-solo-backup/<timestamp>/` first.
+4. **Re-points a stale plugin link** so the agents + hooks load from the new code.
 
-## What changed for you
+## Command map (old → new)
 
-| ≤0.8.x | v1.0 |
-| --- | --- |
-| Skills copied to `~/.claude/skills/<name>/` | Served from the repo via the plugin link |
-| Agents installed as `ult-code-reviewer` etc. | Plugin agents: `code-reviewer`, `researcher`, `refactor-agent`, `db-reader`, `deploy-guard` |
-| Hooks wired in `~/.claude/settings.json` | Wired in the plugin's `hooks/hooks.json` (paths via `${CLAUDE_PLUGIN_ROOT}`) |
-| Updates: re-run `install.sh` | Updates: `git pull` (re-run `install.sh` only when the settings template changes) |
-| Morae/eDiscovery skills bundled | Split to a separate personal plugin — see "Layering personal plugins" in README |
+| Old (v1.x)                | New (v2.0)       |
+| ------------------------- | ---------------- |
+| `/claude-solo:brief`      | `/mm-brief`      |
+| `/claude-solo:riper`      | `/mm-riper`      |
+| `/claude-solo:fix`        | `/mm-fix`        |
+| `/claude-solo:quality`    | `/mm-quality`    |
+| `/claude-solo:ship`       | `/mm-ship`       |
+| `/claude-solo:<anything>` | `/mm-<anything>` |
 
-If anything references the old agent names (saved prompts, scripts, muscle memory),
-switch `ult-<name>` → `<name>`.
+Every skill follows the same rule: replace the `claude-solo:` namespace with the
+`mm-` prefix. The full skill list is in the README.
+
+## Aliases — not provided (by design)
+
+Claude Code has **no alias mechanism** for skills/commands: a skill answers to
+exactly one name (its directory). Shipping 48 old-name stub skills purely to
+forward to the new ones would double the skill listing and its token budget, so
+v2.0 does **not** keep `/claude-solo:*` aliases. The old colon commands stop
+resolving after you re-run the installer — update saved prompts and muscle memory
+to the `/mm-*` form.
 
 ## Verify after migrating
 
 ```bash
-claude plugin list                  # claude-solo@skills-dir … loaded
-claude plugin details claude-solo   # 47 skills, 5 agents, 14 hook events
-bash install.sh --dry-run           # smoke checks all green
+ls ~/.claude/skills | grep '^mm-' | wc -l   # 48 standalone skills
+claude plugin list                           # claude-solo@skills-dir … loaded (agents + hooks)
+bash install.sh --dry-run                    # smoke checks all green
 ```
 
-In a fresh session: `/hud` should show the plugin's SessionStart hooks fired, and
-`/agents` should list the five unprefixed agents.
+In a fresh session, `/mm-hud` should render and `/agents` should still list the
+five agents (`code-reviewer`, `researcher`, `refactor-agent`, `db-reader`,
+`deploy-guard`).
 
 ## Rollback
 
-Backups are kept at `~/.claude/.claude-solo-backup/<timestamp>/` (last 5 retained).
-To roll back: `claude plugin disable claude-solo@skills-dir`, delete the
-`~/.claude/skills/claude-solo` link, and restore files from the newest backup,
-then check out the v0.8.2 tag of this repo and run `bash install.sh`.
+```bash
+npx github:mikkeymoo/claude-solo#pre-mm-rename install
+```
+
+That re-installs the pre-rename (v1.0, colon-command) layout from the
+`pre-mm-rename` tag. Backups are also kept at
+`~/.claude/.claude-solo-backup/<timestamp>/` (last 5 retained).
+
+---
+
+### Earlier migration (≤0.8.x bare-file → v1.0 plugin)
+
+v1.0 converted claude-solo from copied files into a plugin (agents + hooks load
+from the cloned repo; the installer de-wires legacy `settings.json` hook entries
+and removes `ult-*` agent copies). If you are coming straight from a ≤0.8.x
+install, the v2.0 installer performs that migration too in the same run. See the
+v1.0.0 entry in `CHANGELOG.md` for the detail.

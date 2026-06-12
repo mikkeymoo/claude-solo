@@ -7,6 +7,33 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [2.0.0] - 2026-06-12
+
+### Changed — `/mm-*` command rename (BREAKING)
+
+- **All skill commands are renamed** from the colon-namespaced `/claude-solo:<skill>`
+  to a dash-prefixed `/mm-<skill>` (e.g. `/claude-solo:fix` → `/mm-fix`). Plugin
+  skills are always colon-namespaced by Claude Code, so a leading-dash command
+  requires a **standalone** skill — the 48 skills now install as standalone
+  `~/.claude/skills/mm-<name>/` directories instead of being plugin-served.
+- **The plugin stays** (same name `claude-solo`) but now ships only the 5 agents
+  and the hooks (`hooks/hooks.json`); its `skills` component was removed. Repo skill
+  sources moved from `skills/` to `mm-skills/mm-<name>/`.
+- **Installer migrates idempotently**: copies the standalone `/mm-*` skills (now
+  manifest-tracked, so `--uninstall` removes them), removes legacy un-prefixed
+  skill copies, re-points a stale plugin junction/symlink to the current code, and
+  detaches the plugin link on uninstall (Windows-safe — junctions are detached, not
+  recursed into).
+
+### Migration
+
+**Re-run the installer** (`npx github:mikkeymoo/claude-solo install`) and restart
+your session. The old `/claude-solo:*` commands stop resolving — no aliases are
+provided (Claude Code has no skill-alias mechanism). Rollback:
+`npx github:mikkeymoo/claude-solo#pre-mm-rename install`. See `MIGRATION.md`.
+
+---
+
 ## [1.0.0] - 2026-06-11
 
 ### Changed — plugin architecture (BREAKING)

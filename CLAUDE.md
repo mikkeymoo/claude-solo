@@ -36,7 +36,7 @@ enforced barriers. Use care; there is no longer a safety net.
 For any task touching more than 2 files or spanning multiple subsystems:
 
 1. Create or update `.planning/CURRENT_TASK.md` with goal, files in scope, acceptance criteria
-2. Wait for user confirmation OR explicit `/riper --build` invocation before writing code
+2. Wait for user confirmation OR explicit `/mm-riper --build` invocation before writing code
 3. Reference the plan file in commit messages
 
 Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can proceed without a plan.
@@ -55,25 +55,25 @@ Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can procee
 - `db-reader` — any production DB inspection. SELECT-only, enforced by hook.
 - `deploy-guard` — **human-trigger only**. Do not auto-spawn.
 
-## Skills (all bare names — no prefix)
+## Skills (all `/mm-` prefixed — standalone skills)
 
-Sprint pipeline: `/brief` → `/riper --plan` → `/riper --build` → `/code-review-excellence` → `/quality --gate` → `/ship` → `/retro`
+Sprint pipeline: `/mm-brief` → `/mm-riper --plan` → `/mm-riper --build` → `/mm-code-review-excellence` → `/mm-quality --gate` → `/mm-ship` → `/mm-retro`
 
-Workflow modes: `/riper` (phased), `/riper --auto` (autopilot), `/workflow --parallel`, `/swarm` (multi-agent), `/quick` (fast path)
+Workflow modes: `/mm-riper` (phased), `/mm-riper --auto` (autopilot), `/mm-workflow --parallel`, `/mm-swarm` (multi-agent), `/mm-quick` (fast path)
 
-Debugging: `/fix` (tactical), `/fix --deep` (systematic), `/fix --triage` (universal), `/fix --bisect` (git bisect regression finder)
+Debugging: `/mm-fix` (tactical), `/mm-fix --deep` (systematic), `/mm-fix --triage` (universal), `/mm-fix --bisect` (git bisect regression finder)
 
-Quality: `/tdd` (red-green-refactor), `/tdd --write` (test writing), `/test-gen` (generate tests for existing code), `/quality --deps`, `/quality --gate`, `/cleanup`, `/security` (OWASP + CVE scan), `/perf` (performance profiling)
+Quality: `/mm-tdd` (red-green-refactor), `/mm-tdd --write` (test writing), `/mm-test-gen` (generate tests for existing code), `/mm-quality --deps`, `/mm-quality --gate`, `/mm-cleanup`, `/mm-security` (OWASP + CVE scan), `/mm-perf` (performance profiling)
 
-Review: `/code-review-excellence` (constructive), `/code-review-excellence --staff`, `/code-review-excellence --adversarial`, `/api-design` (REST API review/design)
+Review: `/mm-code-review-excellence` (constructive), `/mm-code-review-excellence --staff`, `/mm-code-review-excellence --adversarial`, `/mm-api-design` (REST API review/design)
 
-Exploration: `/zoom-out` (quick context), `/zoom-out --explore` (deep-dive), `/hud` (session), `/hud --doctor` (health), `/onboard` (generate project onboarding guide)
+Exploration: `/mm-zoom-out` (quick context), `/mm-zoom-out --explore` (deep-dive), `/mm-hud` (session), `/mm-hud --doctor` (health), `/mm-onboard` (generate project onboarding guide)
 
-Dependencies: `/deps` (audit/upgrade/clean deps), `/deps --audit`, `/deps --clean`, `/changelog` (generate from conventional commits), `/ci` (CI status/retry)
+Dependencies: `/mm-deps` (audit/upgrade/clean deps), `/mm-deps --audit`, `/mm-deps --clean`, `/mm-changelog` (generate from conventional commits), `/mm-ci` (CI status/retry)
 
-Incident response: `/incident` (structured postmortem Q&A), `/migrate` (migration assistant: `--plan`, `--execute`, `--verify`)
+Incident response: `/mm-incident` (structured postmortem Q&A), `/mm-migrate` (migration assistant: `--plan`, `--execute`, `--verify`)
 
-Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/sketch` (rapid prototype), `/session`, `/cost` (`--trend` for week-over-week comparison), `/config`, `/release`, `/docs` (`--api` for OpenAPI spec generation), `/refactor`, `/swarm` (`--status`, `--results` modes), `/cleanup` (`--aggressive` for maximum dead code removal)
+Meta: `/mm-scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/mm-sketch` (rapid prototype), `/mm-session`, `/mm-cost` (`--trend` for week-over-week comparison), `/mm-config`, `/mm-release`, `/mm-docs` (`--api` for OpenAPI spec generation), `/mm-refactor`, `/mm-swarm` (`--status`, `--results` modes), `/mm-cleanup` (`--aggressive` for maximum dead code removal)
 
 ## Execution defaults
 

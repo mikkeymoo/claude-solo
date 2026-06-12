@@ -1,6 +1,6 @@
 # claude-solo
 
-Claude Code **plugin** for solo developers. 47 skills, 5 subagents, 24 hooks, plus a bootstrap installer for the settings layer plugins can't carry.
+Claude Code config for solo developers — 48 `/mm-*` skills, 5 subagents, 24 hooks. Skills install standalone (so each is a dash-prefixed command like `/mm-fix`); a companion plugin ships the agents and hooks, plus a bootstrap installer for the settings layer plugins can't carry.
 
 ### Quick start (`npx` — interactive)
 
@@ -31,19 +31,19 @@ Every example below shows: what you type, what skill/agent activates, what hooks
 ### Build a feature end-to-end
 
 ```
-You:   /brief Add rate limiting to the /api/upload endpoint
+You:   /mm-brief Add rate limiting to the /api/upload endpoint
 ```
 
-> **Skill:** `brief` activates. Asks clarifying questions (per-user? per-IP? what limit?), then writes `.planning/BRIEF.md` with problem, goal, scope, constraints, open questions. Ends with "Brief saved. Ready to `/riper --plan`?"
+> **Skill:** `brief` activates. Asks clarifying questions (per-user? per-IP? what limit?), then writes `.planning/BRIEF.md` with problem, goal, scope, constraints, open questions. Ends with "Brief saved. Ready to `/mm-riper --plan`?"
 
 ```
-You:   /riper --plan
+You:   /mm-riper --plan
 ```
 
 > **Skill:** `riper` activates in RESEARCH phase. Uses `researcher` agent (Haiku, read-only) to scan the codebase for existing rate-limit patterns, middleware chain, and test coverage. Produces research findings, then advances to INNOVATE phase — generates 2-4 approaches (e.g., in-memory vs Redis, middleware vs decorator). Asks you to pick. After you choose, enters PLAN phase — decomposes into atomic tasks with acceptance criteria. Writes `.planning/PLAN.md`. No code written yet.
 
 ```
-You:   /riper --build
+You:   /mm-riper --build
 ```
 
 > **Skill:** `riper` activates in EXECUTE phase. Works through each task in PLAN.md:
@@ -56,13 +56,13 @@ You:   /riper --build
 > Repeats for each task in the plan.
 
 ```
-You:   /code-review-excellence --adversarial
+You:   /mm-code-review-excellence --adversarial
 ```
 
 > **Skill:** `code-review-excellence` activates in adversarial mode. **Agent:** spawns `code-reviewer` (Opus) in red-team mode — actively tries to break the code. Looks for race conditions, edge cases, security holes, missing error handling. Returns prioritized findings with confidence scores (0-100).
 
 ```
-You:   /quality --gate
+You:   /mm-quality --gate
 ```
 
 > **Skill:** `quality` activates in gate mode. Runs 6 mechanical checks in sequence:
@@ -74,10 +74,10 @@ You:   /quality --gate
 > 5. **Changed files** — flags files with no test coverage
 > 6. **Secrets scan** — runs bundled `secrets_scanner.py` for hardcoded secrets
 >
-> Writes `.planning/VERIFY.md` with results table. Either "Verification passed. Ready to `/ship`." or "Verification failed." with what to fix.
+> Writes `.planning/VERIFY.md` with results table. Either "Verification passed. Ready to `/mm-ship`." or "Verification failed." with what to fix.
 
 ```
-You:   /ship
+You:   /mm-ship
 ```
 
 > **Skill:** `ship` activates. Runs final test suite. Creates PR via `gh pr create` with summary, test plan, breaking changes. Merges. Confirms CI green. Ends with "Shipped."
@@ -87,7 +87,7 @@ You:   /ship
 ### Full autopilot (single prompt, entire pipeline)
 
 ```
-You:   /riper --auto Add dark mode toggle to the settings page
+You:   /mm-riper --auto Add dark mode toggle to the settings page
 ```
 
 > **Skill:** `riper` activates in auto mode. Runs the full pipeline without stopping:
@@ -104,7 +104,7 @@ You:   /riper --auto Add dark mode toggle to the settings page
 ### Fix a bug (tactical)
 
 ```
-You:   /fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
+You:   /mm-fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
 ```
 
 > **Skill:** `fix` activates in default (tactical) mode. Steps:
@@ -121,7 +121,7 @@ You:   /fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
 ### Fix a bug (deep, systematic)
 
 ```
-You:   /fix --deep The webhook handler sometimes drops events under load
+You:   /mm-fix --deep The webhook handler sometimes drops events under load
 ```
 
 > **Skill:** `fix` activates in deep mode. Different approach — doesn't patch, investigates:
@@ -138,7 +138,7 @@ You:   /fix --deep The webhook handler sometimes drops events under load
 ### Fix a bug (triage — don't know what kind of problem it is)
 
 ```
-You:   /fix --triage CI has been failing since yesterday
+You:   /mm-fix --triage CI has been failing since yesterday
 ```
 
 > **Skill:** `fix` activates in triage mode. Routes by error type:
@@ -158,7 +158,7 @@ You:   /fix --triage CI has been failing since yesterday
 ### Find the commit that broke something
 
 ```
-You:   /fix --bisect The login page stopped working sometime this week
+You:   /mm-fix --bisect The login page stopped working sometime this week
 ```
 
 > **Skill:** `fix` activates in bisect mode. Runs `git bisect` to binary-search through commits. Identifies the first bad commit, reads the diff, explains what changed and why it broke. Proposes a fix.
@@ -168,7 +168,7 @@ You:   /fix --bisect The login page stopped working sometime this week
 ### Quick change (no ceremony)
 
 ```
-You:   /quick Fix the off-by-one error in pagination.py line 42
+You:   /mm-quick Fix the off-by-one error in pagination.py line 42
 ```
 
 > **Skill:** `quick` activates. Four steps, no stopping:
@@ -178,14 +178,14 @@ You:   /quick Fix the off-by-one error in pagination.py line 42
 > 3. **Implement** — makes the fix + writes minimal test. **PostToolUse hook:** `post-format-and-heal.sh` formats
 > 4. **Commit** — stages explicitly, commits. **Agent:** `code-reviewer` reviews. **Hook:** `pre-tool-use.js` enforces conventional format
 >
-> If the change grows beyond 5 files, auto-escalates to `/riper`.
+> If the change grows beyond 5 files, auto-escalates to `/mm-riper`.
 
 ---
 
 ### Code review (three modes)
 
 ```
-You:   /code-review-excellence
+You:   /mm-code-review-excellence
 ```
 
 > **Skill:** `code-review-excellence` activates (constructive mode). **Agent:** spawns `code-reviewer` (Opus). 3-pass review:
@@ -197,13 +197,13 @@ You:   /code-review-excellence
 > Returns findings: must-fix / should-fix / consider.
 
 ```
-You:   /code-review-excellence --staff
+You:   /mm-code-review-excellence --staff
 ```
 
 > Same agent, but operates as a staff engineer. Focuses on architectural concerns, long-term maintainability, API design. Asks "will this scale?" and "what breaks when requirements change?"
 
 ```
-You:   /code-review-excellence --adversarial
+You:   /mm-code-review-excellence --adversarial
 ```
 
 > Same agent, red-team mode. Actively tries to break the code. Looks for security holes, data corruption paths, undefined behavior. Confidence scores (0-100) on each finding.
@@ -213,7 +213,7 @@ You:   /code-review-excellence --adversarial
 ### Test-driven development
 
 ```
-You:   /tdd Add a cart checkout flow
+You:   /mm-tdd Add a cart checkout flow
 ```
 
 > **Skill:** `tdd` activates. Enforces vertical slices (one test at a time, not all tests then all code):
@@ -226,7 +226,7 @@ You:   /tdd Add a cart checkout flow
 > Each cycle produces one atomic commit. Never writes all tests first.
 
 ```
-You:   /tdd --write
+You:   /mm-tdd --write
 ```
 
 > Same skill, but generates tests for existing code instead of driving new implementation. Reads the code, identifies untested behaviors, writes tests that verify through public interfaces.
@@ -236,7 +236,7 @@ You:   /tdd --write
 ### Parallel multi-agent work
 
 ```
-You:   /swarm 4
+You:   /mm-swarm 4
 ```
 
 > **Skill:** `swarm` activates. Reads `.planning/PLAN.md`:
@@ -247,10 +247,10 @@ You:   /swarm 4
 > 4. **Monitor** — agents run in background. Each agent uses `code-reviewer` before committing
 > 5. **Merge** — after Wave 1 completes, merges worktree branches back. Resolves conflicts
 > 6. **Next wave** — Wave 2: 2 agents for dependent tasks. Wave 3: remaining tasks
-> 7. **Verify** — runs `/quality --gate` on the merged result
+> 7. **Verify** — runs `/mm-quality --gate` on the merged result
 
 ```
-You:   /swarm --status
+You:   /mm-swarm --status
 ```
 
 > Shows active worktrees from `git worktree list`, branch names, last commit, and recent tool activity for each running agent.
@@ -260,7 +260,7 @@ You:   /swarm --status
 ### Security audit
 
 ```
-You:   /security
+You:   /mm-security
 ```
 
 > **Skill:** `security` activates (manual trigger only — never auto-fires). Scopes to files changed since last tag. Runs 6 checks:
@@ -279,13 +279,13 @@ You:   /security
 ### Explore a codebase
 
 ```
-You:   /zoom-out
+You:   /mm-zoom-out
 ```
 
 > **Skill:** `zoom-out` activates. Quick 3-5 minute overview: project structure, key modules, entry points, data flow, tech stack.
 
 ```
-You:   /zoom-out --explore
+You:   /mm-zoom-out --explore
 ```
 
 > Deep-dive mode. **Agent:** spawns `researcher` (Haiku) for parallel file reads across the codebase. Maps the full architecture: module boundaries, dependency graph, data flow, API surface, test coverage gaps.
@@ -307,7 +307,7 @@ You:   Where does the session token get validated across the codebase?
 ### Scaffold a new project
 
 ```
-You:   /scaffold --react
+You:   /mm-scaffold --react
 ```
 
 > **Skill:** `scaffold` activates. Generates a complete working project:
@@ -321,7 +321,7 @@ You:   /scaffold --react
 > **PostToolUse hooks fire on every file write:** `post-format-and-heal.sh` formats each file, `validate-utf8-source.sh` checks encoding.
 
 ```
-You:   /scaffold --fastapi
+You:   /mm-scaffold --fastapi
 ```
 
 > Same skill, Python template: `src/<pkg>/`, `tests/`, `pyproject.toml`, `.env.example`, ruff + mypy + pytest setup. Runs `pip install -e ".[dev]"` and verifies with tests/lint/types.
@@ -331,7 +331,7 @@ You:   /scaffold --fastapi
 ### Dependency management
 
 ```
-You:   /deps --audit
+You:   /mm-deps --audit
 ```
 
 > **Skill:** `deps` activates. Auto-detects package manager (npm/pnpm/pip/cargo). Runs:
@@ -344,7 +344,7 @@ You:   /deps --audit
 > Produces prioritized action plan: do now (blocking CVEs) → do this week (major bumps) → next sprint (cleanup).
 
 ```
-You:   /deps --clean
+You:   /mm-deps --clean
 ```
 
 > Same skill, cleanup mode. Finds unused dependencies and removes them. Runs tests after each removal to confirm nothing breaks.
@@ -354,10 +354,10 @@ You:   /deps --clean
 ### Cost tracking
 
 ```
-You:   /cost --trend
+You:   /mm-cost --trend
 ```
 
-> **Skill:** `cost` activates. Runs `python ~/.claude/skills/cost/cost_report.py --trend`. Parses `~/.claude/projects/**/*.jsonl` logs. Shows:
+> **Skill:** `cost` activates. Runs `python ~/.claude/skills/mm-cost/cost_report.py --trend`. Parses `~/.claude/projects/**/*.jsonl` logs. Shows:
 >
 > - This week vs last week: cache reads, cache writes, input, output, cost
 > - 7-day bar chart of daily spend
@@ -370,7 +370,7 @@ You:   /cost --trend
 ### Incident postmortem
 
 ```
-You:   /incident
+You:   /mm-incident
 ```
 
 > **Skill:** `incident` activates. Guided Q&A: what happened, when, who was affected, timeline, root cause, fix, what will prevent recurrence. Writes `.planning/POSTMORTEM-{date}.md`.
@@ -380,19 +380,19 @@ You:   /incident
 ### Migration assistant
 
 ```
-You:   /migrate --plan Upgrade React Router from v5 to v6
+You:   /mm-migrate --plan Upgrade React Router from v5 to v6
 ```
 
 > **Skill:** `migrate` activates in plan mode. **Agent:** `researcher` scans for all v5 patterns (`useHistory`, `<Switch>`, `<Redirect>`). Produces a migration plan with each change mapped to a file and a v6 equivalent. Writes `.planning/MIGRATION.md`.
 
 ```
-You:   /migrate --execute
+You:   /mm-migrate --execute
 ```
 
 > Executes the plan. Each file change → **PostToolUse hooks** (format, lint, test). Each logical group → atomic commit with `code-reviewer` review.
 
 ```
-You:   /migrate --verify
+You:   /mm-migrate --verify
 ```
 
 > Runs full test suite + type check + smoke test to confirm migration didn't break anything.
@@ -402,19 +402,19 @@ You:   /migrate --verify
 ### Project health and session management
 
 ```
-You:   /hud --doctor
+You:   /mm-hud --doctor
 ```
 
 > **Skill:** `hud` activates in doctor mode. Checks: git state, uncommitted changes, dependency health, test suite status, TODO count, stale branches, disk usage.
 
 ```
-You:   /hud
+You:   /mm-hud
 ```
 
 > Session HUD: current branch, commits ahead/behind, sprint state from `.planning/`, recent files, token usage this session.
 
 ```
-You:   /onboard
+You:   /mm-onboard
 ```
 
 > **Skill:** `onboard` activates. **Agent:** `researcher` scans the entire codebase. Writes `.planning/ONBOARDING.md` with: what this project does, tech stack, how to run, how to test, key modules, data flow, common tasks.
@@ -494,39 +494,39 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 ## Specialist subagents
 
-| Agent            | Model  | What it does                                   | Triggered by                                       |
-| ---------------- | ------ | ---------------------------------------------- | -------------------------------------------------- |
-| `code-reviewer`  | Opus   | 3-pass staff-engineer review                   | Auto before commits; `/code-review-excellence`     |
-| `researcher`     | Haiku  | Fast cross-file codebase investigation         | Questions spanning >3 files; `/zoom-out --explore` |
-| `refactor-agent` | Sonnet | Large renames in isolated git worktree         | Renames >10 files; `/swarm`; `/refactor`           |
-| `db-reader`      | Haiku  | Read-only DB inspector (SELECT only, enforced) | Any DB query; hook blocks write SQL                |
-| `deploy-guard`   | Opus   | Pre-deploy GO/NO-GO gate                       | Human-trigger only: `/agents deploy-guard`         |
+| Agent            | Model  | What it does                                   | Triggered by                                          |
+| ---------------- | ------ | ---------------------------------------------- | ----------------------------------------------------- |
+| `code-reviewer`  | Opus   | 3-pass staff-engineer review                   | Auto before commits; `/mm-code-review-excellence`     |
+| `researcher`     | Haiku  | Fast cross-file codebase investigation         | Questions spanning >3 files; `/mm-zoom-out --explore` |
+| `refactor-agent` | Sonnet | Large renames in isolated git worktree         | Renames >10 files; `/mm-swarm`; `/mm-refactor`        |
+| `db-reader`      | Haiku  | Read-only DB inspector (SELECT only, enforced) | Any DB query; hook blocks write SQL                   |
+| `deploy-guard`   | Opus   | Pre-deploy GO/NO-GO gate                       | Human-trigger only: `/agents deploy-guard`            |
 
 ---
 
-## All 47 skills
+## All 48 skills
 
-**Sprint:** `/brief` `/riper --plan` `/riper --build` `/riper --auto` `/riper --search` `/code-review-excellence` `/quality --gate` `/ship` `/retro`
+**Sprint:** `/mm-brief` `/mm-riper --plan` `/mm-riper --build` `/mm-riper --auto` `/mm-riper --search` `/mm-code-review-excellence` `/mm-quality --gate` `/mm-ship` `/mm-retro`
 
-**Workflow:** `/workflow` `/swarm` `/swarm --status` `/swarm --results` `/quick`
+**Workflow:** `/mm-workflow` `/mm-swarm` `/mm-swarm --status` `/mm-swarm --results` `/mm-quick`
 
-**Debug:** `/fix` `/fix --deep` `/fix --triage` `/fix --bisect`
+**Debug:** `/mm-fix` `/mm-fix --deep` `/mm-fix --triage` `/mm-fix --bisect`
 
-**Test:** `/tdd` `/tdd --write` `/test-gen`
+**Test:** `/mm-tdd` `/mm-tdd --write` `/mm-test-gen`
 
-**Quality:** `/quality --deps` `/quality --a11y` `/quality --gate` `/cleanup` `/cleanup --aggressive` `/security` `/perf`
+**Quality:** `/mm-quality --deps` `/mm-quality --a11y` `/mm-quality --gate` `/mm-cleanup` `/mm-cleanup --aggressive` `/mm-security` `/mm-perf`
 
-**Review:** `/code-review-excellence --staff` `/code-review-excellence --adversarial` `/api-design` `/design-an-interface` `/grill-me` `/premortem`
+**Review:** `/mm-code-review-excellence --staff` `/mm-code-review-excellence --adversarial` `/mm-api-design` `/mm-design-an-interface` `/mm-grill-me` `/mm-premortem`
 
-**Deps & CI:** `/deps` `/deps --audit` `/deps --clean` `/changelog` `/ci` `/release`
+**Deps & CI:** `/mm-deps` `/mm-deps --audit` `/mm-deps --clean` `/mm-changelog` `/mm-ci` `/mm-release`
 
-**Explore:** `/zoom-out` `/zoom-out --explore` `/hud` `/hud --doctor` `/hud --map` `/onboard` `/lsp-status`
+**Explore:** `/mm-zoom-out` `/mm-zoom-out --explore` `/mm-hud` `/mm-hud --doctor` `/mm-hud --map` `/mm-onboard` `/mm-lsp-status`
 
-**Incident:** `/incident` `/migrate --plan` `/migrate --execute` `/migrate --verify`
+**Incident:** `/mm-incident` `/mm-migrate --plan` `/mm-migrate --execute` `/mm-migrate --verify`
 
-**Scaffold:** `/scaffold --react` `/scaffold --next` `/scaffold --fastapi` `/scaffold --express` `/scaffold --python`
+**Scaffold:** `/mm-scaffold --react` `/mm-scaffold --next` `/mm-scaffold --fastapi` `/mm-scaffold --express` `/mm-scaffold --python`
 
-**Meta:** `/docs` `/docs --api` `/refactor` `/config` `/session` `/cost` `/cost --trend` `/write-a-skill` `/sketch`
+**Meta:** `/mm-docs` `/mm-docs --api` `/mm-refactor` `/mm-config` `/mm-session` `/mm-cost` `/mm-cost --trend` `/mm-write-a-skill` `/mm-sketch`
 
 ---
 
@@ -574,9 +574,11 @@ Both plugins load independently; disabling one never affects the other.
 
 ## Install
 
-Since v1.0, claude-solo is a Claude Code plugin. Skills, agents, and hooks load
-directly from this repo via a link in the skills directory — no file copying, and
-`git pull` updates everything in place.
+claude-solo installs the 48 skills as **standalone** `/mm-*` skill directories in
+`~/.claude/skills/` (a plugin can only produce colon-namespaced commands, so the
+dash form requires standalone skills). The agents and hooks ship as a companion
+plugin linked into the skills directory. Re-run the installer to pick up updates
+(`npx github:mikkeymoo/claude-solo update`).
 
 ### Option A — `npx` (interactive, recommended)
 
@@ -638,7 +640,7 @@ Handled automatically by the installer:
    commands are skipped (rtk can't rewrite them safely); the hook no-ops if rtk isn't installed.
 2. **cache-fix proxy** — fixes 5m→1h cache TTL regression in CC v2.1.81+
 3. **Session hygiene** — long sessions, checkpoints, LSP over Grep
-4. **`/cost --trend`** — week-over-week comparison to spot regressions
+4. **`/mm-cost --trend`** — week-over-week comparison to spot regressions
 
 ## Windows encoding
 
