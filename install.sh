@@ -600,60 +600,49 @@ install_keybindings() {
 # ---------------------------------------------------------------------------
 # Agents install
 # ---------------------------------------------------------------------------
-install_agents() {
+# The plugin ships agents directly (code-reviewer, db-reader, deploy-guard,
+# refactor-agent, researcher). ult-* copies left by <=0.8.x installs would
+# duplicate them in the agent list — remove them (backed up first).
+remove_stale_ult_agents() {
   local src_dir="$1"
-  local manifest="$2"
-  say "Installing agents → $CLAUDE_HOME/agents/"
-  do_run mkdir -p "$CLAUDE_HOME/agents"
-  [[ $DRY_RUN -eq 0 ]] && : > "$manifest"
+  say "Removing stale ult-* agent copies superseded by the plugin"
   shopt -s nullglob
   local count=0
   for f in "$src_dir/"*.md; do
     local name; name=$(basename "$f" .md)
     local target="$CLAUDE_HOME/agents/ult-${name}.md"
-    [[ -f "$target" ]] && backup_path "$target"
-    do_run cp "$f" "$target"
-    # Add ult- prefix only if not already present (idempotent)
-    do_run sed -i "s/^name: ${name}$/name: ult-${name}/" "$target"
-    ok "Installed ult-$name.md"
-    _manifest_add "$manifest" "agents/ult-${name}.md"
+    [[ -f "$target" ]] || continue
+    backup_path "$target"
+    do_run rm -f "$target"
+    ok "Removed stale agent: ult-$name (plugin provides $name)"
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No agent .md files found in $src_dir" || true
+  [[ $count -eq 0 ]] && ok "No stale ult-* agents found" || true
 }
 
 # ---------------------------------------------------------------------------
-# Skills install
+# Skills: the plugin serves skills directly from the repo since v1.0 — bare
+# copies left by <=0.8.x installs would shadow/duplicate them. Remove any
+# bare dir in ~/.claude/skills whose name matches a repo skill (backed up first).
 # ---------------------------------------------------------------------------
-install_skills() {
+remove_stale_bare_skills() {
   local src_dir="$1"
-  local manifest="$2"
-  say "Installing skills → $CLAUDE_HOME/skills/"
-  do_run mkdir -p "$CLAUDE_HOME/skills"
+  say "Removing stale bare-skill copies superseded by the plugin"
   shopt -s nullglob
   local count=0
   for dir in "$src_dir/"*/; do
     local name; name=$(basename "$dir")
     local target="$CLAUDE_HOME/skills/$name"
-    if [[ ! -f "$dir/SKILL.md" ]]; then
-      warn "Skipping $name — no SKILL.md found"
-      continue
-    fi
-    [[ -d "$target" ]] && backup_path "$target"
-    do_run mkdir -p "$target"
-    # Copy all files in the skill directory (SKILL.md + helpers like .py, .sh)
-    for f in "$dir"*; do
-      [[ -f "$f" ]] || continue
-      local fname; fname=$(basename "$f")
-      do_run cp "$f" "$target/$fname"
-      _manifest_add "$manifest" "skills/$name/$fname"
-    done
-    ok "Installed skill: $name"
+    # Only plain dirs: skip links/junctions (plugins) and dirs that ARE plugins
+    [[ -d "$target" && ! -L "$target" && ! -f "$target/.claude-plugin/plugin.json" ]] || continue
+    backup_path "$target"
+    do_run rm -rf "$target"
+    ok "Removed stale bare skill: $name (plugin provides it)"
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && warn "No skill directories found in $src_dir" || true
+  [[ $count -eq 0 ]] && ok "No stale bare skills found" || true
 }
 
 
@@ -795,8 +784,9 @@ de_wire_old_hooks() {
       _unwire_hook_by_command_fragment "$event" "$frag" 2>/dev/null && changed=1
     done
   done
-  # Remove empty hook event arrays
-  jq 'if .hooks then .hooks |= with_entries(select(.value | length > 0)) else . end' \
+  # Remove empty hook event arrays, then the hooks key itself if nothing remains
+  jq 'if .hooks then .hooks |= with_entries(select(.value | length > 0)) else . end
+      | if (.hooks // {} | length) == 0 then del(.hooks) else . end' \
     "$target" > "$target.tmp" && mv "$target.tmp" "$target"
   [[ $changed -eq 1 ]] && ok "Legacy hooks removed" || ok "No legacy hooks found"
   # Also handle start-cache-proxy toggle
@@ -997,7 +987,7 @@ smoke_test() {
     ok "Plugin linked; hooks.json wires $hook_events events"
   fi
   # Legacy hook wiring left in settings.json would double-fire with plugin hooks
-  if jq -e '.hooks' "$settings" >/dev/null 2>&1; then
+  if jq -e '.hooks | length > 0' "$settings" >/dev/null 2>&1; then
     warn "Legacy hooks section still present in settings.json — re-run installer to de-wire"
     smoke_ok=0
   fi
@@ -1074,10 +1064,15 @@ smoke_test() {
     fi
   fi
 
-  # 7. Agent, skill counts
-  local agents; agents=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
-  local skills; skills=$(ls -d "$CLAUDE_HOME/skills/"*/ 2>/dev/null | wc -l)
-  ok "Agents: $agents/5  |  Skills: $skills"
+  # 7. Plugin agent/skill counts (served from the linked repo)
+  local agents; agents=$(ls "$plugin_link/agents/"*.md 2>/dev/null | wc -l)
+  local skills; skills=$(ls -d "$plugin_link/skills/"*/ 2>/dev/null | wc -l)
+  ok "Plugin agents: $agents/5  |  Plugin skills: $skills"
+  local stale_ult; stale_ult=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
+  if [[ $stale_ult -gt 0 ]]; then
+    warn "Stale ult-* agent copies remain in ~/.claude/agents ($stale_ult) — re-run installer"
+    smoke_ok=0
+  fi
 
   echo ""
   if [[ $smoke_ok -eq 1 ]]; then
@@ -1173,8 +1168,8 @@ run_install() {
   install_hooks       "$src_hooks"       "$dst_hooks"
   install_keybindings "$src_keybindings"
   install_mcp         "$src_mcp"
-  install_agents      "$src_agents"      "$MANIFEST"
-  install_skills   "$src_skills"   "$MANIFEST"
+  remove_stale_ult_agents "$src_agents"
+  remove_stale_bare_skills "$src_skills"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
   de_wire_old_hooks
