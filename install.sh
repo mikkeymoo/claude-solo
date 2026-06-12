@@ -699,9 +699,13 @@ install_settings() {
 # ---------------------------------------------------------------------------
 # Surgically bring an EXISTING settings.json up to current claude-solo defaults
 # without overwriting the whole file (so merge-mode installs pick up fixes too).
-# Idempotent: schema fixes always applied; preference keys only set when the
-# user hasn't chosen a value, so explicit choices are never clobbered.
-#   - fallbackModel: bare string -> array (schema expects an array of IDs)
+# Forced fixes always applied; preference keys only set when the user hasn't
+# chosen a value, so opt-in choices (remote control, skill budget) aren't
+# clobbered. Model defaults ARE forced — a merge install adopts the current
+# claude-solo model stack even on machines that already had a prior version.
+#   - model: claude-opus-4-8 (FORCED — latest Opus, 1M context)
+#   - fallbackModel: [claude-sonnet-4-6, claude-haiku-4-5] (FORCED — aliases)
+#   - CLAUDE_CODE_SUBAGENT_MODEL: de-pin old dated Haiku id -> alias (migrate only)
 #   - drop unsupported "mcp__*" allow rule (invalid pattern; /doctor warning)
 #   - allow reading .env (claude-solo policy); Edit/Write stay denied
 #   - disableRemoteControl: true (only if key absent)
@@ -711,16 +715,19 @@ patch_existing_settings() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (fallbackModel array, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (force model=opus-4-8 + sonnet/haiku fallback, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
     return 0
   fi
   _apply_jq_if_changed "$target" '
-    (if (.fallbackModel | type) == "string" then .fallbackModel = [ .fallbackModel ] else . end)
+    .model = "claude-opus-4-8"
+    | .fallbackModel = ["claude-sonnet-4-6", "claude-haiku-4-5"]
+    | (if .env.CLAUDE_CODE_SUBAGENT_MODEL == "claude-haiku-4-5-20251001"
+         then .env.CLAUDE_CODE_SUBAGENT_MODEL = "claude-haiku-4-5" else . end)
     | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
     | (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
     | (if has("disableRemoteControl")        then . else .disableRemoteControl = true end)
     | (if has("skillListingBudgetFraction")  then . else .skillListingBudgetFraction = 0.03 end)
-  ' "Patched existing settings.json to current claude-solo defaults" \
+  ' "Patched existing settings.json (forced Opus 4.8 + Sonnet/Haiku fallback)" \
     "settings.json already current (no patch needed)"
 }
 
