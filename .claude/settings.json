@@ -44,7 +44,6 @@
       "Bash(dd if=*)",
       "Bash(chmod -R 777 *)",
       "Bash(mkfs.*)",
-      "Read(**/.env*)",
       "Edit(**/.env*)",
       "Write(**/.env*)",
       "Read(**/secrets/**)",
