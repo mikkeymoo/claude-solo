@@ -1,6 +1,6 @@
 ---
 name: relativity-sql
-description: Relativity SQL query bundle — domain dedup, processing exceptions, saved-search data sizes, multi-object field population. Includes Invoke-Sqlcmd wrappers and Power BI CSV/Parquet output. Use when: relativity sql, processing exceptions, domain dedup, saved search, ediscovery sql.
+description: "Relativity SQL query bundle — domain dedup, processing exceptions, saved-search data sizes, multi-object field population. Includes Invoke-Sqlcmd wrappers and Power BI CSV/Parquet output. Use when: relativity sql, processing exceptions, domain dedup, saved search, ediscovery sql."
 ---
 
 # /relativity-sql — Relativity SQL Query Bundle
