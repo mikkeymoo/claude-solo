@@ -540,6 +540,33 @@ Note: `git -c key=value push --force` (flag reordering) is NOT blocked by the de
 
 ---
 
+## Layering personal plugins
+
+claude-solo is the universal core. Anything personal — company branding, domain-specific SQL, niche tooling — belongs in a separate plugin layered on top, so the core stays shareable and your sessions only carry the context you need.
+
+Pattern (this is how the author's `claude-personal` plugin works):
+
+```
+claude-personal/
+├── .claude-plugin/plugin.json   # name, version, skills/hooks components
+├── skills/<your-skills>/        # domain skills
+├── scripts/<your-hooks>.sh      # e.g. a SessionStart hook that injects
+└── hooks/hooks.json             #   client context when CWD matches a pattern
+```
+
+Install it the same way as the core — link into the skills dir and it auto-loads:
+
+```bash
+# Windows (junction — no admin needed)
+cmd /c mklink /J "%USERPROFILE%\.claude\skills\my-plugin" "C:\path\to\my-plugin"
+# macOS / Linux
+ln -s /path/to/my-plugin ~/.claude/skills/my-plugin
+```
+
+Both plugins load independently; disabling one never affects the other.
+
+---
+
 ## Install
 
 ```bash
