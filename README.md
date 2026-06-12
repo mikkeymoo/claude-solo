@@ -1,6 +1,6 @@
 # claude-solo
 
-Claude Code **plugin** for solo developers. 47 skills, 5 subagents, 18 hooks, plus a bootstrap installer for the settings layer plugins can't carry.
+Claude Code **plugin** for solo developers. 47 skills, 5 subagents, 24 hooks, plus a bootstrap installer for the settings layer plugins can't carry.
 
 ```bash
 git clone <this-repo> && cd claude-solo
@@ -33,7 +33,7 @@ You:   /riper --build
 
 > **Skill:** `riper` activates in EXECUTE phase. Works through each task in PLAN.md:
 >
-> 1. Writes code → **PostToolUse hooks fire:** `post-format-and-heal.sh` auto-formats the file, `lint-fix.js` runs the project linter (eslint/ruff/clippy) and auto-fixes violations, `enforce-lsp-navigation.sh` nudges if Grep was used instead of LSP
+> 1. Writes code → **PostToolUse hooks fire:** `post-format-and-heal.sh` auto-formats the file, `enforce-lsp-navigation.sh` nudges if Grep was used instead of LSP
 > 2. Writes/updates tests → same PostToolUse hooks fire again
 > 3. Before each `git commit` → **PreToolUse hook:** `pre-tool-use.js` enforces conventional commit format. **Agent:** `code-reviewer` (Opus, 3-pass) spawns automatically — does a blind bug hunt, edge case analysis, then acceptance audit. Returns findings labeled must-fix / should-fix / consider
 > 4. Commits with `feat(api): add rate limiting middleware`
@@ -65,7 +65,7 @@ You:   /quality --gate
 You:   /ship
 ```
 
-> **Skill:** `ship` activates. Runs final test suite. Creates PR via `gh pr create` with summary, test plan, breaking changes. Merges. Confirms CI green. **Hook:** `stop-gate.js` checks for dirty tree and TODO markers before session can end. Ends with "Shipped."
+> **Skill:** `ship` activates. Runs final test suite. Creates PR via `gh pr create` with summary, test plan, breaking changes. Merges. Confirms CI green. Ends with "Shipped."
 
 ---
 
@@ -80,7 +80,7 @@ You:   /riper --auto Add dark mode toggle to the settings page
 > 1. **RESEARCH** — `researcher` agent scans for existing theme handling, CSS variables, settings page structure
 > 2. **INNOVATE** — generates approaches, picks the best fit automatically
 > 3. **PLAN** — writes `.planning/PLAN.md` with atomic tasks
-> 4. **EXECUTE** — implements each task. On every file edit: `post-format-and-heal.sh` formats, `lint-fix.js` lints. Before every commit: `code-reviewer` reviews. `pre-tool-use.js` enforces conventional commits
+> 4. **EXECUTE** — implements each task. On every file edit: `post-format-and-heal.sh` formats. Before every commit: `code-reviewer` reviews. `pre-tool-use.js` enforces conventional commits
 > 5. **REVIEW** — spawns `code-reviewer` for a final pass over all changes
 > 6. Runs tests, ships, writes retro notes
 
@@ -97,8 +97,8 @@ You:   /fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
 > 1. **Reproduce** — confirms the error, gets the full stack trace
 > 2. **Locate** — uses Serena LSP (`find_symbol`, `find_references`) to trace the code path. **Hook:** `enforce-lsp-navigation.sh` nudges if Grep is used instead of LSP
 > 3. **Root cause** — states the problem in one sentence before writing any fix
-> 4. **Fix** — minimal change. **PostToolUse hooks:** `post-format-and-heal.sh` formats, `lint-fix.js` lints and auto-fixes
-> 5. **Verify** — runs relevant tests. **Hook:** `test-fix.js` confirms tests pass
+> 4. **Fix** — minimal change. **PostToolUse hook:** `post-format-and-heal.sh` formats
+> 5. **Verify** — runs relevant tests
 > 6. **Commit** — `fix(ui): handle undefined user in UserCard`. **Agent:** `code-reviewer` reviews before commit. **Hook:** `pre-tool-use.js` validates conventional commit format
 
 ---
@@ -160,7 +160,7 @@ You:   /quick Fix the off-by-one error in pagination.py line 42
 >
 > 1. **Clarify** — restates task in one sentence, confirms it's small
 > 2. **Locate** — reads the file. **Hook:** `enforce-lsp-navigation.sh` nudges LSP use
-> 3. **Implement** — makes the fix + writes minimal test. **PostToolUse hooks:** `post-format-and-heal.sh` formats, `lint-fix.js` auto-lints
+> 3. **Implement** — makes the fix + writes minimal test. **PostToolUse hook:** `post-format-and-heal.sh` formats
 > 4. **Commit** — stages explicitly, commits. **Agent:** `code-reviewer` reviews. **Hook:** `pre-tool-use.js` enforces conventional format
 >
 > If the change grows beyond 5 files, auto-escalates to `/riper`.
@@ -303,7 +303,7 @@ You:   /scaffold --react
 > - `.env.example` with `VITE_API_URL` placeholder
 > - `README.md` with install/run/build/test instructions
 >
-> **PostToolUse hooks fire on every file write:** `post-format-and-heal.sh` formats each file, `lint-fix.js` lints, `validate-utf8-source.sh` checks encoding, `large-file.js` warns if any file >500 lines.
+> **PostToolUse hooks fire on every file write:** `post-format-and-heal.sh` formats each file, `validate-utf8-source.sh` checks encoding.
 
 ```
 You:   /scaffold --fastapi
@@ -457,11 +457,7 @@ Hooks fire without you doing anything. Here's what runs in the background:
 **When Claude edits a file:**
 
 - `validate-utf8-source.sh` — blocks the edit if it would introduce encoding corruption
-- `large-file.js` — warns if the file is >500 lines or >50KB
-- `gitignore-check.js` — warns if the file is gitignored
 - `post-format-and-heal.sh` — auto-formats the file + runs LSP diagnostics
-- `lint-fix.js` — runs the project linter, auto-fixes what it can, exits 2 if errors remain (so Claude fixes them)
-- `test-fix.js` — runs tests after edits (opt-in: `AUTO_TEST=1`)
 
 **When Claude commits:**
 
@@ -478,10 +474,6 @@ Hooks fire without you doing anything. Here's what runs in the background:
 **When context compacts:**
 
 - `pre-compact-checkpoint.sh` — saves `.planning/CHECKPOINT.md` so the session resumes cleanly
-
-**When Claude tries to stop:**
-
-- `stop-gate.js` — blocks if there's a dirty tree, TODO markers, or failing tests
 
 ---
 
@@ -589,7 +581,7 @@ The installer does two things:
 
 1. **Links the plugin** — `~/.claude/skills/claude-solo` → this repo (NTFS junction on
    Windows, symlink elsewhere), then `claude plugin enable claude-solo@skills-dir`.
-   That serves the 47 skills, 5 agents, and 18 hooks.
+   That serves the 47 skills, 5 agents, and 24 hooks.
 2. **Bootstraps the settings layer** (plugins cannot ship this): permission deny rules,
    env vars, statusline, `CLAUDE.md`, and Windows encoding fixes into `~/.claude/`.
 

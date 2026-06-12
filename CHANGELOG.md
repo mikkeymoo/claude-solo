@@ -12,7 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ### Changed — plugin architecture (BREAKING)
 
 - **claude-solo is now a Claude Code plugin** (`.claude-plugin/plugin.json`). Skills (47),
-  agents (5), and hooks (18 across 14 events) load directly from the cloned repo via a
+  agents (5), and hooks (24 across 14 events) load directly from the cloned repo via a
   link at `~/.claude/skills/claude-solo` — no more file copying. `git pull` = upgrade.
 - **Hook wiring moved** from `settings.json` to the plugin's `hooks/hooks.json`, with
   paths via `${CLAUDE_PLUGIN_ROOT}`. Legacy entries are de-wired by the installer

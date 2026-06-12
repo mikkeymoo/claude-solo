@@ -3,7 +3,7 @@
   "name": "claude-solo",
   "displayName": "claude-solo",
   "version": "1.0.0",
-  "description": "Claude Code configuration for solo developers — 47 skills, 5 agents, 18 hooks. Strict deny layer, auto-healing hooks, specialist subagents.",
+  "description": "Claude Code configuration for solo developers — 47 skills, 5 agents, 24 hooks. Strict deny layer, auto-healing hooks, specialist subagents.",
   "author": {
     "name": "mikkeymoo",
     "email": "coolboarder86@gmail.com"
