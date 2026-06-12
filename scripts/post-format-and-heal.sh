@@ -13,10 +13,9 @@
 # edits code itself — only formats + reports. Formatters are idempotent and safe.
 
 set -euo pipefail
-exec 2>/dev/null
 
 INPUT=$(cat)
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null || true)
 
 # No file path (e.g. MultiEdit dict form) → nothing to do
 [[ -z "$FILE" ]] && exit 0
@@ -30,6 +29,35 @@ esac
 
 ext="${FILE##*.}"
 errors=""
+
+# One-time warning when no formatter is available (emitted before exec 2>/dev/null)
+_warn_no_formatter() {
+  local flag="${TMPDIR:-/tmp}/.claude-solo-no-fmt-${ext}"
+  [[ -f "$flag" ]] && return
+  echo "⚠️  claude-solo: no formatter found for .${ext} files (${1})" >&2
+  touch "$flag" 2>/dev/null || true
+}
+case "$ext" in
+  ts|tsx|js|jsx|mjs|cjs|json|md|css|scss|html|yaml|yml)
+    if ! command -v prettier >/dev/null 2>&1 && ! command -v biome >/dev/null 2>&1; then
+      _warn_no_formatter "install prettier or biome for auto-format"
+    fi
+    ;;
+  py)
+    if ! command -v ruff >/dev/null 2>&1 && ! command -v black >/dev/null 2>&1; then
+      _warn_no_formatter "install ruff or black for auto-format"
+    fi
+    ;;
+  rs)
+    command -v rustfmt >/dev/null 2>&1 || _warn_no_formatter "install rustfmt"
+    ;;
+  go)
+    command -v gofmt >/dev/null 2>&1 || _warn_no_formatter "install gofmt (bundled with Go)"
+    ;;
+esac
+
+# Silence formatter/tool stderr for the rest of the script
+exec 2>/dev/null
 
 # ---------------------------------------------------------------------------
 # FORMATTERS — run first, non-blocking
