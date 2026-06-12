@@ -1320,14 +1320,18 @@ smoke_test() {
   fi
 
   # 7. Plugin agents (served from the linked repo) + standalone /mm-* skills
-  local agents; agents=$(ls "$plugin_link/agents/"*.md 2>/dev/null | wc -l)
-  local mm_skills; mm_skills=$(ls -d "$CLAUDE_HOME/skills/"mm-*/ 2>/dev/null | wc -l)
+  # NB: `... | wc -l` with an empty glob makes `ls` exit non-zero; under
+  # `set -euo pipefail` that aborts the whole installer (after all real work is
+  # done, right before "Install complete"). The trailing `|| true` keeps the
+  # count probe from failing the run. `wc` still prints 0 on empty input.
+  local agents; agents=$(ls "$plugin_link/agents/"*.md 2>/dev/null | wc -l) || true
+  local mm_skills; mm_skills=$(ls -d "$CLAUDE_HOME/skills/"mm-*/ 2>/dev/null | wc -l) || true
   ok "Plugin agents: $agents/5  |  Standalone /mm-* skills: $mm_skills"
   if [[ $mm_skills -eq 0 ]]; then
     warn "No /mm-* skills found in ~/.claude/skills — re-run installer"
     smoke_ok=0
   fi
-  local stale_ult; stale_ult=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
+  local stale_ult; stale_ult=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l) || true
   if [[ $stale_ult -gt 0 ]]; then
     warn "Stale ult-* agent copies remain in ~/.claude/agents ($stale_ult) — re-run installer"
     smoke_ok=0
