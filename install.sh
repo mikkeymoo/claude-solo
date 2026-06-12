@@ -753,7 +753,7 @@ install_settings() {
 # user-scope ~/.claude/settings.json when run outside a project) keeps it across
 # re-installs. Preference keys (remote control, skill budget) are likewise only
 # set when absent.
-#   - model: claude-sonnet-4-6 (or absent) -> claude-opus-4-8; else left as-is
+#   - model: claude-sonnet-4-6, claude-opus-4-8 (non-1M), or absent -> claude-opus-4-8[1m]; else left as-is
 #   - fallbackModel: old dated-Haiku default (or absent) -> [sonnet, haiku] aliases
 #   - CLAUDE_CODE_SUBAGENT_MODEL: old dated Haiku id -> alias (migrate only)
 #   - drop unsupported "mcp__*" allow rule (invalid pattern; /doctor warning)
@@ -765,12 +765,12 @@ patch_existing_settings() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8 + sonnet/haiku fallback, drop mcp__*, clear deny-list, disableRemoteControl, skillListingBudgetFraction)\n"
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8[1m] + sonnet/haiku fallback, drop mcp__*, clear deny-list, disableRemoteControl, skillListingBudgetFraction)\n"
     return 0
   fi
   _apply_jq_if_changed "$target" '
-    (if (.model == "claude-sonnet-4-6" or (has("model") | not))
-       then .model = "claude-opus-4-8" else . end)
+    (if (.model == "claude-sonnet-4-6" or .model == "claude-opus-4-8" or (has("model") | not))
+       then .model = "claude-opus-4-8[1m]" else . end)
     | (if (.fallbackModel == "claude-haiku-4-5-20251001"
            or .fallbackModel == ["claude-haiku-4-5-20251001"]
            or (has("fallbackModel") | not))

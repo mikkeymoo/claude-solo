@@ -1,7 +1,7 @@
 {
   "_comment_top": "Global settings — install to ~/.claude/settings.json. Hook scripts installed at ~/.claude/scripts/. Cross-platform: bash required (Git Bash on Windows). See README.md.",
   "_precedence": "Scope precedence (high → low): Managed > Local (.claude/settings.local.json) > Project (.claude/settings.json) > User (this file). Deny rules accumulate across all scopes; first match of deny > defer > ask > allow wins.",
-  "model": "claude-opus-4-8",
+  "model": "claude-opus-4-8[1m]",
   "fallbackModel": ["claude-sonnet-4-6", "claude-haiku-4-5"],
   "effortLevel": "medium",
   "maxTurns": 200,
