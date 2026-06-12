@@ -75,7 +75,7 @@ program
   .description(
     "Interactive installer for the claude-solo Claude Code configuration",
   )
-  .version("1.0.0");
+  .version("2.0.0");
 
 program
   .command("install", { isDefault: true })

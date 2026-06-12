@@ -255,7 +255,7 @@ rl.on("close", () => {
 
     for (const { pattern, reason } of warnings) {
       if (pattern.test(cmdLower)) {
-        process.stderr.write(`⚠️  claude-solo: ${reason}\n`);
+        process.stderr.write(`⚠️  [claude-solo] ${reason}\n`);
         break;
       }
     }
@@ -269,7 +269,7 @@ rl.on("close", () => {
           const suggested = suggestConventionalCommit(commitMessage);
           const suggestion = suggested ? `\nSuggested: ${suggested}` : "";
           process.stderr.write(
-            `❌ claude-solo: Commit message must follow Conventional Commits format\n\n` +
+            `❌ [claude-solo] Commit message must follow Conventional Commits format\n\n` +
               `Expected: type(scope): description\n` +
               `Types: ${VALID_TYPES.join(", ")}\n\n` +
               `Your message: "${commitMessage}"` +

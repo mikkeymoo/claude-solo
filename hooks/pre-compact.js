@@ -80,8 +80,8 @@ rl.on('close', () => {
   try {
     mkdirSync(planningDir, { recursive: true });
     writeFileSync(checkpointPath, parts.join('\n') + '\n');
-    process.stderr.write('📌 claude-solo: checkpoint saved to .planning/CHECKPOINT.md\n');
+    process.stderr.write('📌 [claude-solo] checkpoint saved to .planning/CHECKPOINT.md\n');
   } catch (err) {
-    process.stderr.write(`⚠️  claude-solo: failed to save checkpoint: ${err.message}\n`);
+    process.stderr.write(`⚠️  [claude-solo] failed to save checkpoint: ${err.message}\n`);
   }
 });

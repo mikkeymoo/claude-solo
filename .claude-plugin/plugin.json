@@ -2,13 +2,12 @@
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "claude-solo",
   "displayName": "claude-solo",
-  "version": "1.0.0",
-  "description": "Claude Code configuration for solo developers — 47 skills, 5 agents, 24 hooks. Strict deny layer, auto-healing hooks, specialist subagents.",
+  "version": "2.0.0",
+  "description": "Claude Code configuration for solo developers — 48 standalone /mm-* skills, 5 agents, 24 hooks. Skills install standalone (dash-prefixed commands); this plugin ships the agents and hooks.",
   "author": {
     "name": "mikkeymoo",
     "email": "coolboarder86@gmail.com"
   },
   "defaultEnabled": true,
-  "skills": ["./skills"],
   "hooks": "./hooks/hooks.json"
 }

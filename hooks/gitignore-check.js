@@ -44,7 +44,7 @@ rl.on("close", () => {
 
     if (isGitignored) {
       process.stderr.write(
-        `⚠️  claude-solo: Writing to typically-gitignored path: ${filePath}\n`,
+        `⚠️  [claude-solo] Writing to typically-gitignored path: ${filePath}\n`,
       );
     }
   }

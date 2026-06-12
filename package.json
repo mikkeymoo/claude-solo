@@ -1,7 +1,7 @@
 {
   "name": "claude-solo",
-  "version": "1.0.0",
-  "description": "Interactive installer for the claude-solo Claude Code configuration — strict deny layer, auto-healing hooks, specialist subagents, and a full skill library.",
+  "version": "2.0.0",
+  "description": "Interactive installer for the claude-solo Claude Code configuration — standalone /mm-* skills, auto-healing hooks, specialist subagents, and a full skill library.",
   "type": "module",
   "bin": {
     "claude-solo": "bin/cli.js"
@@ -19,7 +19,7 @@
     "scripts/",
     "hooks/",
     "agents/",
-    "skills/",
+    "mm-skills/",
     "rules/",
     "settings.json",
     "mcp.json",

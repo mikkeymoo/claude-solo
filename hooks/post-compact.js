@@ -4,7 +4,7 @@
  *
  * Fires after Claude compresses context. Re-injects the checkpoint saved
  * by PreCompact so Claude automatically recovers sprint state without the
- * user needing to manually run /session --resume.
+ * user needing to manually run /mm-session --resume.
  *
  * Input (stdin): JSON { session_id, cwd, summary }
  * Output (stdout): JSON { additionalContext: "..." }
@@ -55,13 +55,13 @@ rl.on("close", () => {
     "## Context Restored After Compaction",
     "",
     "The following checkpoint was auto-saved before context was compressed.",
-    "You are already caught up — no need to run /session --resume.",
+    "You are already caught up — no need to run /mm-session --resume.",
     "",
     trimmed + suffix,
   ].join("\n");
 
   process.stderr.write(
-    "🔄 claude-solo: context restored from .planning/CHECKPOINT.md\n",
+    "🔄 [claude-solo] context restored from .planning/CHECKPOINT.md\n",
   );
   process.stdout.write(JSON.stringify({ additionalContext }));
 });

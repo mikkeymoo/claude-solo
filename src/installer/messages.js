@@ -48,8 +48,8 @@ export function outroSuccess(scope) {
   ];
   if (scope === 'user') {
     lines.push(
-      `  ${pc.dim('•')} Try the sprint pipeline: ${pc.cyan('/brief')} → ${pc.cyan('/riper --plan')} → ${pc.cyan('/riper --build')}.`,
-      `  ${pc.dim('•')} Run ${pc.cyan('/hud --doctor')} to verify hooks and agents are wired.`
+      `  ${pc.dim('•')} Try the sprint pipeline: ${pc.cyan('/mm-brief')} → ${pc.cyan('/mm-riper --plan')} → ${pc.cyan('/mm-riper --build')}.`,
+      `  ${pc.dim('•')} Run ${pc.cyan('/mm-hud --doctor')} to verify hooks and agents are wired.`
     );
   } else {
     lines.push(`  ${pc.dim('•')} The project override lives in this directory — commit it if you want it tracked.`);

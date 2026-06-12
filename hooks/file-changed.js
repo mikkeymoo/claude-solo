@@ -88,6 +88,6 @@ rl.on('close', () => {
 
   const additionalContext = lines.join('\n');
 
-  process.stderr.write(`⚠️  claude-solo: ${fileName} changed — dependency drift possible\n`);
+  process.stderr.write(`⚠️  [claude-solo] ${fileName} changed — dependency drift possible\n`);
   process.stdout.write(JSON.stringify({ additionalContext }));
 });

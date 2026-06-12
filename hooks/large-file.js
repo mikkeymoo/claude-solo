@@ -38,7 +38,7 @@ rl.on("close", () => {
     // Warn if >500 lines OR >50KB
     if (lineCount > 500 || sizeBytes > 50000) {
       process.stderr.write(
-        `⚠️  claude-solo: Large file write detected — ${lineCount} lines, ${sizeKB}KB. Consider splitting into smaller files.\n`,
+        `⚠️  [claude-solo] Large file write detected — ${lineCount} lines, ${sizeKB}KB. Consider splitting into smaller files.\n`,
       );
     }
   }

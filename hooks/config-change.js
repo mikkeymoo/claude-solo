@@ -73,7 +73,7 @@ rl.on('close', () => {
 
   if (missing.length > 0) {
     process.stderr.write(
-      `⚠️  claude-solo: settings.json changed — these hooks are no longer registered:\n` +
+      `⚠️  [claude-solo] settings.json changed — these hooks are no longer registered:\n` +
       missing.map(h => `   - ${h}`).join('\n') + '\n' +
       `   Run setup.sh to restore them, or this is intentional.\n`
     );

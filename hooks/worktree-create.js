@@ -103,7 +103,7 @@ rl.on('close', () => {
   }
 
   if (copied > 0) {
-    process.stderr.write(`📋 claude-solo: copied ${copied} file(s) into worktree\n`);
+    process.stderr.write(`📋 [claude-solo] copied ${copied} file(s) into worktree\n`);
   }
 
   // Output the worktree path — this is what Claude Code reads to find the worktree

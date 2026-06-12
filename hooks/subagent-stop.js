@@ -62,9 +62,9 @@ rl.on('close', () => {
   try {
     mkdirSync(outputDir, { recursive: true });
     writeFileSync(outputFile, content);
-    process.stderr.write(`💾 claude-solo: agent output saved → .planning/agent-outputs/${safeLabel}-${timestamp}.md\n`);
+    process.stderr.write(`💾 [claude-solo] agent output saved → .planning/agent-outputs/${safeLabel}-${timestamp}.md\n`);
   } catch (err) {
-    process.stderr.write(`⚠️  claude-solo: failed to save agent output: ${err.message}\n`);
+    process.stderr.write(`⚠️  [claude-solo] failed to save agent output: ${err.message}\n`);
   }
 
   // ── Cleanup: remove this agent's worktree if one exists ─────────────────
@@ -77,7 +77,7 @@ rl.on('close', () => {
       if (dir.includes(shortId)) {
         const wtPath = join(worktreesDir, dir);
         spawnSync('git', ['worktree', 'remove', '--force', wtPath], { cwd });
-        process.stderr.write(`🧹 claude-solo: removed worktree ${dir}\n`);
+        process.stderr.write(`🧹 [claude-solo] removed worktree ${dir}\n`);
         break;
       }
     }

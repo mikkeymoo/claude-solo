@@ -135,7 +135,7 @@ rl.on("close", () => {
   // ── Open risks / next steps hint ────────────────────────────────────────
   parts.push("\n## Next Session");
   parts.push(
-    "Run `/session --resume` or check `.planning/HANDOFF.md` if available.",
+    "Run `/mm-session --resume` or check `.planning/HANDOFF.md` if available.",
   );
 
   // ── Write summary ───────────────────────────────────────────────────────
@@ -143,11 +143,11 @@ rl.on("close", () => {
     mkdirSync(planningDir, { recursive: true });
     writeFileSync(summaryPath, parts.join("\n") + "\n");
     process.stderr.write(
-      "📝 claude-solo: session summary saved to .planning/SESSION-END.md\n",
+      "📝 [claude-solo] session summary saved to .planning/SESSION-END.md\n",
     );
   } catch (err) {
     process.stderr.write(
-      `⚠️  claude-solo: failed to save session summary: ${err.message}\n`,
+      `⚠️  [claude-solo] failed to save session summary: ${err.message}\n`,
     );
   }
 
@@ -169,7 +169,7 @@ rl.on("close", () => {
     }
     // Remove the now-empty worktrees dir
     rmSync(worktreesDir, { recursive: true, force: true });
-    process.stderr.write("🧹 claude-solo: cleaned .claude/worktrees/\n");
+    process.stderr.write("🧹 [claude-solo] cleaned .claude/worktrees/\n");
   } catch {
     /* dir doesn't exist — skip */
   }
@@ -178,7 +178,7 @@ rl.on("close", () => {
   const agentOutputsDir = join(cwd, ".planning", "agent-outputs");
   try {
     rmSync(agentOutputsDir, { recursive: true, force: true });
-    process.stderr.write("🧹 claude-solo: cleaned .planning/agent-outputs/\n");
+    process.stderr.write("🧹 [claude-solo] cleaned .planning/agent-outputs/\n");
   } catch {
     /* skip */
   }

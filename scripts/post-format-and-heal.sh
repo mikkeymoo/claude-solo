@@ -34,7 +34,7 @@ errors=""
 _warn_no_formatter() {
   local flag="${TMPDIR:-/tmp}/.claude-solo-no-fmt-${ext}"
   [[ -f "$flag" ]] && return
-  echo "⚠️  claude-solo: no formatter found for .${ext} files (${1})" >&2
+  echo "⚠️  [claude-solo] no formatter found for .${ext} files (${1})" >&2
   touch "$flag" 2>/dev/null || true
 }
 case "$ext" in

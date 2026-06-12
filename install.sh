@@ -654,27 +654,68 @@ remove_stale_ult_agents() {
 }
 
 # ---------------------------------------------------------------------------
-# Skills: the plugin serves skills directly from the repo since v1.0 — bare
-# copies left by <=0.8.x installs would shadow/duplicate them. Remove any
-# bare dir in ~/.claude/skills whose name matches a repo skill (backed up first).
+# Skills (v2.0+): installed as STANDALONE skill dirs in ~/.claude/skills/mm-<name>,
+# which makes each invocable as a dash-prefixed command (/mm-fix, /mm-riper, …).
+# They are NOT plugin-served any more — plugin skills are always colon-namespaced
+# (/claude-solo:fix), which is exactly what this rename moves away from.
+#
+# Legacy cleanup removes copies left by earlier layouts, then we copy the current
+# mm-* skills in. Both run on every install (idempotent — overwrite-in-place).
 # ---------------------------------------------------------------------------
-remove_stale_bare_skills() {
+
+# Remove pre-v2 skill copies that would otherwise linger:
+#   - un-prefixed bare dirs from <=0.8.x installs (~/.claude/skills/fix, …)
+#   - the OLD names derived from the current repo skill set (strip mm-)
+# Only plain dirs are touched: never the plugin junction or a dir that IS a plugin.
+remove_legacy_skill_copies() {
   local src_dir="$1"
-  say "Removing stale bare-skill copies superseded by the plugin"
+  say "Removing legacy un-prefixed skill copies (superseded by /mm-* standalone skills)"
   shopt -s nullglob
   local count=0
   for dir in "$src_dir/"*/; do
-    local name; name=$(basename "$dir")
-    local target="$CLAUDE_HOME/skills/$name"
-    # Only plain dirs: skip links/junctions (plugins) and dirs that ARE plugins
+    local name; name=$(basename "$dir")          # mm-<old>
+    local old="${name#mm-}"                        # <old>
+    local target="$CLAUDE_HOME/skills/$old"
+    [[ "$old" == "$name" ]] && continue            # safety: skip if no mm- prefix
     [[ -d "$target" && ! -L "$target" && ! -f "$target/.claude-plugin/plugin.json" ]] || continue
     backup_path "$target"
     do_run rm -rf "$target"
-    ok "Removed stale bare skill: $name (plugin provides it)"
+    ok "Removed legacy skill: $old (now /mm-$old)"
     (( count++ )) || true
   done
   shopt -u nullglob
-  [[ $count -eq 0 ]] && ok "No stale bare skills found" || true
+  [[ $count -eq 0 ]] && ok "No legacy skill copies found" || true
+}
+
+# Copy mm-* skill dirs into ~/.claude/skills/ as standalone skills. Each is
+# manifest-tracked (skills/mm-<name>) so --uninstall removes them. Overwrites
+# in place so re-runs and upgrades stay idempotent.
+install_skills() {
+  local src_dir="$1"
+  local manifest="$2"
+  say "Installing standalone /mm-* skills → $CLAUDE_HOME/skills/"
+  do_run mkdir -p "$CLAUDE_HOME/skills"
+  shopt -s nullglob
+  local count=0
+  for dir in "$src_dir/"*/; do
+    local name; name=$(basename "$dir")            # mm-<name>
+    local target="$CLAUDE_HOME/skills/$name"
+    # Guard: never clobber the plugin junction or a real plugin dir.
+    if [[ -L "$target" || -f "$target/.claude-plugin/plugin.json" ]]; then
+      warn "Skipping $name — a plugin/link already occupies that path"
+      continue
+    fi
+    [[ -d "$target" ]] && do_run rm -rf "$target"
+    do_run cp -a "$dir" "$target"
+    _manifest_add "$manifest" "skills/$name"
+    (( count++ )) || true
+  done
+  shopt -u nullglob
+  if [[ $count -eq 0 ]]; then
+    warn "No skills found in $src_dir"
+  else
+    ok "Installed $count standalone /mm-* skills"
+  fi
 }
 
 
@@ -876,10 +917,13 @@ _manifest_uninstall() {
   while IFS= read -r rel; do
     [[ -z "$rel" ]] && continue
     local full="$CLAUDE_HOME/$rel"
-    if [[ -e "$full" ]]; then
-      do_run rm -f "$full"
-      ok "Removed $rel"
-      removed_dirs+=("$(dirname "$full")")
+    # Never follow a link/junction (would recurse into its target on rm -rf).
+    if [[ -L "$full" ]]; then
+      do_run rm -f "$full"; ok "Removed $rel"; removed_dirs+=("$(dirname "$full")")
+    elif [[ -d "$full" ]]; then
+      do_run rm -rf "$full"; ok "Removed $rel/"; removed_dirs+=("$(dirname "$full")")
+    elif [[ -e "$full" ]]; then
+      do_run rm -f "$full"; ok "Removed $rel"; removed_dirs+=("$(dirname "$full")")
     fi
   done < "$manifest"
   local d
@@ -941,6 +985,34 @@ de_wire_old_hooks() {
 # ---------------------------------------------------------------------------
 # Enable the claude-solo plugin by symlinking the repo into the skills dir.
 # ---------------------------------------------------------------------------
+# Safely remove a plugin link/junction WITHOUT recursing into its target.
+# On Windows `rm -rf` on a junction can delete the *target* contents (the repo!),
+# so junctions are detached via cmd `rmdir` (removes the reparse point only).
+_remove_plugin_link() {
+  local link="$1"
+  if [[ -L "$link" ]]; then
+    do_run rm -f "$link"               # POSIX symlink: removes the link only
+    return 0
+  fi
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      local win_link; win_link=$(cygpath -w "$link")
+      cmd //c "rmdir \"$win_link\"" >/dev/null 2>&1 || true   # detaches junction, keeps target
+      ;;
+    *) do_run rm -rf "$link" ;;
+  esac
+}
+
+# Reload the plugin via the CLI if available; otherwise prompt manual reload.
+claude_enable_plugin() {
+  if command -v claude >/dev/null 2>&1; then
+    claude plugin enable claude-solo@skills-dir >/dev/null 2>&1 && ok "Plugin enabled (claude-solo@skills-dir)" || \
+      warn "Could not auto-enable plugin — run: claude plugin enable claude-solo@skills-dir"
+  else
+    warn "claude not on PATH — start a session and run: /reload-plugins"
+  fi
+}
+
 enable_plugin() {
   local skills_dir="$CLAUDE_HOME/skills"
   local link_target="$skills_dir/claude-solo"
@@ -950,17 +1022,32 @@ enable_plugin() {
   fi
   do_run mkdir -p "$skills_dir"
   if [[ -L "$link_target" ]]; then
-    ok "Plugin already linked: $link_target → $(readlink "$link_target")"
+    # POSIX symlink: re-point if it no longer resolves to this repo (e.g. an
+    # older npx cache dir) so upgrades actually pick up the new content.
+    local resolved; resolved=$(readlink -f "$link_target" 2>/dev/null || true)
+    if [[ "$resolved" == "$(readlink -f "$REPO_DIR" 2>/dev/null)" ]]; then
+      ok "Plugin already linked: $link_target → $resolved"
+      claude_enable_plugin; return
+    fi
+    warn "Plugin link is stale ($resolved) — re-pointing to $REPO_DIR"
+    _remove_plugin_link "$link_target"
   elif [[ -d "$link_target" ]]; then
     # On Windows, an NTFS junction looks like a plain directory to bash's -L test.
-    # Verify it points at the repo before treating it as stale.
     if [[ -f "$link_target/.claude-plugin/plugin.json" ]]; then
-      ok "Plugin already linked: $link_target"
+      # Same repo? `-ef` compares device/inode; matches a junction to its target.
+      if [[ "$link_target" -ef "$REPO_DIR" ]]; then
+        ok "Plugin already linked: $link_target"
+        claude_enable_plugin; return
+      fi
+      warn "Plugin junction is stale — re-pointing to $REPO_DIR"
+      _remove_plugin_link "$link_target"
     else
       warn "Directory already exists at $link_target — skipping plugin link. If it's a stale copy, remove it and re-run."
+      return
     fi
-  else
-    case "$(uname -s)" in
+  fi
+  # Not linked (or just detached a stale link) — create the junction/symlink.
+  case "$(uname -s)" in
       MINGW*|MSYS*|CYGWIN*)
         # Git Bash 'ln -s' copies instead of linking, and real symlinks need admin.
         # NTFS junctions work without elevation. PowerShell handles paths with
@@ -982,15 +1069,8 @@ enable_plugin() {
         do_run ln -s "$REPO_DIR" "$link_target"
         ok "Plugin linked: $link_target → $REPO_DIR"
         ;;
-    esac
-  fi
-  # Reload via CLI if available; otherwise prompt manual reload
-  if command -v claude >/dev/null 2>&1; then
-    claude plugin enable claude-solo@skills-dir >/dev/null 2>&1 && ok "Plugin enabled (claude-solo@skills-dir)" || \
-      warn "Could not auto-enable plugin — run: claude plugin enable claude-solo@skills-dir"
-  else
-    warn "claude not on PATH — start a session and run: /reload-plugins"
-  fi
+  esac
+  claude_enable_plugin
 }
 
 # ---------------------------------------------------------------------------
@@ -1236,10 +1316,14 @@ smoke_test() {
     fi
   fi
 
-  # 7. Plugin agent/skill counts (served from the linked repo)
+  # 7. Plugin agents (served from the linked repo) + standalone /mm-* skills
   local agents; agents=$(ls "$plugin_link/agents/"*.md 2>/dev/null | wc -l)
-  local skills; skills=$(ls -d "$plugin_link/skills/"*/ 2>/dev/null | wc -l)
-  ok "Plugin agents: $agents/5  |  Plugin skills: $skills"
+  local mm_skills; mm_skills=$(ls -d "$CLAUDE_HOME/skills/"mm-*/ 2>/dev/null | wc -l)
+  ok "Plugin agents: $agents/5  |  Standalone /mm-* skills: $mm_skills"
+  if [[ $mm_skills -eq 0 ]]; then
+    warn "No /mm-* skills found in ~/.claude/skills — re-run installer"
+    smoke_ok=0
+  fi
   local stale_ult; stale_ult=$(ls "$CLAUDE_HOME/agents/"ult-*.md 2>/dev/null | wc -l)
   if [[ $stale_ult -gt 0 ]]; then
     warn "Stale ult-* agent copies remain in ~/.claude/agents ($stale_ult) — re-run installer"
@@ -1272,6 +1356,19 @@ uninstall() {
     backup_path "$CLAUDE_HOME/scripts"
     do_run rm -rf "$CLAUDE_HOME/scripts"
     ok "Removed ~/.claude/scripts/"
+  fi
+
+  # Detach the plugin link/junction (agents + hooks). Use the safe remover so a
+  # Windows junction is detached, not recursed into.
+  local plugin_link="$CLAUDE_HOME/skills/claude-solo"
+  if [[ -L "$plugin_link" || -d "$plugin_link" ]]; then
+    command -v claude >/dev/null 2>&1 && claude plugin disable claude-solo@skills-dir >/dev/null 2>&1 || true
+    if [[ $DRY_RUN -eq 1 ]]; then
+      printf "  ${YELLOW}[dry-run]${NC} would detach plugin link %s\n" "$plugin_link"
+    else
+      _remove_plugin_link "$plugin_link"
+      ok "Detached plugin link: $plugin_link"
+    fi
   fi
 
   for ns in ultimate ultimate-windows; do
@@ -1307,7 +1404,7 @@ run_install() {
   local src_keybindings="$REPO_DIR/keybindings.json"
   local src_mcp="$REPO_DIR/mcp.json"
   local src_agents="$REPO_DIR/agents"
-  local src_skills="$REPO_DIR/skills"
+  local src_skills="$REPO_DIR/mm-skills"
   local src_rules="$REPO_DIR/rules"
   local src_settings="$REPO_DIR/settings.json"
   local src_claude_md="$REPO_DIR/CLAUDE.md"
@@ -1341,7 +1438,8 @@ run_install() {
   install_keybindings "$src_keybindings"
   install_mcp         "$src_mcp"
   remove_stale_ult_agents "$src_agents"
-  remove_stale_bare_skills "$src_skills"
+  remove_legacy_skill_copies "$src_skills"
+  install_skills   "$src_skills"   "$MANIFEST"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
   patch_existing_settings
@@ -1387,7 +1485,7 @@ run_install() {
   echo ""
   say "Install complete."
   say "Start a fresh Claude Code session — all hooks, agents, and skills are active."
-  say "Skills: /brief  /riper  /fix  /quality  /ship  /hud  /cost  /swarm ..."
+  say "Skills: /mm-brief  /mm-riper  /mm-fix  /mm-quality  /mm-ship  /mm-hud  /mm-cost  /mm-swarm ..."
   [[ $INSTALL_CACHE_FIX -eq 1 ]] && say "Cache-fix proxy mode: enabled (npm-managed local proxy)" || say "Cache-fix proxy mode: disabled (native Claude path preserved)"
   if [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]]; then
     prune_old_backups
