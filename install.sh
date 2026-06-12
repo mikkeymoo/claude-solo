@@ -699,13 +699,15 @@ install_settings() {
 # ---------------------------------------------------------------------------
 # Surgically bring an EXISTING settings.json up to current claude-solo defaults
 # without overwriting the whole file (so merge-mode installs pick up fixes too).
-# Forced fixes always applied; preference keys only set when the user hasn't
-# chosen a value, so opt-in choices (remote control, skill budget) aren't
-# clobbered. Model defaults ARE forced — a merge install adopts the current
-# claude-solo model stack even on machines that already had a prior version.
-#   - model: claude-opus-4-8 (FORCED — latest Opus, 1M context)
-#   - fallbackModel: [claude-sonnet-4-6, claude-haiku-4-5] (FORCED — aliases)
-#   - CLAUDE_CODE_SUBAGENT_MODEL: de-pin old dated Haiku id -> alias (migrate only)
+# Migrate-forward, never clobber a deliberate choice. Model defaults are only
+# bumped when the file still carries the PRIOR claude-solo default (or the key
+# is absent) — so a user who picked a model via `/model` (which persists to
+# user-scope ~/.claude/settings.json when run outside a project) keeps it across
+# re-installs. Preference keys (remote control, skill budget) are likewise only
+# set when absent.
+#   - model: claude-sonnet-4-6 (or absent) -> claude-opus-4-8; else left as-is
+#   - fallbackModel: old dated-Haiku default (or absent) -> [sonnet, haiku] aliases
+#   - CLAUDE_CODE_SUBAGENT_MODEL: old dated Haiku id -> alias (migrate only)
 #   - drop unsupported "mcp__*" allow rule (invalid pattern; /doctor warning)
 #   - allow reading .env (claude-solo policy); Edit/Write stay denied
 #   - disableRemoteControl: true (only if key absent)
@@ -715,19 +717,23 @@ patch_existing_settings() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (force model=opus-4-8 + sonnet/haiku fallback, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8 + sonnet/haiku fallback, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
     return 0
   fi
   _apply_jq_if_changed "$target" '
-    .model = "claude-opus-4-8"
-    | .fallbackModel = ["claude-sonnet-4-6", "claude-haiku-4-5"]
+    (if (.model == "claude-sonnet-4-6" or (has("model") | not))
+       then .model = "claude-opus-4-8" else . end)
+    | (if (.fallbackModel == "claude-haiku-4-5-20251001"
+           or .fallbackModel == ["claude-haiku-4-5-20251001"]
+           or (has("fallbackModel") | not))
+       then .fallbackModel = ["claude-sonnet-4-6", "claude-haiku-4-5"] else . end)
     | (if .env.CLAUDE_CODE_SUBAGENT_MODEL == "claude-haiku-4-5-20251001"
          then .env.CLAUDE_CODE_SUBAGENT_MODEL = "claude-haiku-4-5" else . end)
     | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
     | (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
     | (if has("disableRemoteControl")        then . else .disableRemoteControl = true end)
     | (if has("skillListingBudgetFraction")  then . else .skillListingBudgetFraction = 0.03 end)
-  ' "Patched existing settings.json (forced Opus 4.8 + Sonnet/Haiku fallback)" \
+  ' "Patched existing settings.json (migrated model default to Opus 4.8)" \
     "settings.json already current (no patch needed)"
 }
 
