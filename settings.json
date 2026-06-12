@@ -12,7 +12,9 @@
     "commit": "auto",
     "pr": "auto"
   },
-  "autoUpdatesChannel": "stable",
+  "autoUpdatesChannel": "latest",
+  "outputStyle": "default",
+  "awaySummaryEnabled": false,
   "env": {
     "_comment": "Only vars verified against official Claude Code docs. cache-fix-wrapper exports CACHE_FIX_* separately — do NOT redefine those here. PYTHONIOENCODING + PYTHONUTF8: prevents charmap codec errors when Python stdout encounters Unicode (em-dashes, smart quotes, non-ASCII names in email/document parsing). CLAUDE_CODE_USE_POWERSHELL_TOOL: enables native PowerShell tool support on Windows.",
     "ENABLE_TOOL_SEARCH": "1",

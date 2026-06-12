@@ -1,6 +1,9 @@
 {
   "model": "claude-opus-4-8[1m]",
   "effortLevel": "medium",
+  "autoUpdatesChannel": "latest",
+  "outputStyle": "default",
+  "awaySummaryEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline.sh"
