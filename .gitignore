@@ -18,6 +18,10 @@ convert-skills.mjs
 .claude/state/
 .claude/cache-fix-tools.json
 
+# LSP / plugin runtime dirs (not for version control)
+.serena/
+.plugin-config/
+
 # Python caches
 .ruff_cache/
 __pycache__/
