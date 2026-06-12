@@ -4,7 +4,7 @@ description: Fast parallel codebase investigator. Use for questions spanning >3 
 model: claude-haiku-4-5-20251001
 effort: medium
 maxTurns: 25
-memory: local
+memory: project
 color: cyan
 tools: Read, Glob, Grep, WebFetch, WebSearch, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview
 disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash
