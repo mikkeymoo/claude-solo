@@ -760,12 +760,15 @@ install_settings() {
 #   - permissions.deny -> [] (deny-list removed per user request — FORCED)
 #   - disableRemoteControl: true (only if key absent)
 #   - skillListingBudgetFraction: 0.03 (only if key absent)
+#   - autoUpdatesChannel: prior default "stable" (or absent) -> "latest"; else left as-is
+#   - outputStyle: "default" (only if key absent)
+#   - awaySummaryEnabled: false (only if key absent)
 # ---------------------------------------------------------------------------
 patch_existing_settings() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8[1m] + sonnet/haiku fallback, drop mcp__*, clear deny-list, disableRemoteControl, skillListingBudgetFraction)\n"
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8[1m] + sonnet/haiku fallback, drop mcp__*, clear deny-list, disableRemoteControl, skillListingBudgetFraction, autoUpdatesChannel->latest, outputStyle, awaySummaryEnabled)\n"
     return 0
   fi
   _apply_jq_if_changed "$target" '
@@ -781,8 +784,36 @@ patch_existing_settings() {
     | (if (.permissions | type) == "object" then .permissions.deny = [] else . end)
     | (if has("disableRemoteControl")        then . else .disableRemoteControl = true end)
     | (if has("skillListingBudgetFraction")  then . else .skillListingBudgetFraction = 0.03 end)
+    | (if (.autoUpdatesChannel == "stable" or (has("autoUpdatesChannel") | not))
+       then .autoUpdatesChannel = "latest" else . end)
+    | (if has("outputStyle")                 then . else .outputStyle = "default" end)
+    | (if has("awaySummaryEnabled")          then . else .awaySummaryEnabled = false end)
   ' "Patched existing settings.json (migrated model + cleared deny-list)" \
     "settings.json already current (no patch needed)"
+}
+
+# ---------------------------------------------------------------------------
+# User-scope local overrides: ~/.claude/settings.local.json has the highest
+# precedence after managed settings, so we mirror the three preference keys
+# here too (created if missing). Only-if-absent — never clobber a deliberate
+# per-machine override.
+#   - autoUpdatesChannel: "latest" (only if key absent)
+#   - outputStyle: "default" (only if key absent)
+#   - awaySummaryEnabled: false (only if key absent)
+# ---------------------------------------------------------------------------
+patch_user_local_settings() {
+  local target="$CLAUDE_HOME/settings.local.json"
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would ensure settings.local.json (autoUpdatesChannel=latest, outputStyle=default, awaySummaryEnabled=false; only-if-absent)\n"
+    return 0
+  fi
+  [[ -f "$target" ]] || echo '{}' > "$target"
+  _apply_jq_if_changed "$target" '
+      (if has("autoUpdatesChannel") then . else .autoUpdatesChannel = "latest" end)
+    | (if has("outputStyle")        then . else .outputStyle = "default" end)
+    | (if has("awaySummaryEnabled") then . else .awaySummaryEnabled = false end)
+  ' "Patched settings.local.json (preference defaults)" \
+    "settings.local.json already current (no patch needed)"
 }
 
 # ---------------------------------------------------------------------------
@@ -971,8 +1002,31 @@ install_claude_md() {
   local marker_start="<!-- claude-solo:start -->"
   local marker_end="<!-- claude-solo:end -->"
 
-  if [[ -f "$target" ]] && grep -Fq "$marker_start" "$target"; then
-    ok "CLAUDE.md already has claude-solo block — skipping"
+  # Already has the managed block -> re-sync its contents in place from the
+  # current repo CLAUDE.md, preserving everything the user added OUTSIDE the
+  # markers. (Previously this just skipped, so re-installs never picked up
+  # CLAUDE.md changes — e.g. the ult-* -> bare agent-name rename.) Requires
+  # BOTH markers present; a half-marker file falls through to the append path.
+  if [[ -f "$target" ]] && grep -Fq "$marker_start" "$target" && grep -Fq "$marker_end" "$target"; then
+    if [[ $DRY_RUN -eq 1 ]]; then
+      printf "  ${YELLOW}[dry-run]${NC} would re-sync claude-solo block in %s\n" "$target"
+      return
+    fi
+    local tmp="$target.tmp"
+    if awk -v s="$marker_start" -v e="$marker_end" -v srcfile="$src" '
+        $0 == s { print; while ((getline line < srcfile) > 0) print line; close(srcfile); inblock=1; next }
+        $0 == e { inblock=0; print; next }
+        !inblock { print }
+      ' "$target" > "$tmp"; then
+      if [[ "$(cat "$target")" == "$(cat "$tmp")" ]]; then
+        rm -f "$tmp"; ok "CLAUDE.md claude-solo block already current"
+      else
+        backup_path "$target"; mv "$tmp" "$target"
+        ok "Re-synced claude-solo block in $target"
+      fi
+    else
+      rm -f "$tmp"; warn "awk failed re-syncing CLAUDE.md — left as-is"
+    fi
     return
   fi
 
@@ -1291,6 +1345,7 @@ run_install() {
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
   patch_existing_settings
+  patch_user_local_settings
   de_wire_old_hooks
   enable_plugin
   install_claude_md "$src_claude_md"
