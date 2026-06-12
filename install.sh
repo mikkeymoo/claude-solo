@@ -70,6 +70,22 @@ backup_path() {
   ok "Backed up $path"
 }
 
+# Keep only the 5 most-recent backup snapshots; silently prune older ones.
+prune_old_backups() {
+  local base_dir="${CLAUDE_HOME}/.claude-solo-backup"
+  [[ $DRY_RUN -eq 1 ]] && return 0
+  [[ ! -d "$base_dir" ]] && return 0
+  local keep=5
+  # List dirs sorted newest-first, skip the first $keep, remove the rest
+  local old
+  old=$(ls -1dt "$base_dir"/2??????????????* 2>/dev/null | tail -n +$((keep + 1)) || true)
+  [[ -z "$old" ]] && return 0
+  while IFS= read -r d; do
+    rm -rf "$d"
+    ok "Pruned old backup: $d"
+  done <<< "$old"
+}
+
 # Detect Windows (MSYS/Git Bash/Cygwin)
 is_windows() {
   [[ "${MSYSTEM:-}" != "" || "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "cygwin" ]]
@@ -247,8 +263,10 @@ fix_ruff() {
     fi
     if [[ -n "$lad" ]]; then
       local lad_unix
+      # cygpath preferred; fallback strips drive colon and lowercases the letter
+      # using bash ${var,} (4+) instead of non-POSIX GNU sed \L.
       lad_unix=$(cygpath -u "$lad" 2>/dev/null \
-        || printf '%s' "$lad" | sed 's|\\|/|g; s|^\([A-Za-z]\):|/\L\1|')
+        || { _p=$(printf '%s' "$lad" | sed 's|\\|/|g; s|^\([A-Za-z]\):|/\1|'); _d="${_p:1:1}"; printf '/%s%s' "${_d,}" "${_p:2}"; })
       for d in "$lad_unix"/Programs/Python/Python3*/Scripts; do
         search_dirs+=("$d")
       done
@@ -342,6 +360,18 @@ check_prereqs() {
     ok "claude: $(claude --version 2>/dev/null | head -1 || echo 'version unknown')"
   fi
   if [[ ${#missing[@]} -gt 0 ]]; then
+    for _m in "${missing[@]}"; do
+      case "$_m" in
+        jq)
+          warn "Install jq:"
+          warn "  Windows (winget): winget install jqlang.jq"
+          warn "  Windows (choco):  choco install jq"
+          warn "  Windows (scoop):  scoop install jq"
+          warn "  Linux (apt):      sudo apt install jq"
+          warn "  macOS (brew):     brew install jq"
+          ;;
+      esac
+    done
     die "Missing required tools: ${missing[*]}"
   fi
   command -v gh >/dev/null 2>&1 || warn "gh not on PATH (optional — GitHub features will no-op)"
@@ -1197,7 +1227,10 @@ run_install() {
   say "Start a fresh Claude Code session — all hooks, agents, and skills are active."
   say "Skills: /brief  /riper  /fix  /quality  /ship  /hud  /cost  /swarm ..."
   [[ $INSTALL_CACHE_FIX -eq 1 ]] && say "Cache-fix proxy mode: enabled (npm-managed local proxy)" || say "Cache-fix proxy mode: disabled (native Claude path preserved)"
-  [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]] && say "Backups at: $BACKUP_DIR"
+  if [[ $BACKUP -eq 1 && $DRY_RUN -eq 0 ]]; then
+    prune_old_backups
+    say "Backups at: $BACKUP_DIR (last 5 kept)"
+  fi
 }
 
 # ---------------------------------------------------------------------------
