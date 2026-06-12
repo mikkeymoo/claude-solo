@@ -34,7 +34,7 @@ Reads PLAN.md, finds 8 tasks, groups into:
 
 - Max agents per wave: 5 (diminishing returns beyond that)
 - Each agent gets: task description, relevant file paths, acceptance criteria
-- Agents use `ult-code-reviewer` before committing
+- Agents use `code-reviewer` before committing
 - If any agent fails, pause the wave and report before continuing
 - DB schema changes serialize — they cannot run in parallel with anything
 - Always run `/quality --gate` after all waves complete

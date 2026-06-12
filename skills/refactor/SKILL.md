@@ -15,5 +15,5 @@ argument-hint: "[what to refactor and why]"
 Rules:
 
 - Refactor is behavior-neutral — bug fixes and features go in separate commits
-- For renames touching >10 files, use the `ult-refactor-agent` subagent (isolated worktree)
+- For renames touching >10 files, use the `refactor-agent` subagent (isolated worktree)
 - Don't "improve" adjacent code that wasn't asked about

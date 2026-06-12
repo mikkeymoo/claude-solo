@@ -1,9 +1,10 @@
 # claude-solo
 
-Claude Code configuration for solo developers. 51 skills, 5 subagents, 18 hooks. One installer.
+Claude Code **plugin** for solo developers. 47 skills, 5 subagents, 18 hooks, plus a bootstrap installer for the settings layer plugins can't carry.
 
 ```bash
-bash install.sh
+git clone <this-repo> && cd claude-solo
+bash install.sh    # links the plugin + installs the settings/deny layer
 ```
 
 ---
@@ -24,7 +25,7 @@ You:   /brief Add rate limiting to the /api/upload endpoint
 You:   /riper --plan
 ```
 
-> **Skill:** `riper` activates in RESEARCH phase. Uses `ult-researcher` agent (Haiku, read-only) to scan the codebase for existing rate-limit patterns, middleware chain, and test coverage. Produces research findings, then advances to INNOVATE phase — generates 2-4 approaches (e.g., in-memory vs Redis, middleware vs decorator). Asks you to pick. After you choose, enters PLAN phase — decomposes into atomic tasks with acceptance criteria. Writes `.planning/PLAN.md`. No code written yet.
+> **Skill:** `riper` activates in RESEARCH phase. Uses `researcher` agent (Haiku, read-only) to scan the codebase for existing rate-limit patterns, middleware chain, and test coverage. Produces research findings, then advances to INNOVATE phase — generates 2-4 approaches (e.g., in-memory vs Redis, middleware vs decorator). Asks you to pick. After you choose, enters PLAN phase — decomposes into atomic tasks with acceptance criteria. Writes `.planning/PLAN.md`. No code written yet.
 
 ```
 You:   /riper --build
@@ -34,7 +35,7 @@ You:   /riper --build
 >
 > 1. Writes code → **PostToolUse hooks fire:** `post-format-and-heal.sh` auto-formats the file, `lint-fix.js` runs the project linter (eslint/ruff/clippy) and auto-fixes violations, `enforce-lsp-navigation.sh` nudges if Grep was used instead of LSP
 > 2. Writes/updates tests → same PostToolUse hooks fire again
-> 3. Before each `git commit` → **PreToolUse hook:** `pre-tool-use.js` enforces conventional commit format. **Agent:** `ult-code-reviewer` (Opus, 3-pass) spawns automatically — does a blind bug hunt, edge case analysis, then acceptance audit. Returns findings labeled must-fix / should-fix / consider
+> 3. Before each `git commit` → **PreToolUse hook:** `pre-tool-use.js` enforces conventional commit format. **Agent:** `code-reviewer` (Opus, 3-pass) spawns automatically — does a blind bug hunt, edge case analysis, then acceptance audit. Returns findings labeled must-fix / should-fix / consider
 > 4. Commits with `feat(api): add rate limiting middleware`
 >
 > Repeats for each task in the plan.
@@ -43,7 +44,7 @@ You:   /riper --build
 You:   /code-review-excellence --adversarial
 ```
 
-> **Skill:** `code-review-excellence` activates in adversarial mode. **Agent:** spawns `ult-code-reviewer` (Opus) in red-team mode — actively tries to break the code. Looks for race conditions, edge cases, security holes, missing error handling. Returns prioritized findings with confidence scores (0-100).
+> **Skill:** `code-review-excellence` activates in adversarial mode. **Agent:** spawns `code-reviewer` (Opus) in red-team mode — actively tries to break the code. Looks for race conditions, edge cases, security holes, missing error handling. Returns prioritized findings with confidence scores (0-100).
 
 ```
 You:   /quality --gate
@@ -76,11 +77,11 @@ You:   /riper --auto Add dark mode toggle to the settings page
 
 > **Skill:** `riper` activates in auto mode. Runs the full pipeline without stopping:
 >
-> 1. **RESEARCH** — `ult-researcher` agent scans for existing theme handling, CSS variables, settings page structure
+> 1. **RESEARCH** — `researcher` agent scans for existing theme handling, CSS variables, settings page structure
 > 2. **INNOVATE** — generates approaches, picks the best fit automatically
 > 3. **PLAN** — writes `.planning/PLAN.md` with atomic tasks
-> 4. **EXECUTE** — implements each task. On every file edit: `post-format-and-heal.sh` formats, `lint-fix.js` lints. Before every commit: `ult-code-reviewer` reviews. `pre-tool-use.js` enforces conventional commits
-> 5. **REVIEW** — spawns `ult-code-reviewer` for a final pass over all changes
+> 4. **EXECUTE** — implements each task. On every file edit: `post-format-and-heal.sh` formats, `lint-fix.js` lints. Before every commit: `code-reviewer` reviews. `pre-tool-use.js` enforces conventional commits
+> 5. **REVIEW** — spawns `code-reviewer` for a final pass over all changes
 > 6. Runs tests, ships, writes retro notes
 
 ---
@@ -98,7 +99,7 @@ You:   /fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
 > 3. **Root cause** — states the problem in one sentence before writing any fix
 > 4. **Fix** — minimal change. **PostToolUse hooks:** `post-format-and-heal.sh` formats, `lint-fix.js` lints and auto-fixes
 > 5. **Verify** — runs relevant tests. **Hook:** `test-fix.js` confirms tests pass
-> 6. **Commit** — `fix(ui): handle undefined user in UserCard`. **Agent:** `ult-code-reviewer` reviews before commit. **Hook:** `pre-tool-use.js` validates conventional commit format
+> 6. **Commit** — `fix(ui): handle undefined user in UserCard`. **Agent:** `code-reviewer` reviews before commit. **Hook:** `pre-tool-use.js` validates conventional commit format
 
 ---
 
@@ -113,7 +114,7 @@ You:   /fix --deep The webhook handler sometimes drops events under load
 > 1. **Characterize** — what fails, when, how often, since when?
 > 2. **Gather data** — reads logs, adds instrumentation, runs with verbose output
 > 3. **Hypothesize** — lists 2-3 root causes ranked by likelihood (e.g., race condition in queue, connection pool exhaustion, timeout too aggressive)
-> 4. **Test hypotheses** — fastest test first, adds logging/assertions. Uses `ult-researcher` agent if the investigation spans many files
+> 4. **Test hypotheses** — fastest test first, adds logging/assertions. Uses `researcher` agent if the investigation spans many files
 > 5. **Confirm** — one-sentence root cause before any fix
 > 6. **Fix + verify** — minimal fix, no regression. Same hooks and code reviewer as tactical mode
 
@@ -160,7 +161,7 @@ You:   /quick Fix the off-by-one error in pagination.py line 42
 > 1. **Clarify** — restates task in one sentence, confirms it's small
 > 2. **Locate** — reads the file. **Hook:** `enforce-lsp-navigation.sh` nudges LSP use
 > 3. **Implement** — makes the fix + writes minimal test. **PostToolUse hooks:** `post-format-and-heal.sh` formats, `lint-fix.js` auto-lints
-> 4. **Commit** — stages explicitly, commits. **Agent:** `ult-code-reviewer` reviews. **Hook:** `pre-tool-use.js` enforces conventional format
+> 4. **Commit** — stages explicitly, commits. **Agent:** `code-reviewer` reviews. **Hook:** `pre-tool-use.js` enforces conventional format
 >
 > If the change grows beyond 5 files, auto-escalates to `/riper`.
 
@@ -172,7 +173,7 @@ You:   /quick Fix the off-by-one error in pagination.py line 42
 You:   /code-review-excellence
 ```
 
-> **Skill:** `code-review-excellence` activates (constructive mode). **Agent:** spawns `ult-code-reviewer` (Opus). 3-pass review:
+> **Skill:** `code-review-excellence` activates (constructive mode). **Agent:** spawns `code-reviewer` (Opus). 3-pass review:
 >
 > 1. **Blind hunt** — reads the diff with fresh eyes, flags bugs and logic errors
 > 2. **Edge cases** — looks for missing null checks, race conditions, error paths
@@ -204,7 +205,7 @@ You:   /tdd Add a cart checkout flow
 >
 > 1. **RED** — write one failing test for the simplest behavior
 > 2. **GREEN** — write the minimum code to make it pass. **PostToolUse hooks:** format + lint
-> 3. **REFACTOR** — clean up without changing behavior. **Agent:** `ult-code-reviewer` reviews
+> 3. **REFACTOR** — clean up without changing behavior. **Agent:** `code-reviewer` reviews
 > 4. Repeat for next behavior
 >
 > Each cycle produces one atomic commit. Never writes all tests first.
@@ -227,8 +228,8 @@ You:   /swarm 4
 >
 > 1. **Analyze** — identifies 8 tasks, maps dependencies
 > 2. **Partition** — groups into waves of independent work (tasks touching the same file are NOT independent)
-> 3. **Spawn** — Wave 1: 4 `ult-refactor-agent` instances (Sonnet), each in an isolated git worktree
-> 4. **Monitor** — agents run in background. Each agent uses `ult-code-reviewer` before committing
+> 3. **Spawn** — Wave 1: 4 `refactor-agent` instances (Sonnet), each in an isolated git worktree
+> 4. **Monitor** — agents run in background. Each agent uses `code-reviewer` before committing
 > 5. **Merge** — after Wave 1 completes, merges worktree branches back. Resolves conflicts
 > 6. **Next wave** — Wave 2: 2 agents for dependent tasks. Wave 3: remaining tasks
 > 7. **Verify** — runs `/quality --gate` on the merged result
@@ -272,19 +273,19 @@ You:   /zoom-out
 You:   /zoom-out --explore
 ```
 
-> Deep-dive mode. **Agent:** spawns `ult-researcher` (Haiku) for parallel file reads across the codebase. Maps the full architecture: module boundaries, dependency graph, data flow, API surface, test coverage gaps.
+> Deep-dive mode. **Agent:** spawns `researcher` (Haiku) for parallel file reads across the codebase. Maps the full architecture: module boundaries, dependency graph, data flow, API surface, test coverage gaps.
 
 ```
 You:   How does the authentication flow work end-to-end?
 ```
 
-> No skill — Claude handles directly but **routes to `ult-researcher` agent** (Haiku, read-only) because the question spans >3 files. The researcher uses Serena LSP to trace from login endpoint → middleware → JWT validation → session store. Returns a synthesized report with file:line citations.
+> No skill — Claude handles directly but **routes to `researcher` agent** (Haiku, read-only) because the question spans >3 files. The researcher uses Serena LSP to trace from login endpoint → middleware → JWT validation → session store. Returns a synthesized report with file:line citations.
 
 ```
 You:   Where does the session token get validated across the codebase?
 ```
 
-> Same pattern — **routes to `ult-researcher` agent**. Uses `find_symbol` and `find_referencing_symbols` via Serena LSP to find all validation call sites. Returns a map of every file and function that touches the token.
+> Same pattern — **routes to `researcher` agent**. Uses `find_symbol` and `find_referencing_symbols` via Serena LSP to find all validation call sites. Returns a map of every file and function that touches the token.
 
 ---
 
@@ -367,13 +368,13 @@ You:   /incident
 You:   /migrate --plan Upgrade React Router from v5 to v6
 ```
 
-> **Skill:** `migrate` activates in plan mode. **Agent:** `ult-researcher` scans for all v5 patterns (`useHistory`, `<Switch>`, `<Redirect>`). Produces a migration plan with each change mapped to a file and a v6 equivalent. Writes `.planning/MIGRATION.md`.
+> **Skill:** `migrate` activates in plan mode. **Agent:** `researcher` scans for all v5 patterns (`useHistory`, `<Switch>`, `<Redirect>`). Produces a migration plan with each change mapped to a file and a v6 equivalent. Writes `.planning/MIGRATION.md`.
 
 ```
 You:   /migrate --execute
 ```
 
-> Executes the plan. Each file change → **PostToolUse hooks** (format, lint, test). Each logical group → atomic commit with `ult-code-reviewer` review.
+> Executes the plan. Each file change → **PostToolUse hooks** (format, lint, test). Each logical group → atomic commit with `code-reviewer` review.
 
 ```
 You:   /migrate --verify
@@ -401,7 +402,7 @@ You:   /hud
 You:   /onboard
 ```
 
-> **Skill:** `onboard` activates. **Agent:** `ult-researcher` scans the entire codebase. Writes `.planning/ONBOARDING.md` with: what this project does, tech stack, how to run, how to test, key modules, data flow, common tasks.
+> **Skill:** `onboard` activates. **Agent:** `researcher` scans the entire codebase. Writes `.planning/ONBOARDING.md` with: what this project does, tech stack, how to run, how to test, key modules, data flow, common tasks.
 
 ---
 
@@ -425,13 +426,13 @@ You:   The /api/users endpoint returns 500 when the email contains a plus sign
 You:   Refactor the database layer to use repository pattern
 ```
 
-> Recognized as a multi-file refactor → triggers `riper` skill. If the rename touches >10 files, `ult-refactor-agent` gets spawned in an isolated worktree.
+> Recognized as a multi-file refactor → triggers `riper` skill. If the rename touches >10 files, `refactor-agent` gets spawned in an isolated worktree.
 
 ```
 You:   Review the changes I just made to the auth module
 ```
 
-> Triggers `code-review-excellence` skill → spawns `ult-code-reviewer` agent.
+> Triggers `code-review-excellence` skill → spawns `code-reviewer` agent.
 
 ```
 You:   How much did I spend on tokens this week?
@@ -488,11 +489,11 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 | Agent                | Model  | What it does                                   | Triggered by                                       |
 | -------------------- | ------ | ---------------------------------------------- | -------------------------------------------------- |
-| `ult-code-reviewer`  | Opus   | 3-pass staff-engineer review                   | Auto before commits; `/code-review-excellence`     |
-| `ult-researcher`     | Haiku  | Fast cross-file codebase investigation         | Questions spanning >3 files; `/zoom-out --explore` |
-| `ult-refactor-agent` | Sonnet | Large renames in isolated git worktree         | Renames >10 files; `/swarm`; `/refactor`           |
-| `ult-db-reader`      | Haiku  | Read-only DB inspector (SELECT only, enforced) | Any DB query; hook blocks write SQL                |
-| `ult-deploy-guard`   | Opus   | Pre-deploy GO/NO-GO gate                       | Human-trigger only: `/agents deploy-guard`         |
+| `code-reviewer`  | Opus   | 3-pass staff-engineer review                   | Auto before commits; `/code-review-excellence`     |
+| `researcher`     | Haiku  | Fast cross-file codebase investigation         | Questions spanning >3 files; `/zoom-out --explore` |
+| `refactor-agent` | Sonnet | Large renames in isolated git worktree         | Renames >10 files; `/swarm`; `/refactor`           |
+| `db-reader`      | Haiku  | Read-only DB inspector (SELECT only, enforced) | Any DB query; hook blocks write SQL                |
+| `deploy-guard`   | Opus   | Pre-deploy GO/NO-GO gate                       | Human-trigger only: `/agents deploy-guard`         |
 
 ---
 
@@ -534,7 +535,7 @@ What the deny layer actually blocks:
 What the hooks add on top:
 
 - `pre-tool-use.js` warns on dangerous patterns including `git -c ... push --force` reordering
-- `validate-readonly-query.sh` blocks all write SQL when running as the `ult-db-reader` agent
+- `validate-readonly-query.sh` blocks all write SQL when running as the `db-reader` agent
 
 Note: `git -c key=value push --force` (flag reordering) is NOT blocked by the deny rules (string matching can't catch all forms) — the hook layer is why you keep both.
 
@@ -569,9 +570,13 @@ Both plugins load independently; disabling one never affects the other.
 
 ## Install
 
+Since v1.0, claude-solo is a Claude Code plugin. Skills, agents, and hooks load
+directly from this repo via a link in the skills directory — no file copying, and
+`git pull` updates everything in place.
+
 ```bash
-bash install.sh              # Merge with existing config
-bash install.sh --fresh      # Replace config (backup taken)
+bash install.sh              # Link plugin + merge settings layer (recommended)
+bash install.sh --fresh      # Replace settings (backup taken)
 bash install.sh --project    # Add project override to CWD
 bash install.sh --dry-run    # Preview only
 bash install.sh --uninstall  # Remove using manifest
@@ -580,18 +585,18 @@ bash install.sh --verify     # Check prerequisites
 
 **Requires:** `bash` (Git Bash on Windows), `jq`
 
-**What gets installed:**
+The installer does two things:
 
-```
-~/.claude/
-  scripts/       18 lifecycle scripts
-  hooks/         21 JS hooks
-  agents/        5 subagents (ult-* prefix)
-  skills/        47 skills
-  rules/         10 engineering rules
-  settings.json  Permissions, hooks, env vars
-  CLAUDE.md      Working style + routing
-```
+1. **Links the plugin** — `~/.claude/skills/claude-solo` → this repo (NTFS junction on
+   Windows, symlink elsewhere), then `claude plugin enable claude-solo@skills-dir`.
+   That serves the 47 skills, 5 agents, and 18 hooks.
+2. **Bootstraps the settings layer** (plugins cannot ship this): permission deny rules,
+   env vars, statusline, `CLAUDE.md`, and Windows encoding fixes into `~/.claude/`.
+
+Per-project install instead of user-wide: link the repo into `<project>/.claude/skills/claude-solo`.
+
+Upgrading from a ≤0.8.x bare-file install? See [MIGRATION.md](MIGRATION.md) —
+the installer de-wires old hook entries and removes superseded skill/agent copies automatically.
 
 ## Cost optimization
 

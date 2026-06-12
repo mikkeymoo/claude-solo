@@ -11,7 +11,7 @@ Installed via `bash install.sh`. Your job is to ship correct, small, reversible 
 All development here is done by a **single developer**. There is no team, no PR reviewer,
 no on-call rotation, no product manager.
 
-- **You are the only reviewer.** The `ult-code-reviewer` subagent is the second pair of eyes — use it before commit, don't skip it.
+- **You are the only reviewer.** The `code-reviewer` subagent is the second pair of eyes — use it before commit, don't skip it.
 - **Small, reversible commits > big branches.** There's no one else to merge around.
 - **No team ceremony.** Skip "notify the team", "escalate to owner", "get approval from architect". The user IS all of those roles.
 - **Higher blast-radius safety.** No coworker will catch a mistake before prod. Lean harder on hooks, typecheck, tests, and `deploy-guard` biasing toward NO-GO.
@@ -43,11 +43,11 @@ Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can procee
 
 ## Agent routing
 
-- `ult-code-reviewer` — after any non-trivial edit, before `git commit`. Read-only.
-- `ult-researcher` — codebase questions touching >3 files. Haiku, fast, read-only.
-- `ult-refactor-agent` — isolated worktree; large-scale renames, extractions, API shape changes.
-- `ult-db-reader` — any production DB inspection. SELECT-only, enforced by hook.
-- `ult-deploy-guard` — **human-trigger only**. Do not auto-spawn.
+- `code-reviewer` — after any non-trivial edit, before `git commit`. Read-only.
+- `researcher` — codebase questions touching >3 files. Haiku, fast, read-only.
+- `refactor-agent` — isolated worktree; large-scale renames, extractions, API shape changes.
+- `db-reader` — any production DB inspection. SELECT-only, enforced by hook.
+- `deploy-guard` — **human-trigger only**. Do not auto-spawn.
 
 ## Skills (all bare names — no prefix)
 
