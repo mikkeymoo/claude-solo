@@ -18,7 +18,7 @@ Add `--yes` for non-interactive/CI runs.
 ### Or clone and run the script directly
 
 ```bash
-git clone <this-repo> && cd claude-solo
+git clone https://github.com/mikkeymoo/claude-solo && cd claude-solo
 bash install.sh    # links the plugin + installs the settings/deny layer
 ```
 
@@ -581,7 +581,28 @@ Since v1.0, claude-solo is a Claude Code plugin. Skills, agents, and hooks load
 directly from this repo via a link in the skills directory — no file copying, and
 `git pull` updates everything in place.
 
+### Option A — `npx` (interactive, recommended)
+
+A guided front door over `install.sh` — asks scope, fresh-vs-merge, and cache-fix,
+then runs the install and streams its output. No clone needed.
+
 ```bash
+npx github:mikkeymoo/claude-solo install            # guided user-level install
+npx github:mikkeymoo/claude-solo install --project  # project override in this dir
+npx github:mikkeymoo/claude-solo install --dry-run  # walk the prompts, change nothing
+npx github:mikkeymoo/claude-solo install --yes      # non-interactive (CI): flags + defaults
+npx github:mikkeymoo/claude-solo uninstall          # remove a prior install
+npx github:mikkeymoo/claude-solo verify             # check prerequisites only
+npx github:mikkeymoo/claude-solo update             # re-run as a merge update
+```
+
+**Requires:** Node ≥18, plus `bash` (Git Bash on Windows) and `jq`. The CLI checks for
+bash up front and prints `winget install Git.Git` if it's missing, before prompting.
+
+### Option B — clone and run the script directly
+
+```bash
+git clone https://github.com/mikkeymoo/claude-solo && cd claude-solo
 bash install.sh              # Link plugin + merge settings layer (recommended)
 bash install.sh --fresh      # Replace settings (backup taken)
 bash install.sh --project    # Add project override to CWD
@@ -591,6 +612,9 @@ bash install.sh --verify     # Check prerequisites
 ```
 
 **Requires:** `bash` (Git Bash on Windows), `jq`
+
+Both options run the same `install.sh` — the `npx` layer only adds the prompts and a
+one-line entry point.
 
 The installer does two things:
 
