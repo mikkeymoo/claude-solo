@@ -17,7 +17,8 @@
             "type": "command",
             "statusMessage": "Summarizing today's token usage...",
             "timeout": 10000,
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/cost-summary.sh"
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/cost-summary.sh",
+            "async": true
           }
         ]
       },
@@ -27,7 +28,8 @@
             "type": "command",
             "statusMessage": "Checking quota window...",
             "timeout": 10000,
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/quota-warmup-warn.sh"
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/quota-warmup-warn.sh",
+            "async": true
           }
         ]
       },
