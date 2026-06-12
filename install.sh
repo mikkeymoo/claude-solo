@@ -761,96 +761,97 @@ _manifest_uninstall() {
 }
 
 # ---------------------------------------------------------------------------
-# Wire hooks into settings.json
-# NOTE: _wire_hook PREPENDS each entry. To control execution order, the hook
-# that should run FIRST must be wired LAST (it ends up at array index 0).
-# Current SessionStart execution order (first→last):
-#   bootstrap-windows-encoding → cost-summary → quota-warmup-warn →
-#   session-hud → session-start-context → morae-context → update-check
-# Optional when --with-cache-fix is enabled:
-#   start-cache-proxy runs before all of the above
+# De-wire legacy v0.8.x hook entries from settings.json.
+# The v1.0 plugin (hooks/hooks.json) takes over all hook management.
+# This prevents double-firing when upgrading from bare-file to plugin install.
 # ---------------------------------------------------------------------------
-ensure_hooks_wired() {
+de_wire_old_hooks() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json to wire claude-solo hooks\n"
+    printf "  ${YELLOW}[dry-run]${NC} would de-wire legacy v0.8.x hooks from settings.json\n"
     return
   fi
-  say "Ensuring claude-solo hooks are wired in settings.json"
+  say "De-wiring legacy hooks from settings.json (plugin takes over)"
+  local fragments=(
+    "session-start.js" "session-end.js" "pre-tool-use.js" "post-tool-use.js"
+    "post-tool-use-failure.js" "prompt-submit.js" "permission-request.js"
+    "pre-compact.js" "post-compact.js" "subagent-stop.js" "worktree-create.js"
+    "file-changed.js" "config-change.js"
+    "post-format-and-heal" "compress-lsp-output" "session-start-context"
+    "session-hud" "quota-warmup-warn" "cost-summary" "bootstrap-windows-encoding"
+    "pre-compact-checkpoint" "validate-readonly-query" "validate-utf8-source"
+    "enforce-lsp-navigation" "morae-context" "start-cache-proxy"
+  )
+  local events=(
+    "SessionStart" "SessionEnd" "PreToolUse" "PostToolUse" "PostToolUseFailure"
+    "UserPromptSubmit" "PermissionRequest" "PreCompact" "PostCompact"
+    "SubagentStop" "Stop" "WorktreeCreate" "FileChanged" "ConfigChange"
+  )
+  local changed=0
+  for event in "${events[@]}"; do
+    for frag in "${fragments[@]}"; do
+      _unwire_hook_by_command_fragment "$event" "$frag" 2>/dev/null && changed=1
+    done
+  done
+  # Remove empty hook event arrays
+  jq 'if .hooks then .hooks |= with_entries(select(.value | length > 0)) else . end' \
+    "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+  [[ $changed -eq 1 ]] && ok "Legacy hooks removed" || ok "No legacy hooks found"
+  # Also handle start-cache-proxy toggle
+  [[ $INSTALL_CACHE_FIX -eq 1 ]] && \
+    _patch_settings_env "ANTHROPIC_BASE_URL" "http://localhost:9801" || \
+    _remove_settings_env_key "ANTHROPIC_BASE_URL"
+}
 
-  _wire_hook() {
-    local event="$1" check_str="$2" entry="$3"
-    if ! jq -e "(.hooks.${event} // [])[] | .hooks[]? | select(.command | contains(\"${check_str}\"))" "$target" >/dev/null 2>&1; then
-      jq ".hooks.${event} = ([${entry}] + (.hooks.${event} // []))" "$target" > "$target.tmp" && mv "$target.tmp" "$target"
-      ok "Wired ${check_str} into ${event}"
-    else
-      ok "${check_str} already wired in ${event}"
-    fi
-  }
-
-  # PostToolUse
-  _wire_hook "PostToolUse" \
-    "post-format-and-heal" \
-    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/scripts/post-format-and-heal.sh","timeout":60000}]}'
-
-  _wire_hook "PostToolUse" \
-    "compress-lsp-output" \
-    '{"matcher":"mcp__serena__.*","hooks":[{"type":"command","command":"bash ~/.claude/scripts/compress-lsp-output.sh","timeout":5000}]}'
-
-  # SessionStart — wired in REVERSE execution order (last wired = first executed)
-  _wire_hook "SessionStart" \
-    "morae-context" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/morae-context.sh","statusMessage":"Checking project context...","timeout":5000}]}'
-
-  _wire_hook "SessionStart" \
-    "session-start-context" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-start-context.sh","statusMessage":"Loading git + sprint context...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "session-hud" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/session-hud.sh","statusMessage":"Loading session HUD...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "quota-warmup-warn" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/quota-warmup-warn.sh","statusMessage":"Checking quota window...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "cost-summary" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/cost-summary.sh","statusMessage":"Summarizing today'"'"'s token usage...","timeout":10000}]}'
-
-  _wire_hook "SessionStart" \
-    "bootstrap-windows-encoding" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/bootstrap-windows-encoding.sh","statusMessage":"Bootstrapping Windows UTF-8 encoding...","timeout":5000}]}'
-
-  if [[ $INSTALL_CACHE_FIX -eq 1 ]]; then
-    # start-cache-proxy wired LAST → prepended to front → runs FIRST
-    # Ensures proxy is up before any API calls are made in the session
-    _wire_hook "SessionStart" \
-      "start-cache-proxy" \
-      '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/start-cache-proxy.sh","statusMessage":"Starting cache proxy...","timeout":8000}]}'
-  else
-    _unwire_hook_by_command_fragment "SessionStart" "start-cache-proxy"
+# ---------------------------------------------------------------------------
+# Enable the claude-solo plugin by symlinking the repo into the skills dir.
+# ---------------------------------------------------------------------------
+enable_plugin() {
+  local skills_dir="$CLAUDE_HOME/skills"
+  local link_target="$skills_dir/claude-solo"
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would symlink %s → %s\n" "$link_target" "$REPO_DIR"
+    return
   fi
-
-  # PreCompact
-  _wire_hook "PreCompact" \
-    "pre-compact-checkpoint" \
-    '{"hooks":[{"type":"command","command":"bash ~/.claude/scripts/pre-compact-checkpoint.sh","statusMessage":"Saving checkpoint before compaction..."}]}'
-
-  # PreToolUse
-  _wire_hook "PreToolUse" \
-    "validate-readonly-query" \
-    '{"matcher":"Bash","hooks":[{"type":"command","command":"bash ~/.claude/scripts/validate-readonly-query.sh"}]}'
-
-  _wire_hook "PreToolUse" \
-    "validate-utf8-source" \
-    '{"matcher":"Edit|Write|MultiEdit","hooks":[{"type":"command","command":"bash ~/.claude/scripts/validate-utf8-source.sh"}]}'
-
-  _wire_hook "PreToolUse" \
-    "enforce-lsp-navigation" \
-    '{"matcher":"Grep|Glob","hooks":[{"type":"command","command":"bash ~/.claude/scripts/enforce-lsp-navigation.sh"}]}'
-
+  do_run mkdir -p "$skills_dir"
+  if [[ -L "$link_target" ]]; then
+    ok "Plugin already linked: $link_target → $(readlink "$link_target")"
+  elif [[ -d "$link_target" ]]; then
+    # On Windows, an NTFS junction looks like a plain directory to bash's -L test.
+    # Verify it points at the repo before treating it as stale.
+    if [[ -f "$link_target/.claude-plugin/plugin.json" ]]; then
+      ok "Plugin already linked: $link_target"
+    else
+      warn "Directory already exists at $link_target — skipping plugin link. If it's a stale copy, remove it and re-run."
+    fi
+  else
+    case "$(uname -s)" in
+      MINGW*|MSYS*|CYGWIN*)
+        # Git Bash 'ln -s' copies instead of linking, and real symlinks need admin.
+        # NTFS junctions work without elevation.
+        local win_target win_repo
+        win_target=$(cygpath -w "$link_target")
+        win_repo=$(cygpath -w "$REPO_DIR")
+        if cmd //c "mklink /J \"$win_target\" \"$win_repo\"" >/dev/null 2>&1; then
+          ok "Plugin linked (junction): $link_target → $REPO_DIR"
+        else
+          warn "Could not create junction — link manually: cmd /c mklink /J \"$win_target\" \"$win_repo\""
+        fi
+        ;;
+      *)
+        do_run ln -s "$REPO_DIR" "$link_target"
+        ok "Plugin linked: $link_target → $REPO_DIR"
+        ;;
+    esac
+  fi
+  # Reload via CLI if available; otherwise prompt manual reload
+  if command -v claude >/dev/null 2>&1; then
+    claude plugin enable claude-solo@skills-dir >/dev/null 2>&1 && ok "Plugin enabled (claude-solo@skills-dir)" || \
+      warn "Could not auto-enable plugin — run: claude plugin enable claude-solo@skills-dir"
+  else
+    warn "claude not on PATH — start a session and run: /reload-plugins"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -1185,7 +1186,8 @@ run_install() {
   install_skills   "$src_skills"   "$MANIFEST"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
-  ensure_hooks_wired
+  de_wire_old_hooks
+  enable_plugin
   install_claude_md "$src_claude_md"
 
   # statusline
