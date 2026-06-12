@@ -18,7 +18,6 @@
       "Bash(aws s3 rm*)",
       "Bash(aws ec2 terminate-instances*)",
       "Bash(docker push*)",
-      "Read(**/.env*)",
       "Edit(**/.env*)",
       "Write(**/.env*)",
       "Read(**/secrets/**)",

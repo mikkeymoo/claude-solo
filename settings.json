@@ -2,7 +2,7 @@
   "_comment_top": "Global settings — install to ~/.claude/settings.json. Hook scripts installed at ~/.claude/scripts/. Cross-platform: bash required (Git Bash on Windows). See README.md.",
   "_precedence": "Scope precedence (high → low): Managed > Local (.claude/settings.local.json) > Project (.claude/settings.json) > User (this file). Deny rules accumulate across all scopes; first match of deny > defer > ask > allow wins.",
   "model": "claude-sonnet-4-6",
-  "fallbackModel": "claude-haiku-4-5-20251001",
+  "fallbackModel": ["claude-haiku-4-5-20251001"],
   "effortLevel": "medium",
   "maxTurns": 200,
   "includeGitInstructions": true,
@@ -37,18 +37,8 @@
   "permissions": {
     "_comment": "deny > ask > allow. Deny rules survive --dangerously-skip-permissions and bypassPermissions. Hooks (plugin hooks.json) are the second enforcement layer.",
     "defaultMode": "bypassPermissions",
-    "allow": [
-      "Read",
-      "Write",
-      "Edit",
-      "MultiEdit",
-      "Glob",
-      "Grep",
-      "Bash(*)",
-      "mcp__*"
-    ],
+    "allow": ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash(*)"],
     "deny": [
-      "Read(**/.env*)",
       "Edit(**/.env*)",
       "Write(**/.env*)",
       "Read(**/secrets/**)",
@@ -102,5 +92,7 @@
     ]
   },
   "skipDangerousModePermissionPrompt": true,
-  "autoMemoryEnabled": true
+  "autoMemoryEnabled": true,
+  "disableRemoteControl": true,
+  "skillListingBudgetFraction": 0.03
 }
