@@ -65,6 +65,10 @@ backup_path() {
   [[ ! -e "$path" ]] && return 0
   do_run mkdir -p "$BACKUP_DIR"
   local rel="${path#"$HOME"/}"
+  # Paths outside $HOME (e.g. project-level files) keep their leading slash
+  # after the prefix-strip above; drop it so the backup mirror stays relative
+  # instead of producing "$BACKUP_DIR//abs/path".
+  rel="${rel#/}"
   do_run mkdir -p "$BACKUP_DIR/$(dirname "$rel")"
   do_run cp -a "$path" "$BACKUP_DIR/$rel"
   ok "Backed up $path"
