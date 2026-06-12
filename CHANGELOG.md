@@ -7,6 +7,52 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [1.0.0] - 2026-06-11
+
+### Changed — plugin architecture (BREAKING)
+
+- **claude-solo is now a Claude Code plugin** (`.claude-plugin/plugin.json`). Skills (47),
+  agents (5), and hooks (18 across 14 events) load directly from the cloned repo via a
+  link at `~/.claude/skills/claude-solo` — no more file copying. `git pull` = upgrade.
+- **Hook wiring moved** from `settings.json` to the plugin's `hooks/hooks.json`, with
+  paths via `${CLAUDE_PLUGIN_ROOT}`. Legacy entries are de-wired by the installer
+  (including hooks pruned in 0.8.1) so nothing double-fires.
+- **Agents renamed**: plugin ships `code-reviewer`, `researcher`, `refactor-agent`,
+  `db-reader`, `deploy-guard` (no `ult-` prefix). Installer removes the old `ult-*` copies.
+  Plugin-illegal frontmatter (`hooks`, `permissionMode`) removed from `db-reader`/`deploy-guard`;
+  their enforcement lives in the plugin's global PreToolUse hook and the project-override
+  `Agent(deploy-guard)` deny rule respectively.
+- **install.sh is now a bootstrap**: links + enables the plugin, installs the settings
+  layer plugins can't carry (deny rules, env, statusline, CLAUDE.md), removes superseded
+  bare-skill/agent copies, and prunes backups. On Windows it uses an NTFS junction
+  (no admin required) instead of `ln -s`.
+- **Settings template** (`settings.json`): hooks section removed; deny list modernized to
+  the nested patterns from 0.8.2; added `fallbackModel` and `autoMemoryEnabled: true`.
+
+### Removed — Morae/personal split (BREAKING)
+
+- `morae-brand`, `relativity-sql`, `python-windows-gui` skills and the `morae-context.sh`
+  SessionStart hook moved to a separate **claude-personal** plugin, layered independently.
+  See README "Layering personal plugins". Core is now fully universal (47 skills).
+
+### Added — 2025–2026 Claude Code features
+
+- `async: true` on `cost-summary` / `quota-warmup-warn` SessionStart hooks.
+- `disable-model-invocation: true` on manual-only skills: `security`, `release`, `ship`, `incident`.
+- `paths:` frontmatter on 8 of 10 rules so they load only for matching files
+  (`karpathy-pitfalls` and `lsp-first` stay universal by design).
+- `memory: project` on the `researcher` agent (joins `code-reviewer`).
+- `MIGRATION.md` — upgrade guide from ≤0.8.x bare installs.
+
+### Fixed
+
+- `relativity-sql` SKILL.md frontmatter failed YAML parse (unquoted `:` in description) —
+  skill silently loaded with empty metadata. (Skill now lives in claude-personal.)
+- Installer smoke test now checks plugin link + `hooks.json` instead of settings-wired hooks,
+  and flags leftover legacy hook sections or stale `ult-*` agents.
+
+---
+
 ## [0.8.2] - 2026-06-11
 
 ### Fixed
