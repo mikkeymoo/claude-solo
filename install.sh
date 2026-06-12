@@ -138,26 +138,6 @@ _remove_settings_env_key() {
   fi
 }
 
-_unwire_hook_by_command_fragment() {
-  local event="$1" fragment="$2"
-  local target="$CLAUDE_HOME/settings.json"
-  [[ ! -f "$target" ]] && return 0
-  [[ $DRY_RUN -eq 1 ]] && { printf "  ${YELLOW}[dry-run]${NC} would remove %s from %s hooks\n" "$fragment" "$event"; return 0; }
-
-  jq --arg event "$event" --arg fragment "$fragment" '
-    .hooks = (.hooks // {}) |
-    .hooks[$event] = (
-      (.hooks[$event] // [])
-      | map(
-          select(
-            ((((.hooks // []) | map(.command // "") | join(" ")) | contains($fragment)) | not)
-          )
-        )
-    )
-  ' "$target" > "$target.tmp" && mv "$target.tmp" "$target"
-  ok "Ensured ${fragment} is not wired in ${event}"
-}
-
 find_native_claude_binary() {
   local candidate
   local -a candidates=()
@@ -777,22 +757,26 @@ de_wire_old_hooks() {
     "enforce-lsp-navigation" "morae-context" "start-cache-proxy"
     "large-file.js" "gitignore-check.js" "lint-fix.js" "test-fix.js" "stop-gate.js"
   )
-  local events=(
-    "SessionStart" "SessionEnd" "PreToolUse" "PostToolUse" "PostToolUseFailure"
-    "UserPromptSubmit" "PermissionRequest" "PreCompact" "PostCompact"
-    "SubagentStop" "Stop" "WorktreeCreate" "FileChanged" "ConfigChange"
-  )
-  local changed=0
-  for event in "${events[@]}"; do
-    for frag in "${fragments[@]}"; do
-      _unwire_hook_by_command_fragment "$event" "$frag" 2>/dev/null && changed=1
-    done
-  done
-  # Remove empty hook event arrays, then the hooks key itself if nothing remains
-  jq 'if .hooks then .hooks |= with_entries(select(.value | length > 0)) else . end
-      | if (.hooks // {} | length) == 0 then del(.hooks) else . end' \
-    "$target" > "$target.tmp" && mv "$target.tmp" "$target"
-  [[ $changed -eq 1 ]] && ok "Legacy hooks removed" || ok "No legacy hooks found"
+  # Single jq pass over every event: drop any matcher-group whose commands
+  # mention a legacy fragment, prune emptied event arrays, then drop .hooks if
+  # nothing remains. A fragment match in ANY event is removed, so we no longer
+  # enumerate event names. (The old code ran one jq per event×fragment — 400+
+  # process spawns that crawled on Windows and spammed a "✓ Ensured…" line each.)
+  jq '
+    def mentions_legacy:
+      ([ (.hooks // [])[] | .command // "" ] | join(" ")) as $cmds
+      | ($ARGS.positional | any(. as $f | $cmds | contains($f)));
+    if .hooks then
+      .hooks |= ( map_values( map(select(mentions_legacy | not)) )
+                  | with_entries(select(.value | length > 0)) )
+      | if (.hooks | length) == 0 then del(.hooks) else . end
+    else . end
+  ' "$target" --args "${fragments[@]}" > "$target.tmp"
+  if cmp -s "$target" "$target.tmp" 2>/dev/null; then
+    rm -f "$target.tmp"; ok "No legacy hooks found"
+  else
+    mv "$target.tmp" "$target"; ok "Legacy hooks de-wired (plugin takes over)"
+  fi
   # Also handle start-cache-proxy toggle
   [[ $INSTALL_CACHE_FIX -eq 1 ]] && \
     _patch_settings_env "ANTHROPIC_BASE_URL" "http://127.0.0.1:9801" || \
