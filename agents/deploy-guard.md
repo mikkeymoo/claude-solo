@@ -6,7 +6,6 @@ effort: xhigh
 maxTurns: 50
 memory: project
 color: orange
-permissionMode: default
 tools: Read, Glob, Grep, Bash, mcp__serena__find_symbol, mcp__serena__get_symbols_overview
 disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
