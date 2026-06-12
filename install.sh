@@ -653,6 +653,24 @@ install_rules() {
   [[ $count -eq 0 ]] && warn "No rule .md files found in $src_dir" || true
 }
 
+# Apply a jq filter to a JSON file, but only rewrite (and report "changed")
+# when the result differs SEMANTICALLY — jq reformats output, so a byte compare
+# would false-positive on every no-op pass. Compares canonical (sort-keys) forms.
+_apply_jq_if_changed() {
+  local target="$1" filter="$2" changed_msg="$3" unchanged_msg="$4"
+  [[ ! -f "$target" ]] && return 0
+  local tmp="$target.tmp"
+  if ! jq "$filter" "$target" > "$tmp" 2>/dev/null; then
+    warn "jq failed on $(basename "$target") — leaving as-is"
+    rm -f "$tmp"; return 0
+  fi
+  if [[ "$(jq -S . "$target" 2>/dev/null)" == "$(jq -S . "$tmp" 2>/dev/null)" ]]; then
+    rm -f "$tmp"; ok "$unchanged_msg"
+  else
+    mv "$tmp" "$target"; ok "$changed_msg"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # settings.json install
 # ---------------------------------------------------------------------------
@@ -676,6 +694,34 @@ install_settings() {
   say "Diff (yours → repo) — merge manually if needed:"
   diff -u "$target" "$src" | head -80 || true
   warn "Repo settings.json is at: $src"
+}
+
+# ---------------------------------------------------------------------------
+# Surgically bring an EXISTING settings.json up to current claude-solo defaults
+# without overwriting the whole file (so merge-mode installs pick up fixes too).
+# Idempotent: schema fixes always applied; preference keys only set when the
+# user hasn't chosen a value, so explicit choices are never clobbered.
+#   - fallbackModel: bare string -> array (schema expects an array of IDs)
+#   - drop unsupported "mcp__*" allow rule (invalid pattern; /doctor warning)
+#   - allow reading .env (claude-solo policy); Edit/Write stay denied
+#   - disableRemoteControl: true (only if key absent)
+#   - skillListingBudgetFraction: 0.03 (only if key absent)
+# ---------------------------------------------------------------------------
+patch_existing_settings() {
+  local target="$CLAUDE_HOME/settings.json"
+  [[ ! -f "$target" ]] && return 0
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (fallbackModel array, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
+    return 0
+  fi
+  _apply_jq_if_changed "$target" '
+    (if (.fallbackModel | type) == "string" then .fallbackModel = [ .fallbackModel ] else . end)
+    | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
+    | (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
+    | (if has("disableRemoteControl")        then . else .disableRemoteControl = true end)
+    | (if has("skillListingBudgetFraction")  then . else .skillListingBudgetFraction = 0.03 end)
+  ' "Patched existing settings.json to current claude-solo defaults" \
+    "settings.json already current (no patch needed)"
 }
 
 # ---------------------------------------------------------------------------
@@ -762,21 +808,18 @@ de_wire_old_hooks() {
   # nothing remains. A fragment match in ANY event is removed, so we no longer
   # enumerate event names. (The old code ran one jq per event×fragment — 400+
   # process spawns that crawled on Windows and spammed a "✓ Ensured…" line each.)
-  jq '
+  local frags_json
+  frags_json=$(jq -nc '$ARGS.positional' --args "${fragments[@]}")
+  _apply_jq_if_changed "$target" '
     def mentions_legacy:
       ([ (.hooks // [])[] | .command // "" ] | join(" ")) as $cmds
-      | ($ARGS.positional | any(. as $f | $cmds | contains($f)));
+      | ('"$frags_json"' | any(. as $f | $cmds | contains($f)));
     if .hooks then
       .hooks |= ( map_values( map(select(mentions_legacy | not)) )
                   | with_entries(select(.value | length > 0)) )
       | if (.hooks | length) == 0 then del(.hooks) else . end
     else . end
-  ' "$target" --args "${fragments[@]}" > "$target.tmp"
-  if cmp -s "$target" "$target.tmp" 2>/dev/null; then
-    rm -f "$target.tmp"; ok "No legacy hooks found"
-  else
-    mv "$target.tmp" "$target"; ok "Legacy hooks de-wired (plugin takes over)"
-  fi
+  ' "Legacy hooks de-wired (plugin takes over)" "No legacy hooks found"
   # Also handle start-cache-proxy toggle
   [[ $INSTALL_CACHE_FIX -eq 1 ]] && \
     _patch_settings_env "ANTHROPIC_BASE_URL" "http://127.0.0.1:9801" || \
@@ -1165,6 +1208,7 @@ run_install() {
   remove_stale_bare_skills "$src_skills"
   install_rules    "$src_rules"    "$MANIFEST"
   install_settings "$src_settings"
+  patch_existing_settings
   de_wire_old_hooks
   enable_plugin
   install_claude_md "$src_claude_md"
