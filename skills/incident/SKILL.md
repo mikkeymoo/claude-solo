@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: incident
 description: "Structure a postmortem from a production incident. Writes .planning/POSTMORTEM-{date}.md. Use after any significant outage or data issue."
 argument-hint: "[incident title or description]"

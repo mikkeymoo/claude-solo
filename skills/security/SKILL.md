@@ -1,4 +1,6 @@
 ---
+disable-model-invocation: true
+argument-hint: "--deps | --full"
 name: security
 description: "OWASP-based security audit: injection, auth, secrets, API safety, and dependency CVEs. Manual trigger only. Use when explicitly asked for a security review."
 ---

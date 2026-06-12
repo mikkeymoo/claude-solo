@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: ship
 description: "Final test run, PR creation, merge, and post-ship checklist. Use when ready to ship a feature."
 ---

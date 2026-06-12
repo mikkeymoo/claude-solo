@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: release
 description: "Cut a release: version bump, changelog update, git tag, and push. Use when ready to tag and ship a version."
 argument-hint: "[patch|minor|major] or explicit version"
