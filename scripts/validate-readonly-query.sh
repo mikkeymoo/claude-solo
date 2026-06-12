@@ -33,8 +33,11 @@ fi
 # Quick passes — empty or whitespace-only commands
 [[ -z "${CMD// /}" ]] && exit 0
 
-# Normalize to uppercase for keyword detection but keep $CMD for logging
-UP=$(echo "$CMD" | tr '[:lower:]' '[:upper:]')
+# Normalize: collapse runs of whitespace and convert to uppercase for keyword detection.
+# This catches "INSERT   INTO" (extra spaces), tab-separated tokens, and newlines in
+# multi-line SQL strings. Alias names (e.g. alias q='psql ...') are NOT detected here —
+# the user would need to bypass the agent-type guard to exploit that.
+UP=$(echo "$CMD" | tr '[:lower:]' '[:upper:]' | tr -s '[:space:]' ' ')
 
 # Explicit write keywords at statement position — not inside quoted strings of a SELECT.
 # We err on the side of over-blocking: any of these tokens => deny.
