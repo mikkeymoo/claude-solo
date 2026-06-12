@@ -22,6 +22,9 @@ convert-skills.mjs
 .serena/
 .plugin-config/
 
+# Node (installer wrapper deps — npx reinstalls on clone)
+node_modules/
+
 # Python caches
 .ruff_cache/
 __pycache__/

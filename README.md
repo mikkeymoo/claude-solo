@@ -2,6 +2,21 @@
 
 Claude Code **plugin** for solo developers. 47 skills, 5 subagents, 24 hooks, plus a bootstrap installer for the settings layer plugins can't carry.
 
+### Quick start (`npx` — interactive)
+
+```bash
+npx github:mikkeymoo/claude-solo install            # user-level, guided prompts
+npx github:mikkeymoo/claude-solo install --project  # project override in this dir
+npx github:mikkeymoo/claude-solo install --dry-run  # preview only, change nothing
+```
+
+The `npx` front door asks scope (user vs project), fresh-vs-merge, and cache-fix,
+then shells out to `install.sh` for the real work. **Windows needs Git Bash on PATH**
+(`winget install Git.Git`) — the installer checks and prints this hint before prompting.
+Add `--yes` for non-interactive/CI runs.
+
+### Or clone and run the script directly
+
 ```bash
 git clone <this-repo> && cd claude-solo
 bash install.sh    # links the plugin + installs the settings/deny layer

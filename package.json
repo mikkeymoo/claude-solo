@@ -1,0 +1,46 @@
+{
+  "name": "claude-solo",
+  "version": "1.0.0",
+  "description": "Interactive installer for the claude-solo Claude Code configuration — strict deny layer, auto-healing hooks, specialist subagents, and a full skill library.",
+  "type": "module",
+  "bin": {
+    "claude-solo": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "install.sh",
+    "scripts/",
+    "hooks/",
+    "agents/",
+    "skills/",
+    "rules/",
+    "settings.json",
+    "mcp.json",
+    "keybindings.json",
+    "CLAUDE.md",
+    "project-override/",
+    "gitignore-additions.txt",
+    ".claude-plugin/"
+  ],
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "commander": "^12.1.0",
+    "picocolors": "^1.0.1"
+  },
+  "author": {
+    "name": "mikkeymoo",
+    "email": "coolboarder86@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "github:mikkeymoo/claude-solo"
+  }
+}
