@@ -1,0 +1,258 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Bootstrapping Windows UTF-8 encoding...",
+            "timeout": 5000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-windows-encoding.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Summarizing today's token usage...",
+            "timeout": 10000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/cost-summary.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking quota window...",
+            "timeout": 10000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/quota-warmup-warn.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Loading session HUD...",
+            "timeout": 10000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-hud.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Loading git + sprint context...",
+            "timeout": 10000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-start-context.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Loading session context...",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-end.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-end.js"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/enforce-lsp-navigation.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/validate-utf8-source.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/validate-readonly-query.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|mcp__desktop-commander__start_process",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 60000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/post-format-and-heal.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__serena__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/compress-lsp-output.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use-failure.js"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/prompt-submit.js"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/permission-request.js"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Saving checkpoint before compaction...",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/pre-compact-checkpoint.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.js"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Re-loading context after compaction...",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-compact.js"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-stop.js"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 30000,
+            "statusMessage": "Setting up isolated worktree...",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/worktree-create.js"
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "package.json|pyproject.toml|requirements.txt|Cargo.toml|go.mod|.env.example",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/file-changed.js"
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/config-change.js"
+          }
+        ]
+      }
+    ]
+  }
+}
