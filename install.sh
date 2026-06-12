@@ -791,7 +791,7 @@ de_wire_old_hooks() {
   [[ $changed -eq 1 ]] && ok "Legacy hooks removed" || ok "No legacy hooks found"
   # Also handle start-cache-proxy toggle
   [[ $INSTALL_CACHE_FIX -eq 1 ]] && \
-    _patch_settings_env "ANTHROPIC_BASE_URL" "http://localhost:9801" || \
+    _patch_settings_env "ANTHROPIC_BASE_URL" "http://127.0.0.1:9801" || \
     _remove_settings_env_key "ANTHROPIC_BASE_URL"
 }
 
@@ -820,11 +820,16 @@ enable_plugin() {
     case "$(uname -s)" in
       MINGW*|MSYS*|CYGWIN*)
         # Git Bash 'ln -s' copies instead of linking, and real symlinks need admin.
-        # NTFS junctions work without elevation.
-        local win_target win_repo
+        # NTFS junctions work without elevation. PowerShell handles paths with
+        # spaces reliably; cmd/mklink quote-mangling under MSYS does not.
+        local win_target win_repo pwsh_bin
         win_target=$(cygpath -w "$link_target")
         win_repo=$(cygpath -w "$REPO_DIR")
-        if cmd //c "mklink /J \"$win_target\" \"$win_repo\"" >/dev/null 2>&1; then
+        pwsh_bin=$(find_pwsh)
+        if [[ -n "$pwsh_bin" ]] && "$pwsh_bin" -NoProfile -Command \
+             "New-Item -ItemType Junction -Path '$win_target' -Target '$win_repo' | Out-Null" >/dev/null 2>&1; then
+          ok "Plugin linked (junction): $link_target → $REPO_DIR"
+        elif cmd //c "mklink /J \"$win_target\" \"$win_repo\"" >/dev/null 2>&1; then
           ok "Plugin linked (junction): $link_target → $REPO_DIR"
         else
           warn "Could not create junction — link manually: cmd /c mklink /J \"$win_target\" \"$win_repo\""
