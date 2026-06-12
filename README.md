@@ -24,6 +24,83 @@ bash install.sh    # links the plugin + installs the settings/deny layer
 
 ---
 
+## 📦 What's installed
+
+|     | Component                             | Count  | Lands in                                                                 |
+| :-: | ------------------------------------- | :----: | ------------------------------------------------------------------------ |
+| 🧩  | **Skills** — `/mm-*` commands         | **48** | `~/.claude/skills/mm-<name>/` (standalone)                               |
+| 🤖  | **Agents** — specialist subagents     | **5**  | shipped by the plugin → `/agents`                                        |
+| 🔌  | **Plugin** — `claude-solo@skills-dir` | **1**  | `~/.claude/skills/claude-solo` (link → repo)                             |
+| 🪝  | **Hooks** — JS, across 14 events      | **18** | `~/.claude/hooks/` + `hooks/hooks.json`                                  |
+| 🐚  | **Hook scripts** — shell/PowerShell   | **15** | `~/.claude/scripts/`                                                     |
+| 📏  | **Rules** — auto-loaded guidance      | **10** | `~/.claude/rules/`                                                       |
+| ⚙️  | **Config layer**                      |   —    | `settings.json`, `CLAUDE.md`, `mcp.json`, `keybindings.json`, statusline |
+
+> **Skills = commands.** In current Claude Code, `.claude/commands/*.md` and `skills/*/SKILL.md` both produce a `/command` — claude-solo ships all 48 as skills, each invokable as `/mm-<name>`.
+
+<details>
+<summary><b>🧩 48 skills</b> — grouped by purpose</summary>
+
+| Group               | Commands                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint pipeline** | `/mm-brief` · `/mm-riper` · `/mm-code-review-excellence` · `/mm-quality` · `/mm-ship` · `/mm-retro`                                                                  |
+| **Workflow modes**  | `/mm-workflow` · `/mm-swarm` · `/mm-quick`                                                                                                                           |
+| **Debugging**       | `/mm-fix` · `/mm-triage-issue` · `/mm-incident`                                                                                                                      |
+| **Testing**         | `/mm-tdd` · `/mm-test-gen`                                                                                                                                           |
+| **Quality**         | `/mm-cleanup` · `/mm-security` · `/mm-perf` · `/mm-deps`                                                                                                             |
+| **Review & design** | `/mm-api-design` · `/mm-design-an-interface` · `/mm-grill-me` · `/mm-premortem` · `/mm-improve-codebase-architecture` · `/mm-request-refactor-plan` · `/mm-refactor` |
+| **Exploration**     | `/mm-zoom-out` · `/mm-hud` · `/mm-onboard` · `/mm-lsp-status`                                                                                                        |
+| **Deps & CI**       | `/mm-changelog` · `/mm-ci` · `/mm-release`                                                                                                                           |
+| **Migration**       | `/mm-migrate`                                                                                                                                                        |
+| **Scaffolding**     | `/mm-scaffold` · `/mm-sketch`                                                                                                                                        |
+| **Planning & PRD**  | `/mm-to-issues` · `/mm-to-prd`                                                                                                                                       |
+| **Meta**            | `/mm-docs` · `/mm-config` · `/mm-session` · `/mm-cost` · `/mm-write-a-skill` · `/mm-find-skills` · `/mm-brainstorm` · `/mm-qa`                                       |
+| **Domain**          | `/mm-sql-craft` (T-SQL) · `/mm-impeccable` (frontend UI) · `/mm-git-guardrails-claude-code`                                                                          |
+
+</details>
+
+<details>
+<summary><b>🤖 5 agents</b> — specialist subagents</summary>
+
+| Agent            | Model  | Role                                             |
+| ---------------- | :----: | ------------------------------------------------ |
+| `code-reviewer`  |  Opus  | 3-pass staff review before commit (read-only)    |
+| `researcher`     | Haiku  | Fast cross-file investigation (read-only)        |
+| `refactor-agent` | Sonnet | Large renames in an isolated git worktree        |
+| `db-reader`      | Haiku  | SELECT-only DB inspection (hook-enforced)        |
+| `deploy-guard`   |  Opus  | Pre-deploy GO/NO-GO verdict (human-trigger only) |
+
+</details>
+
+<details>
+<summary><b>🪝 Hooks &amp; 🐚 scripts</b> — what fires automatically</summary>
+
+**14 hook events wired:** `SessionStart` · `SessionEnd` · `Stop` · `PreToolUse` · `PostToolUse` · `PostToolUseFailure` · `UserPromptSubmit` · `PermissionRequest` · `PreCompact` · `PostCompact` · `SubagentStop` · `WorktreeCreate` · `FileChanged` · `ConfigChange`
+
+**Highlights:**
+
+- `rtk-rewrite` — compresses CLI output 60–90% before it hits context
+- `post-format-and-heal` — auto-format + lint-fix after every edit
+- `enforce-lsp-navigation` — nudges Serena LSP over raw Grep
+- `validate-readonly-query` — blocks write-SQL when running as `db-reader`
+- `pre-compact-checkpoint` / `post-compact` — saves & restores context on compaction
+- `session-start-context` / `session-hud` — git + sprint state on every session
+- `cost-summary` / `quota-warmup-warn` — token spend & quota awareness
+- `bootstrap-windows-encoding` — UTF-8 safety on Windows
+
+</details>
+
+<details>
+<summary><b>📏 10 rules</b> — auto-loaded engineering guidance</summary>
+
+`karpathy-pitfalls` · `lsp-first` · `api-routes` · `ci-workflows` · `config-files` · `documentation` · `env-files` · `migrations` · `security-sensitive` · `tests`
+
+Plus optional tooling the installer ensures on PATH: **rtk**, **ruff**, **prettier**, **tsc**, **pyright** (and an opt-in `claude-code-cache-fix` proxy via `--with-cache-fix`).
+
+</details>
+
+---
+
 ## Examples
 
 Every example below shows: what you type, what skill/agent activates, what hooks fire, and what artifacts are produced.
