@@ -494,8 +494,8 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 ## Specialist subagents
 
-| Agent                | Model  | What it does                                   | Triggered by                                       |
-| -------------------- | ------ | ---------------------------------------------- | -------------------------------------------------- |
+| Agent            | Model  | What it does                                   | Triggered by                                       |
+| ---------------- | ------ | ---------------------------------------------- | -------------------------------------------------- |
 | `code-reviewer`  | Opus   | 3-pass staff-engineer review                   | Auto before commits; `/code-review-excellence`     |
 | `researcher`     | Haiku  | Fast cross-file codebase investigation         | Questions spanning >3 files; `/zoom-out --explore` |
 | `refactor-agent` | Sonnet | Large renames in isolated git worktree         | Renames >10 files; `/swarm`; `/refactor`           |
@@ -532,19 +532,16 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 ## Security model
 
-claude-solo uses `defaultMode: "bypassPermissions"` + `skipDangerousModePermissionPrompt: true` for solo-developer velocity (no per-call approval dialogs). **The deny rules and hooks are the only guardrails — everything else runs unprompted.**
+claude-solo uses `defaultMode: "bypassPermissions"` + `skipDangerousModePermissionPrompt: true` for solo-developer velocity (no per-call approval dialogs).
 
-What the deny layer actually blocks:
+**The deny-list has been removed.** `permissions.deny` is empty across all scopes and `hooks/permission-request.js` no longer blocks catastrophic commands. With `bypassPermissions`, that means **nothing is blocked — every tool call runs unprompted, including `rm -rf /`, `curl | bash`, force-push, and `.env`/secret edits.** There is no safety net; treat the agent as you would your own shell.
 
-- Nested `.env*`, `secrets/`, `credentials/`, `*.pem`, `id_rsa*`, `id_ed25519*` files (Read/Edit/Write)
-- Destructive Bash: `rm -rf /`, `rm -rf ~`, `git push --force*`, `git reset --hard`, `git clean -f`, `npm/cargo/twine publish`, `curl|bash`, `dd if=`, `chmod -R 777`, `mkfs.*`
+What still exists (not enforcement):
 
-What the hooks add on top:
+- `pre-tool-use.js` emits **advisory** danger warnings (never blocks)
+- `validate-readonly-query.sh` blocks write SQL only when running as the `db-reader` subagent
 
-- `pre-tool-use.js` warns on dangerous patterns including `git -c ... push --force` reordering
-- `validate-readonly-query.sh` blocks all write SQL when running as the `db-reader` agent
-
-Note: `git -c key=value push --force` (flag reordering) is NOT blocked by the deny rules (string matching can't catch all forms) — the hook layer is why you keep both.
+To restore guardrails, add entries back to `permissions.deny` in `settings.json` and a catastrophic-pattern block to `hooks/permission-request.js`.
 
 ---
 

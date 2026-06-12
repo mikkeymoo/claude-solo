@@ -709,7 +709,7 @@ install_settings() {
 #   - fallbackModel: old dated-Haiku default (or absent) -> [sonnet, haiku] aliases
 #   - CLAUDE_CODE_SUBAGENT_MODEL: old dated Haiku id -> alias (migrate only)
 #   - drop unsupported "mcp__*" allow rule (invalid pattern; /doctor warning)
-#   - allow reading .env (claude-solo policy); Edit/Write stay denied
+#   - permissions.deny -> [] (deny-list removed per user request — FORCED)
 #   - disableRemoteControl: true (only if key absent)
 #   - skillListingBudgetFraction: 0.03 (only if key absent)
 # ---------------------------------------------------------------------------
@@ -717,7 +717,7 @@ patch_existing_settings() {
   local target="$CLAUDE_HOME/settings.json"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8 + sonnet/haiku fallback, drop mcp__*, allow .env read, disableRemoteControl, skillListingBudgetFraction)\n"
+    printf "  ${YELLOW}[dry-run]${NC} would patch settings.json (migrate old model default -> opus-4-8 + sonnet/haiku fallback, drop mcp__*, clear deny-list, disableRemoteControl, skillListingBudgetFraction)\n"
     return 0
   fi
   _apply_jq_if_changed "$target" '
@@ -730,31 +730,31 @@ patch_existing_settings() {
     | (if .env.CLAUDE_CODE_SUBAGENT_MODEL == "claude-haiku-4-5-20251001"
          then .env.CLAUDE_CODE_SUBAGENT_MODEL = "claude-haiku-4-5" else . end)
     | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
-    | (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
+    | (if (.permissions | type) == "object" then .permissions.deny = [] else . end)
     | (if has("disableRemoteControl")        then . else .disableRemoteControl = true end)
     | (if has("skillListingBudgetFraction")  then . else .skillListingBudgetFraction = 0.03 end)
-  ' "Patched existing settings.json (migrated model default to Opus 4.8)" \
+  ' "Patched existing settings.json (migrated model + cleared deny-list)" \
     "settings.json already current (no patch needed)"
 }
 
 # ---------------------------------------------------------------------------
-# Project scope: surgically allow .env reads (and drop the invalid mcp__* rule)
-# in an EXISTING project .claude/settings.json without overwriting the rest.
-# Global-only keys (disableRemoteControl, fallbackModel, skillListingBudgetFraction)
-# are intentionally NOT applied here — they belong in user scope, not an override.
+# Project scope: clear the deny-list (per user request) and drop the invalid
+# mcp__* rule in an EXISTING project .claude/settings.json without overwriting
+# the rest. Global-only keys (disableRemoteControl, fallbackModel,
+# skillListingBudgetFraction) are intentionally NOT applied here.
 # ---------------------------------------------------------------------------
 patch_existing_project_settings() {
   local target="$1"
   [[ ! -f "$target" ]] && return 0
   if [[ $DRY_RUN -eq 1 ]]; then
-    printf "  ${YELLOW}[dry-run]${NC} would patch %s (allow .env read, drop mcp__*)\n" "$target"
+    printf "  ${YELLOW}[dry-run]${NC} would patch %s (clear deny-list, drop mcp__*)\n" "$target"
     return 0
   fi
   _apply_jq_if_changed "$target" '
-    (if (.permissions.deny  | type) == "array" then .permissions.deny  -= ["Read(**/.env*)"] else . end)
+    (if (.permissions | type) == "object" then .permissions.deny = [] else . end)
     | (if (.permissions.allow | type) == "array" then .permissions.allow -= ["mcp__*"] else . end)
-  ' "Patched project .claude/settings.json (allow .env read)" \
-    "project .claude/settings.json already allows .env read"
+  ' "Patched project .claude/settings.json (cleared deny-list)" \
+    "project .claude/settings.json already current"
 }
 
 # ---------------------------------------------------------------------------

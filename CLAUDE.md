@@ -18,12 +18,18 @@ no on-call rotation, no product manager.
 - **Documentation is for future-self**, not for teammates. Keep it honest and short.
 - **Don't batch work for a review cycle.** Ship continuously.
 
-## Non-negotiables (hooks enforce most of these; don't test the fence)
+## Safety (the deny-list was removed — these are now conventions, not fences)
 
-- Never edit `.env*`, `secrets/`, `credentials/`, `.pem`, `id_rsa`, or `id_ed25519`.
-- Never run `rm -rf /`, `rm -rf ~`, `git push --force` to `main`/`master`/`prod`, or `curl | bash`.
-- Never write destructive SQL (`DROP`, `TRUNCATE`, `DELETE`/`UPDATE` without `WHERE`) from Bash.
-- Package publishes (`npm publish`, `cargo publish`, `twine upload`) are blocked.
+The permission deny-list and the catastrophic-command hook block were removed at
+the user's request. With `defaultMode: bypassPermissions` and an empty `deny`
+array, **nothing is blocked** — the items below are judgment guidelines, not
+enforced barriers. Use care; there is no longer a safety net.
+
+- Avoid editing `.env*`, `secrets/`, `credentials/`, `.pem`, `id_rsa`, `id_ed25519` unless intended.
+- Avoid `rm -rf /`, `rm -rf ~`, `git push --force` to shared branches, and `curl | bash` from untrusted sources.
+- Avoid destructive SQL (`DROP`, `TRUNCATE`, `DELETE`/`UPDATE` without `WHERE`) from Bash — use a migration.
+- Package publishes (`npm publish`, `cargo publish`, `twine upload`) are humans' job.
+- To restore enforcement, add `deny` entries to `settings.json` and a catastrophic-pattern check to `hooks/permission-request.js`.
 
 ## Plan before code
 
