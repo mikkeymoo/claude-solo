@@ -29,6 +29,7 @@ PROJECT_MODE=0
 BACKUP=1
 ASSUME_YES=0
 INSTALL_CACHE_FIX=0
+INSTALL_RTK=1     # rtk (Rust Token Killer): install by default; --without-rtk to skip
 
 # ---------------------------------------------------------------------------
 # Output helpers
@@ -213,6 +214,8 @@ while [[ $# -gt 0 ]]; do
     --project)    PROJECT_MODE=1     ;;
     --with-cache-fix) INSTALL_CACHE_FIX=1 ;;
     --without-cache-fix) INSTALL_CACHE_FIX=0 ;;
+    --with-rtk)   INSTALL_RTK=1       ;;
+    --without-rtk) INSTALL_RTK=0      ;;
     --no-backup)  BACKUP=0           ;;
     --dry-run|-n) DRY_RUN=1          ;;
     --uninstall)  UNINSTALL=1        ;;
@@ -454,11 +457,56 @@ install_cache_fix() {
 }
 
 # ---------------------------------------------------------------------------
+# rtk (Rust Token Killer): compresses CLI output 60–90% before it reaches the
+# context window. The auto-rewrite happens via the plugin PreToolUse hook
+# (scripts/rtk-rewrite.sh) which works cross-platform INCLUDING native Windows —
+# unlike `rtk init -g`, which refuses hook mode on Windows. So we only ensure the
+# binary is present here; the hook ships with the plugin and no-ops without rtk.
+# ---------------------------------------------------------------------------
+ensure_rtk() {
+  if command -v rtk >/dev/null 2>&1; then
+    if rtk rewrite "git status" >/dev/null 2>&1; then
+      ok "rtk: $(rtk --version 2>/dev/null | head -1) (auto-rewrite hook active)"
+    else
+      warn "rtk on PATH but 'rtk rewrite' failed — likely the wrong 'rtk' (Rust Type Kit on crates.io)."
+      warn "  Reinstall the right one: cargo install --git https://github.com/rtk-ai/rtk"
+    fi
+    return
+  fi
+  if [[ $INSTALL_RTK -ne 1 ]]; then
+    say "rtk not installed (skipped via --without-rtk). Add later: cargo install --git https://github.com/rtk-ai/rtk"
+    return
+  fi
+  if [[ $DRY_RUN -eq 1 ]]; then
+    printf "  ${YELLOW}[dry-run]${NC} would install rtk (brew, else cargo --git rtk-ai/rtk)\n"
+    return
+  fi
+  # brew where available; else cargo with --git to dodge the crates.io name
+  # collision (a different 'rtk' = Rust Type Kit).
+  if command -v brew >/dev/null 2>&1; then
+    say "  Installing rtk via brew..."
+    brew install rtk >/dev/null 2>&1 || warn "brew install rtk failed — run manually: brew install rtk"
+  elif command -v cargo >/dev/null 2>&1; then
+    say "  Installing rtk via cargo (rtk-ai/rtk — ~1–2 min build)..."
+    cargo install --git https://github.com/rtk-ai/rtk >/dev/null 2>&1 \
+      || warn "cargo install rtk failed — run manually: cargo install --git https://github.com/rtk-ai/rtk"
+  else
+    warn "rtk: needs brew or cargo to install (get Rust at https://rustup.rs), or pass --without-rtk to skip."
+    return
+  fi
+  if command -v rtk >/dev/null 2>&1; then
+    ok "rtk installed: $(rtk --version 2>/dev/null | head -1) (auto-rewrite hook active)"
+  else
+    warn "rtk not on PATH after install — open a new shell or add ~/.cargo/bin to PATH"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Optional tools installer
-# (reserved for future optional tools)
 # ---------------------------------------------------------------------------
 install_optional_tools() {
-  say "Installing optional tools — nothing to install"
+  say "Installing optional tools"
+  ensure_rtk
 }
 
 # ---------------------------------------------------------------------------

@@ -618,8 +618,9 @@ The installer does two things:
 1. **Links the plugin** — `~/.claude/skills/claude-solo` → this repo (NTFS junction on
    Windows, symlink elsewhere), then `claude plugin enable claude-solo@skills-dir`.
    That serves the 47 skills, 5 agents, and 24 hooks.
-2. **Bootstraps the settings layer** (plugins cannot ship this): permission deny rules,
+2. **Bootstraps the settings layer** (plugins cannot ship this): permissions,
    env vars, statusline, `CLAUDE.md`, and Windows encoding fixes into `~/.claude/`.
+3. **Installs rtk** (Rust Token Killer) by default — pass `--without-rtk` to skip. Needs `cargo` or `brew`.
 
 Per-project install instead of user-wide: link the repo into `<project>/.claude/skills/claude-solo`.
 
@@ -630,9 +631,14 @@ the installer de-wires old hook entries and removes superseded skill/agent copie
 
 Handled automatically by the installer:
 
-1. **cache-fix proxy** — fixes 5m→1h cache TTL regression in CC v2.1.81+
-2. **Session hygiene** — long sessions, checkpoints, LSP over Grep
-3. **`/cost --trend`** — week-over-week comparison to spot regressions
+1. **rtk auto-rewrite** — the `rtk-rewrite.sh` PreToolUse hook transparently routes simple Bash
+   commands through [rtk](https://github.com/rtk-ai/rtk) (Rust Token Killer), compressing CLI
+   output 60–90% before it hits the context window. No manual `rtk` prefixing. Works on **native
+   Windows too** (Git Bash), where `rtk init -g`'s own hook refuses to install. Compound/piped
+   commands are skipped (rtk can't rewrite them safely); the hook no-ops if rtk isn't installed.
+2. **cache-fix proxy** — fixes 5m→1h cache TTL regression in CC v2.1.81+
+3. **Session hygiene** — long sessions, checkpoints, LSP over Grep
+4. **`/cost --trend`** — week-over-week comparison to spot regressions
 
 ## Windows encoding
 

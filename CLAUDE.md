@@ -78,9 +78,9 @@ Meta: `/scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates)
 ## Execution defaults
 
 - Atomic commits: one logical unit, staged explicitly (`git add <file>` not `git add .`).
-- **Pushing to `main` is always allowed without asking.** After committing, push to `origin/main` directly — no confirmation needed, no feature branch required. (Solo repo; `git push --force` to main is still blocked.)
+- **Pushing to `main` is always allowed without asking.** After committing, push to `origin/main` directly — no confirmation needed, no feature branch required. (Solo repo; the deny-list was removed, so even `git push --force` is no longer blocked — use care.)
 - Run tests after meaningful edits — PostToolUse hook will nudge; don't ignore it.
-- Prefer `rtk <cmd>` wrappers for 60–90% token savings on CLI output.
+- `rtk` (Rust Token Killer) auto-rewrites simple Bash commands via the `rtk-rewrite.sh` PreToolUse hook — no need to prefix `rtk` yourself (it's a no-op if rtk isn't installed). 60–90% token savings on CLI output.
 - Use Serena LSP (`mcp__serena__*`) over Grep for code navigation when available.
 
 ## Engineering rules
