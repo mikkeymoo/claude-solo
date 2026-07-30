@@ -56,9 +56,7 @@ Active hooks
   SessionStart  session-hud.sh
   PreToolUse    validate-readonly-query.sh      (matcher: Bash)
   PreToolUse    validate-utf8-source.sh         (matcher: Edit|Write|MultiEdit)
-  PreToolUse    enforce-lsp-navigation.sh       (matcher: Grep|Glob)
   PostToolUse   post-format-and-heal.sh         (matcher: Edit|Write|MultiEdit)
-  PostToolUse   compress-lsp-output.sh          (matcher: mcp__serena__.*)
   Notification  notify-desktop.sh
   PreCompact    pre-compact-checkpoint.sh
 ```

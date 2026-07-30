@@ -19,4 +19,4 @@ Map the specified area and return a useful mental model.
 4. **Gotchas** — anything non-obvious or surprising
 5. **Gaps** — missing tests, undocumented behavior, code/expectation mismatches
 
-Use Serena LSP over grep where possible. Return a summary you can act on — not a raw file listing.
+Return a summary you can act on — not a raw file listing.

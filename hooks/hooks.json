@@ -94,15 +94,6 @@
         ]
       },
       {
-        "matcher": "Grep|Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/enforce-lsp-navigation.sh"
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
@@ -138,16 +129,6 @@
             "type": "command",
             "timeout": 60000,
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/post-format-and-heal.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__serena__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "timeout": 5000,
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/compress-lsp-output.sh"
           }
         ]
       },

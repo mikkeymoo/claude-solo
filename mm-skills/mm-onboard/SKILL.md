@@ -91,7 +91,7 @@ The generated guide should:
 
 ## Implementation notes
 
-- Use `find_symbol` and `get_symbols_overview` (Serena LSP) to understand code structure
+- Map structure with Glob (entry points, config) then Grep for exported symbols and route definitions
 - Prefer reading actual code and config files over guessing
 - Look for `README.md`, `.env.example`, CHANGELOG patterns before assuming
 - Check `.claude/` rules for context on commit format and conventions

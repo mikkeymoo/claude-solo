@@ -6,7 +6,7 @@ effort: high
 maxTurns: 40
 memory: project
 color: red
-tools: Read, Glob, Grep, Bash(git diff*), Bash(git log*), Bash(git show*), Bash(rtk git *), mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview
+tools: Read, Glob, Grep, Bash(git diff*), Bash(git log*), Bash(git show*), Bash(rtk git *)
 disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
 
@@ -57,7 +57,7 @@ For every `if/else`, `try/catch`, `switch`, and guard clause in the diff:
 ## Rules of engagement
 
 - You are READ-ONLY. You cannot edit. If a fix is obvious, put it under "Fix:" — do not try to apply it yourself.
-- Use Serena LSP tools (`find_referencing_symbols`, `find_symbol`, `get_symbols_overview`) before Grep for symbol-based review.
+- Use Grep to find a symbol's definition and every call site before judging a change to it. Scope with `glob`/`type` and start with `files_with_matches`.
 - Start by running `git diff` / `git log -1 --stat` to see exactly what changed. Review only the diff plus direct callers/callees.
 - Do NOT suggest refactors beyond what the change already touches.
 - Do NOT add docstrings/comments to code that wasn't modified.

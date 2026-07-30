@@ -7,6 +7,38 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [Unreleased]
+
+### Removed — Serena LSP integration
+
+Serena was measurably unused. Across every MCP session logged since it was
+installed (26 sessions, 6 days), `~/.serena/logs/` recorded **zero
+`CallToolRequest` entries** — only `ListTools`/`ListResources` handshakes. No
+language server was ever initialized and `Available projects:` was empty in all
+26 logs. It started a Python process, an LSP backend, and a dashboard web server
+(plus a Windows tray app) on every session and was never invoked.
+
+- **Removed** `rules/lsp-first.md` — the LSP-first navigation mandate.
+- **Removed** `mm-skills/mm-lsp-status/` — existed only to diagnose Serena/cclsp.
+- **Removed** `scripts/enforce-lsp-navigation.sh` (PreToolUse `Grep|Glob` nudge)
+  and `scripts/compress-lsp-output.sh` (PostToolUse `mcp__serena__.*`), plus both
+  hook registrations in `hooks/hooks.json`. Note: `install.sh` still lists these
+  in its legacy de-wiring list, which correctly strips them from existing
+  `settings.json` files on upgrade.
+- **Removed** the `serena` entry from `mcp.json` and `.claude/mcp.json`.
+- **Removed** `mcp__serena__*` from the tool lists of `code-reviewer`,
+  `researcher`, `refactor-agent`, and `deploy-guard`; their navigation guidance
+  now specifies Grep/Glob with word-boundary patterns for renames.
+- **Untracked and deleted** `.serena/` (already in `.gitignore`; `project.yml`
+  predated the ignore rule and was committed by mistake).
+- Updated `CLAUDE.md`, `README.md`, and the `mm-hud`/`mm-onboard`/`mm-refactor`/
+  `mm-zoom-out` skills to describe Grep-based navigation.
+
+`pyright-lsp` (separate plugin) is unaffected and still provides Python
+diagnostics. `cclsp` remains listed in `mcp.json` but is not installed.
+
+---
+
 ## [2.0.0] - 2026-06-12
 
 ### Changed — `/mm-*` command rename (BREAKING)

@@ -81,7 +81,6 @@ bash install.sh    # links the plugin + installs the settings/deny layer
 
 - `rtk-rewrite` — compresses CLI output 60–90% before it hits context
 - `post-format-and-heal` — auto-format + lint-fix after every edit
-- `enforce-lsp-navigation` — nudges Serena LSP over raw Grep
 - `validate-readonly-query` — blocks write-SQL when running as `db-reader`
 - `pre-compact-checkpoint` / `post-compact` — saves & restores context on compaction
 - `session-start-context` / `session-hud` — git + sprint state on every session
@@ -187,7 +186,7 @@ You:   /mm-fix TypeError: Cannot read property 'id' of undefined in UserCard.tsx
 > **Skill:** `fix` activates in default (tactical) mode. Steps:
 >
 > 1. **Reproduce** — confirms the error, gets the full stack trace
-> 2. **Locate** — uses Serena LSP (`find_symbol`, `find_references`) to trace the code path. **Hook:** `enforce-lsp-navigation.sh` nudges if Grep is used instead of LSP
+> 2. **Locate** — uses Grep/Glob to trace the code path from entry point to the failing call site
 > 3. **Root cause** — states the problem in one sentence before writing any fix
 > 4. **Fix** — minimal change. **PostToolUse hook:** `post-format-and-heal.sh` formats
 > 5. **Verify** — runs relevant tests
@@ -371,13 +370,13 @@ You:   /mm-zoom-out --explore
 You:   How does the authentication flow work end-to-end?
 ```
 
-> No skill — Claude handles directly but **routes to `researcher` agent** (Haiku, read-only) because the question spans >3 files. The researcher uses Serena LSP to trace from login endpoint → middleware → JWT validation → session store. Returns a synthesized report with file:line citations.
+> No skill — Claude handles directly but **routes to `researcher` agent** (Haiku, read-only) because the question spans >3 files. The researcher greps from login endpoint → middleware → JWT validation → session store. Returns a synthesized report with file:line citations.
 
 ```
 You:   Where does the session token get validated across the codebase?
 ```
 
-> Same pattern — **routes to `researcher` agent**. Uses `find_symbol` and `find_referencing_symbols` via Serena LSP to find all validation call sites. Returns a map of every file and function that touches the token.
+> Same pattern — **routes to `researcher` agent**. Greps for the token symbol to find all validation call sites. Returns a map of every file and function that touches the token.
 
 ---
 
@@ -561,7 +560,6 @@ Hooks fire without you doing anything. Here's what runs in the background:
 
 **When Claude searches code:**
 
-- `enforce-lsp-navigation.sh` — nudges to use Serena LSP instead of Grep for symbol navigation
 
 **When context compacts:**
 

@@ -81,12 +81,11 @@ Meta: `/mm-scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templat
 - **Pushing to `main` is always allowed without asking.** After committing, push to `origin/main` directly — no confirmation needed, no feature branch required. (Solo repo; the deny-list was removed, so even `git push --force` is no longer blocked — use care.)
 - Run tests after meaningful edits — PostToolUse hook will nudge; don't ignore it.
 - `rtk` (Rust Token Killer) auto-rewrites simple Bash commands via the `rtk-rewrite.sh` PreToolUse hook — no need to prefix `rtk` yourself (it's a no-op if rtk isn't installed). 60–90% token savings on CLI output.
-- Use Serena LSP (`mcp__serena__*`) over Grep for code navigation when available.
+- Use Grep/Glob for code navigation. Scope with `glob`/`type`, start with `files_with_matches`, then re-run with `content` on the hits.
 
 ## Engineering rules
 
 See `.claude/rules/karpathy-pitfalls.md` for common AI coding pitfalls.
-See `.claude/rules/lsp-first.md` for navigation conventions.
 Other rules in `.claude/rules/` are auto-loaded per file type.
 
 ## Compact policy

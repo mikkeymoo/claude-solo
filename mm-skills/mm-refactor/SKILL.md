@@ -8,7 +8,7 @@ argument-hint: "[what to refactor and why]"
 
 1. **Confirm tests exist** — if no tests cover this code, write them first
 2. **Plan** — describe the exact change: rename X to Y, extract function Z, move module A to B
-3. **Execute** — use Serena LSP (`mcp__serena__rename_symbol`) for renames touching multiple files
+3. **Execute** — Grep the symbol repo-wide first, read every hit, then Edit. Use `Name` patterns so comments and substrings aren't caught
 4. **Verify** — all tests still pass; no behavior change
 5. **Commit** — `refactor: <what changed>`
 
