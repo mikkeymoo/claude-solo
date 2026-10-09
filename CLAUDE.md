@@ -20,11 +20,6 @@ no on-call rotation, no product manager.
 
 ## Safety (the deny-list was removed — these are now conventions, not fences)
 
-The permission deny-list and the catastrophic-command hook block were removed at
-the user's request. With `defaultMode: bypassPermissions` and an empty `deny`
-array, **nothing is blocked** — the items below are judgment guidelines, not
-enforced barriers. Use care; there is no longer a safety net.
-
 - Avoid editing `.env*`, `secrets/`, `credentials/`, `.pem`, `id_rsa`, `id_ed25519` unless intended.
 - Avoid `rm -rf /`, `rm -rf ~`, `git push --force` to shared branches, and `curl | bash` from untrusted sources.
 - Avoid destructive SQL (`DROP`, `TRUNCATE`, `DELETE`/`UPDATE` without `WHERE`) from Bash — use a migration.
@@ -36,7 +31,7 @@ enforced barriers. Use care; there is no longer a safety net.
 For any task touching more than 2 files or spanning multiple subsystems:
 
 1. Create or update `.planning/CURRENT_TASK.md` with goal, files in scope, acceptance criteria
-2. Wait for user confirmation OR explicit `/mm-riper --build` invocation before writing code
+2. Wait for user confirmation before writing code
 3. Reference the plan file in commit messages
 
 Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can proceed without a plan.
@@ -54,26 +49,6 @@ Small, obviously-scoped tasks (single-file fixes, typos, doc updates) can procee
 - `refactor-agent` — isolated worktree; large-scale renames, extractions, API shape changes.
 - `db-reader` — any production DB inspection. SELECT-only, enforced by hook.
 - `deploy-guard` — **human-trigger only**. Do not auto-spawn.
-
-## Skills (all `/mm-` prefixed — standalone skills)
-
-Sprint pipeline: `/mm-brief` → `/mm-riper --plan` → `/mm-riper --build` → `/mm-code-review-excellence` → `/mm-quality --gate` → `/mm-ship` → `/mm-retro`
-
-Workflow modes: `/mm-riper` (phased), `/mm-riper --auto` (autopilot), `/mm-workflow --parallel`, `/mm-swarm` (multi-agent), `/mm-quick` (fast path)
-
-Debugging: `/mm-fix` (tactical), `/mm-fix --deep` (systematic), `/mm-fix --triage` (universal), `/mm-fix --bisect` (git bisect regression finder)
-
-Quality: `/mm-tdd` (red-green-refactor), `/mm-tdd --write` (test writing), `/mm-test-gen` (generate tests for existing code), `/mm-quality --deps`, `/mm-quality --gate`, `/mm-cleanup`, `/mm-security` (OWASP + CVE scan), `/mm-perf` (performance profiling)
-
-Review: `/mm-code-review-excellence` (constructive), `/mm-code-review-excellence --staff`, `/mm-code-review-excellence --adversarial`, `/mm-api-design` (REST API review/design)
-
-Exploration: `/mm-zoom-out` (quick context), `/mm-zoom-out --explore` (deep-dive), `/mm-hud` (session), `/mm-hud --doctor` (health), `/mm-onboard` (generate project onboarding guide)
-
-Dependencies: `/mm-deps` (audit/upgrade/clean deps), `/mm-deps --audit`, `/mm-deps --clean`, `/mm-changelog` (generate from conventional commits), `/mm-ci` (CI status/retry)
-
-Incident response: `/mm-incident` (structured postmortem Q&A), `/mm-migrate` (migration assistant: `--plan`, `--execute`, `--verify`)
-
-Meta: `/mm-scaffold` (new: `--react`, `--next`, `--fastapi`, `--express` templates), `/mm-sketch` (rapid prototype), `/mm-session`, `/mm-cost` (`--trend` for week-over-week comparison), `/mm-config`, `/mm-release`, `/mm-docs` (`--api` for OpenAPI spec generation), `/mm-refactor`, `/mm-swarm` (`--status`, `--results` modes), `/mm-cleanup` (`--aggressive` for maximum dead code removal)
 
 ## Execution defaults
 
